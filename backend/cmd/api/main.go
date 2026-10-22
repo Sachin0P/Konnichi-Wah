@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/planner"
 
 	// Import the pq driver so that it can register itself with the database/sql
 	// package. We alias the import to the blank identifier because we never use
@@ -47,12 +48,16 @@ type config struct {
 }
 
 // Define an application struct to hold the dependencies for our HTTP handlers,
-// helpers and middleware. More fields (the LLM client, Google API clients) will
-// be added as we build out the app.
+// helpers and middleware. More fields (Google API clients) will be added as we
+// build out the app.
+//
+// The planner field is an interface, so we can switch from the built-in
+// catalogue to a real LLM planner without touching the handlers.
 type application struct {
-	config config
-	logger *slog.Logger
-	models data.Models
+	config  config
+	logger  *slog.Logger
+	models  data.Models
+	planner planner.Planner
 }
 
 func main() {
@@ -106,9 +111,10 @@ func main() {
 	logger.Info("database connection pool established")
 
 	app := &application{
-		config: cfg,
-		logger: logger,
-		models: data.NewModels(db),
+		config:  cfg,
+		logger:  logger,
+		models:  data.NewModels(db),
+		planner: planner.Catalogue{},
 	}
 
 	err = app.serve()

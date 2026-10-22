@@ -15,7 +15,7 @@ import (
 // is tagged with one or more of these, and itinerary stops will use the same
 // list, so that every stop can be matched to its tips. The planner's JSON
 // schema will be built from this list too, so the LLM can't invent new types.
-var PlaceTypes = []string{"temple", "shrine", "onsen", "ryokan", "restaurant", "train", "taxi", "shop", "street"}
+var PlaceTypes = []string{"temple", "shrine", "onsen", "ryokan", "restaurant", "train", "taxi", "shop", "street", "park", "attraction"}
 
 // Severities lists the permitted severity values. "important" means breaking
 // the rule could cause real offence or get you refused entry; "helpful" means

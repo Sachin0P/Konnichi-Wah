@@ -19,6 +19,8 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/etiquette", app.listEtiquetteRulesHandler)
 
+	router.HandlerFunc(http.MethodPost, "/v1/plan/suggestions", app.createPlanSuggestionsHandler)
+
 	// recoverPanic must be the outermost middleware, so that it catches panics
 	// in all the middleware and handlers below it.
 	return app.recoverPanic(app.enableCORS(app.rateLimit(router)))

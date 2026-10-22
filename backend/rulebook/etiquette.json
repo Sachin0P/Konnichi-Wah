@@ -442,7 +442,7 @@
   },
   {
     "id": "street-rubbish",
-    "place_types": ["street", "temple", "shrine"],
+    "place_types": ["street", "temple", "shrine", "park", "attraction"],
     "title": "Carry your rubbish with you",
     "tip": "Public bins are rare. Keep a small bag for your rubbish and throw it away at your hotel or a convenience store, sorted into burnable, plastic and bottles/cans.",
     "severity": "important"
@@ -501,6 +501,48 @@
     "place_types": ["street"],
     "title": "Know the emergency numbers",
     "tip": "Call 110 for the police and 119 for an ambulance or fire. The JNTO Visitor Hotline (050-3816-2787) helps tourists in English 24 hours a day.",
+    "severity": "helpful"
+  },
+  {
+    "id": "park-hanami",
+    "place_types": ["park"],
+    "title": "Cherry blossom picnic manners",
+    "tip": "During hanami season, don't pick blossoms or shake branches for photos, don't block paths with large mats, and take all your rubbish home.",
+    "severity": "helpful"
+  },
+  {
+    "id": "park-nara-deer",
+    "place_types": ["park"],
+    "title": "Feed Nara's deer only deer crackers",
+    "tip": "In Nara Park, feed the deer only the official shika senbei crackers sold there, never your own snacks. The deer can bite, butt or chase you, so keep children close and maps and paper out of reach.",
+    "severity": "important"
+  },
+  {
+    "id": "park-trails",
+    "place_types": ["park"],
+    "title": "Stay on the marked paths",
+    "tip": "In gardens and nature areas, stay on the paths and don't pick plants or step on moss. Many famous gardens are carefully maintained by hand.",
+    "severity": "helpful"
+  },
+  {
+    "id": "attraction-book-ahead",
+    "place_types": ["attraction"],
+    "title": "Book popular attractions in advance",
+    "tip": "Many popular attractions, such as the Ghibli Museum, teamLab and observation decks, sell timed tickets online that sell out days or weeks ahead. Book before you travel.",
+    "severity": "important"
+  },
+  {
+    "id": "attraction-photos",
+    "place_types": ["attraction"],
+    "title": "Check the photo rules",
+    "tip": "Some museums and galleries ban photography completely, and others only allow it without flash. Follow the signs and staff instructions.",
+    "severity": "important"
+  },
+  {
+    "id": "attraction-queues",
+    "place_types": ["attraction", "shop", "restaurant"],
+    "title": "Join the end of the queue",
+    "tip": "Queues are orderly and taken seriously. Find the end of the line (staff sometimes hold a sign saying 最後尾, 'end of line') and never cut in or save places for friends who arrive later.",
     "severity": "helpful"
   }
 ]
