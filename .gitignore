@@ -12,8 +12,9 @@ android/local.properties
 android/.idea/
 *.iml
 
-# IDE files from opening the repo root in Android Studio / IntelliJ.
+# IDE files from opening the repo root in Android Studio / IntelliJ or VS Code.
 /.idea/
+/.vscode/
 
 # Claude Code per-machine settings.
 .claude/settings.local.json

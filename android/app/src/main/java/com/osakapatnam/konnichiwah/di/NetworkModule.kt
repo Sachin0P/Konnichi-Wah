@@ -20,10 +20,15 @@ import javax.inject.Singleton
 object NetworkModule {
 
     // ignoreUnknownKeys lets the backend add new response fields without
-    // breaking app builds that don't know about them yet.
+    // breaking app builds that don't know about them yet. encodeDefaults
+    // makes requests always send every field (e.g. "avoid": []), so what we
+    // send matches docs/api.md exactly.
     @Provides
     @Singleton
-    fun provideJson(): Json = Json { ignoreUnknownKeys = true }
+    fun provideJson(): Json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     @Provides
     @Singleton

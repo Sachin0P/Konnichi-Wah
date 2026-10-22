@@ -95,6 +95,8 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
 
+    implementation(libs.androidx.datastore.preferences)
+
     testImplementation(libs.junit)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
