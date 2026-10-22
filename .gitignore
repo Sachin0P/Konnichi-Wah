@@ -2,6 +2,19 @@
 backend/bin/
 backend/.envrc
 
+# Android: build output, Gradle/Kotlin caches, IDE files and the per-machine
+# SDK path.
+android/.gradle/
+android/.kotlin/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+*.iml
+
+# IDE files from opening the repo root in Android Studio / IntelliJ.
+/.idea/
+
 # Claude Code per-machine settings.
 .claude/settings.local.json
 
