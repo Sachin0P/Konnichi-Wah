@@ -40,6 +40,12 @@ db/migrations/up: confirm
 	@echo 'Running up migrations...'
 	migrate -path ./migrations -database ${KONNICHIWAH_DB_DSN} up
 
+## db/seed: load rulebook/etiquette.json into the database
+.PHONY: db/seed
+db/seed:
+	@echo 'Seeding etiquette rules...'
+	go run ./cmd/seed -db-dsn=${KONNICHIWAH_DB_DSN}
+
 # ==================================================================================== #
 # QUALITY CONTROL
 # ==================================================================================== #

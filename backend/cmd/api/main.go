@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
+
 	// Import the pq driver so that it can register itself with the database/sql
 	// package. We alias the import to the blank identifier because we never use
 	// the package directly.
@@ -45,11 +47,12 @@ type config struct {
 }
 
 // Define an application struct to hold the dependencies for our HTTP handlers,
-// helpers and middleware. More fields (models, the LLM client, Google API
-// clients) will be added as we build out the app.
+// helpers and middleware. More fields (the LLM client, Google API clients) will
+// be added as we build out the app.
 type application struct {
 	config config
 	logger *slog.Logger
+	models data.Models
 }
 
 func main() {
@@ -105,6 +108,7 @@ func main() {
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	err = app.serve()

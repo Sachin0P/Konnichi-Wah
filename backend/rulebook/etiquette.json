@@ -1,0 +1,506 @@
+[
+  {
+    "id": "temple-shoes",
+    "place_types": ["temple", "ryokan"],
+    "title": "Remove your shoes",
+    "tip": "Take off your shoes where you see a step up, a shoe rack or slippers laid out. Slip-on shoes and socks without holes make this much easier.",
+    "severity": "important"
+  },
+  {
+    "id": "temple-photos",
+    "place_types": ["temple", "shrine"],
+    "title": "Check before taking photos",
+    "tip": "Photography is often banned inside halls and of the main statues. Look for no-photo signs, and don't photograph monks, priests or people praying without asking.",
+    "severity": "important"
+  },
+  {
+    "id": "temple-sacred-objects",
+    "place_types": ["temple", "shrine"],
+    "title": "Don't touch or climb sacred objects",
+    "tip": "Statues, sacred ropes (shimenawa), roped-off trees and altars are objects of worship. Look, but don't touch, lean on or climb them for photos.",
+    "severity": "important"
+  },
+  {
+    "id": "temple-quiet",
+    "place_types": ["temple", "shrine"],
+    "title": "Keep your voice low",
+    "tip": "Temples and shrines are active places of worship. Talk quietly, keep children close and set your phone to silent.",
+    "severity": "helpful"
+  },
+  {
+    "id": "temple-dress",
+    "place_types": ["temple", "shrine"],
+    "title": "Dress modestly",
+    "tip": "There is rarely a strict dress code, but covering your shoulders and knees is respectful, especially inside halls.",
+    "severity": "helpful"
+  },
+  {
+    "id": "temple-incense",
+    "place_types": ["temple"],
+    "title": "Wave out incense, don't blow on it",
+    "tip": "At the large incense burner, people waft the smoke over themselves for good health. If you light a stick, put out the flame by waving your hand, not by blowing.",
+    "severity": "helpful"
+  },
+  {
+    "id": "temple-prayer",
+    "place_types": ["temple"],
+    "title": "How to pray at a temple",
+    "tip": "Gently drop a coin in the offering box, put your palms together, bow and pray silently. Unlike at shrines, you don't clap at Buddhist temples.",
+    "severity": "helpful"
+  },
+  {
+    "id": "temple-goshuin",
+    "place_types": ["temple", "shrine"],
+    "title": "Goshuin stamps are a religious record",
+    "tip": "Many temples and shrines write a calligraphy seal (goshuin) in a special book for a small fee. Ask politely at the office and treat it as a blessing, not a souvenir stamp.",
+    "severity": "helpful"
+  },
+  {
+    "id": "temple-omikuji",
+    "place_types": ["temple", "shrine"],
+    "title": "Tie up bad fortunes",
+    "tip": "If your omikuji paper fortune is bad, tie it to the rack or wires provided so the bad luck stays behind. Good fortunes can be kept.",
+    "severity": "helpful"
+  },
+  {
+    "id": "shrine-torii",
+    "place_types": ["shrine"],
+    "title": "Bow at the torii gate",
+    "tip": "Give a light bow before passing through the torii gate. The centre of the path is traditionally for the deity, so walk slightly to one side.",
+    "severity": "helpful"
+  },
+  {
+    "id": "shrine-purification",
+    "place_types": ["shrine", "temple"],
+    "title": "Purify your hands at the water basin",
+    "tip": "At the temizuya: rinse your left hand, then your right, then pour water into your cupped left hand to rinse your mouth and spit it beside the basin. Never drink from the ladle or put it to your lips.",
+    "severity": "helpful"
+  },
+  {
+    "id": "shrine-prayer",
+    "place_types": ["shrine"],
+    "title": "How to pray at a shrine",
+    "tip": "Drop a coin in the offering box, ring the bell if there is one, then bow twice, clap twice, pray silently and bow once more.",
+    "severity": "helpful"
+  },
+  {
+    "id": "onsen-wash-first",
+    "place_types": ["onsen", "ryokan"],
+    "title": "Wash fully before getting in",
+    "tip": "Sit on a stool at the washing area and soap and rinse your whole body before entering the bath. The bath water is shared and only for soaking.",
+    "severity": "important"
+  },
+  {
+    "id": "onsen-no-swimwear",
+    "place_types": ["onsen", "ryokan"],
+    "title": "Bathe without swimwear",
+    "tip": "Shared baths are separated by gender and entered naked; swimsuits are not allowed. If you'd rather not, book a private bath (kashikiri-buro), which many ryokan offer.",
+    "severity": "important"
+  },
+  {
+    "id": "onsen-gender-curtains",
+    "place_types": ["onsen", "ryokan"],
+    "title": "Check which bath is which",
+    "tip": "Look for 男 (men) and 女 (women) on the entrance curtains; men's are often blue and women's red. Some places swap the baths between morning and evening, so check every time.",
+    "severity": "important"
+  },
+  {
+    "id": "onsen-tattoos",
+    "place_types": ["onsen", "ryokan"],
+    "title": "Tattoos may be refused",
+    "tip": "Many onsen still refuse guests with tattoos, including small ones. Check the policy in advance; some allow small tattoos covered with a patch, and private baths avoid the issue.",
+    "severity": "important"
+  },
+  {
+    "id": "onsen-towel",
+    "place_types": ["onsen", "ryokan"],
+    "title": "Keep your small towel out of the water",
+    "tip": "Bring the small towel into the bath area, but never dip it in the bath. Rest it on your head or beside the bath.",
+    "severity": "important"
+  },
+  {
+    "id": "onsen-no-photos",
+    "place_types": ["onsen", "ryokan"],
+    "title": "No phones or cameras in the baths",
+    "tip": "Never take photos or use your phone in the changing room or the bathing area, even if it seems empty.",
+    "severity": "important"
+  },
+  {
+    "id": "onsen-health",
+    "place_types": ["onsen", "ryokan"],
+    "title": "Take short soaks and drink water",
+    "tip": "Onsen water is usually around 40-42°C. Elderly travellers and anyone with heart or blood pressure problems should take short dips, drink water and avoid bathing after alcohol.",
+    "severity": "important"
+  },
+  {
+    "id": "onsen-hair",
+    "place_types": ["onsen", "ryokan"],
+    "title": "Tie up long hair",
+    "tip": "Long hair shouldn't touch the bath water, so tie it up or wear a bath cap.",
+    "severity": "helpful"
+  },
+  {
+    "id": "onsen-calm",
+    "place_types": ["onsen", "ryokan"],
+    "title": "No swimming or splashing",
+    "tip": "The bath is for quiet soaking. Don't swim, splash, dive or talk loudly.",
+    "severity": "helpful"
+  },
+  {
+    "id": "onsen-dry-off",
+    "place_types": ["onsen", "ryokan"],
+    "title": "Dry off before the changing room",
+    "tip": "Wipe yourself down with your small towel before going back into the changing room, so you don't drip on the floor.",
+    "severity": "helpful"
+  },
+  {
+    "id": "ryokan-tatami",
+    "place_types": ["ryokan", "restaurant", "temple"],
+    "title": "No slippers on tatami",
+    "tip": "Indoor slippers are for corridors only. Take them off before stepping onto tatami mats, and walk on tatami in socks or bare feet.",
+    "severity": "important"
+  },
+  {
+    "id": "ryokan-toilet-slippers",
+    "place_types": ["ryokan", "restaurant"],
+    "title": "Use the toilet slippers, then leave them",
+    "tip": "Many toilets have their own pair of slippers. Switch into them at the door and leave them there when you come out; wearing them back into the room is a classic mistake.",
+    "severity": "helpful"
+  },
+  {
+    "id": "ryokan-yukata",
+    "place_types": ["ryokan", "onsen"],
+    "title": "Wrap your yukata left over right",
+    "tip": "Always fold the left side of the yukata over the right. Right over left is only used to dress the dead at funerals.",
+    "severity": "important"
+  },
+  {
+    "id": "ryokan-dietary-needs",
+    "place_types": ["ryokan"],
+    "title": "Tell the ryokan about your diet when booking",
+    "tip": "Ryokan dinners are set multi-course meals usually made with fish stock (dashi). Ask for vegetarian, Jain, no-beef or no-pork meals when you book; they often can't change the menu on the day.",
+    "severity": "important"
+  },
+  {
+    "id": "ryokan-meal-times",
+    "place_types": ["ryokan"],
+    "title": "Keep to your meal and check-in times",
+    "tip": "Dinner is cooked for a fixed time, often chosen at check-in. Arrive on time, and call ahead if you will be late checking in.",
+    "severity": "helpful"
+  },
+  {
+    "id": "ryokan-futon",
+    "place_types": ["ryokan"],
+    "title": "Staff will lay out your futon",
+    "tip": "In traditional rooms, staff often come in to lay out the futon while you are at dinner and put it away in the morning. Leave your things tidy so they can do this.",
+    "severity": "helpful"
+  },
+  {
+    "id": "restaurant-no-tipping",
+    "place_types": ["restaurant", "taxi", "ryokan", "shop"],
+    "title": "Don't tip",
+    "tip": "Tipping isn't part of Japanese culture and can cause confusion; staff may chase you to return the money. Good service is already included, and a sincere thank you (arigatou gozaimasu) is enough.",
+    "severity": "important"
+  },
+  {
+    "id": "restaurant-chopsticks-upright",
+    "place_types": ["restaurant", "ryokan"],
+    "title": "Never stand chopsticks upright in rice",
+    "tip": "Chopsticks stuck upright in a bowl of rice resemble incense at funerals. Rest them on the chopstick holder or across your plate.",
+    "severity": "important"
+  },
+  {
+    "id": "restaurant-chopsticks-passing",
+    "place_types": ["restaurant", "ryokan"],
+    "title": "Don't pass food chopstick to chopstick",
+    "tip": "Passing food directly between two pairs of chopsticks mirrors a funeral rite. Place the food on the other person's plate instead.",
+    "severity": "important"
+  },
+  {
+    "id": "restaurant-hidden-dashi",
+    "place_types": ["restaurant", "ryokan", "shop"],
+    "title": "Vegetarian-looking dishes may contain fish",
+    "tip": "Dashi (fish stock, usually bonito) is in miso soup, udon and soba broth, tempura dipping sauce and many simmered vegetables. Show your phrase card and ask about dashi even when a dish has no visible meat.",
+    "severity": "important"
+  },
+  {
+    "id": "restaurant-hidden-pork-beef",
+    "place_types": ["restaurant", "shop"],
+    "title": "Pork and beef hide in many dishes",
+    "tip": "Most ramen broths use pork or chicken (tonkotsu is pork bone), gyoza are usually pork, and curry roux often contains beef or pork fat. On packaged food, look for 豚 (pork), 牛 (beef) and 鶏 (chicken) on the label.",
+    "severity": "important"
+  },
+  {
+    "id": "restaurant-onion-garlic",
+    "place_types": ["restaurant", "ryokan"],
+    "title": "Jain diets: onion and garlic are everywhere",
+    "tip": "Onion, garlic and leek are in most sauces and stocks. Shojin ryori (Buddhist temple cuisine) avoids meat, fish and pungent vegetables, so it is a good option, but still ask about root vegetables.",
+    "severity": "important"
+  },
+  {
+    "id": "restaurant-ticket-machine",
+    "place_types": ["restaurant"],
+    "title": "Buy a meal ticket at the machine",
+    "tip": "Many ramen, udon and curry shops have a ticket machine by the door. Choose and pay there, then hand the ticket to the staff. Photos on the buttons help you pick.",
+    "severity": "helpful"
+  },
+  {
+    "id": "restaurant-pay-at-register",
+    "place_types": ["restaurant"],
+    "title": "Pay at the register",
+    "tip": "Staff usually leave the bill on your table. Take it to the cashier by the door when you leave; you don't pay at the table.",
+    "severity": "helpful"
+  },
+  {
+    "id": "restaurant-seating",
+    "place_types": ["restaurant"],
+    "title": "Wait to be seated",
+    "tip": "Wait at the entrance and show how many people are in your group with your fingers. Staff will greet you with 'irasshaimase'; you don't need to reply.",
+    "severity": "helpful"
+  },
+  {
+    "id": "restaurant-oshibori",
+    "place_types": ["restaurant"],
+    "title": "The wet towel is for your hands",
+    "tip": "Use the oshibori (wet towel) to wipe your hands before eating. Avoid wiping your face or the table with it, especially at nicer restaurants.",
+    "severity": "helpful"
+  },
+  {
+    "id": "restaurant-greetings",
+    "place_types": ["restaurant", "ryokan"],
+    "title": "Say itadakimasu and gochisousama",
+    "tip": "Say 'itadakimasu' before you start eating and 'gochisousama deshita' when you finish or leave. Staff and hosts appreciate it.",
+    "severity": "helpful"
+  },
+  {
+    "id": "restaurant-slurping",
+    "place_types": ["restaurant"],
+    "title": "Slurping noodles is fine",
+    "tip": "Slurping ramen, soba and udon is normal and shows you are enjoying them. Blowing your nose at the table is not; step outside or go to the toilet.",
+    "severity": "helpful"
+  },
+  {
+    "id": "restaurant-pouring-drinks",
+    "place_types": ["restaurant"],
+    "title": "Pour drinks for others",
+    "tip": "In a group, pour drinks for others rather than yourself, and wait for everyone to say 'kanpai' before drinking.",
+    "severity": "helpful"
+  },
+  {
+    "id": "restaurant-reservations",
+    "place_types": ["restaurant"],
+    "title": "Cancel bookings you can't keep",
+    "tip": "No-shows are a serious problem for small restaurants, and many charge cancellation fees. Cancel as early as you can if your plans change.",
+    "severity": "important"
+  },
+  {
+    "id": "restaurant-outside-food",
+    "place_types": ["restaurant"],
+    "title": "Don't bring outside food",
+    "tip": "Eating your own food in a restaurant is not accepted. If someone in your group has strict dietary needs, look for places that can cater to them instead.",
+    "severity": "helpful"
+  },
+  {
+    "id": "train-queue",
+    "place_types": ["train"],
+    "title": "Queue at the platform markings",
+    "tip": "Lines and arrows on the platform show where the doors will open. Queue there and let passengers get off before you get on.",
+    "severity": "important"
+  },
+  {
+    "id": "train-quiet",
+    "place_types": ["train"],
+    "title": "No phone calls on trains",
+    "tip": "Set your phone to silent (manner mode) and don't take calls on the train. Keep conversations quiet; trains are usually very calm.",
+    "severity": "important"
+  },
+  {
+    "id": "train-priority-seats",
+    "place_types": ["train"],
+    "title": "Leave priority seats for those who need them",
+    "tip": "Priority seats near the doors are for elderly people, pregnant women, people with disabilities and people with small children. Give up your seat if someone needs it.",
+    "severity": "important"
+  },
+  {
+    "id": "train-women-only-cars",
+    "place_types": ["train"],
+    "title": "Women-only cars at rush hour",
+    "tip": "Some city lines have women-only cars during the morning rush, marked in pink on the platform and the train. Men should use the other cars.",
+    "severity": "important"
+  },
+  {
+    "id": "train-large-luggage",
+    "place_types": ["train"],
+    "title": "Reserve a space for big suitcases",
+    "tip": "On the Tokaido, Sanyo and Kyushu Shinkansen, suitcases over 160 cm (length + width + height) need a seat with an oversized baggage area reserved in advance, or you may be charged a fee. Consider sending bags ahead with a luggage delivery service (takkyubin).",
+    "severity": "important"
+  },
+  {
+    "id": "train-escalators",
+    "place_types": ["train", "shop"],
+    "title": "Escalators: left in Tokyo, right in Osaka",
+    "tip": "People usually stand on the left in Tokyo and on the right in Osaka, leaving the other side for walking. Many stations now ask everyone to stand still on both sides, so follow the signs.",
+    "severity": "helpful"
+  },
+  {
+    "id": "train-ic-card",
+    "place_types": ["train", "shop"],
+    "title": "Use an IC card",
+    "tip": "A rechargeable IC card such as Suica, PASMO or ICOCA (also available in phone wallets) lets you tap in and out of gates without buying tickets. It also works at convenience stores and vending machines.",
+    "severity": "helpful"
+  },
+  {
+    "id": "train-keep-ticket",
+    "place_types": ["train"],
+    "title": "Keep your ticket until you exit",
+    "tip": "You need your paper ticket or IC card to get out through the exit gate. If you've underpaid, use the fare adjustment machine (精算機) next to the gates.",
+    "severity": "helpful"
+  },
+  {
+    "id": "train-eating",
+    "place_types": ["train"],
+    "title": "Eat on long-distance trains only",
+    "tip": "Eating bento on the Shinkansen and limited express trains is normal, but avoid eating on crowded local and subway trains.",
+    "severity": "helpful"
+  },
+  {
+    "id": "train-rush-hour",
+    "place_types": ["train"],
+    "title": "Avoid rush hour with luggage",
+    "tip": "City trains are packed from about 7:30 to 9:30 am and 5:30 to 7:30 pm. Travel with suitcases or elderly family members outside these times.",
+    "severity": "helpful"
+  },
+  {
+    "id": "train-backpacks",
+    "place_types": ["train"],
+    "title": "Wear your backpack on your front",
+    "tip": "In crowded trains, wear your backpack on your front or put it on the overhead rack so it doesn't push into people.",
+    "severity": "helpful"
+  },
+  {
+    "id": "train-reclining",
+    "place_types": ["train"],
+    "title": "Check behind you before reclining",
+    "tip": "On the Shinkansen it is polite to glance back, or say 'sumimasen', before reclining your seat. Return it upright before you leave.",
+    "severity": "helpful"
+  },
+  {
+    "id": "train-last-train",
+    "place_types": ["train"],
+    "title": "Check the time of the last train",
+    "tip": "Most city trains stop running around midnight, and taxis late at night are expensive. Check the last train back to your hotel.",
+    "severity": "helpful"
+  },
+  {
+    "id": "taxi-doors",
+    "place_types": ["taxi"],
+    "title": "Taxi doors open by themselves",
+    "tip": "The driver opens and closes the rear left door with a lever. Stand back as it swings open, and don't slam it shut yourself.",
+    "severity": "helpful"
+  },
+  {
+    "id": "taxi-address",
+    "place_types": ["taxi"],
+    "title": "Show the address in Japanese",
+    "tip": "Many drivers speak little English. Show your destination written in Japanese, or a map pin, rather than saying the name.",
+    "severity": "helpful"
+  },
+  {
+    "id": "taxi-seatbelt",
+    "place_types": ["taxi"],
+    "title": "Wear a seatbelt in the back too",
+    "tip": "Seatbelts are required by law for passengers in the back seat as well as the front.",
+    "severity": "important"
+  },
+  {
+    "id": "shop-no-bargaining",
+    "place_types": ["shop"],
+    "title": "Prices are fixed",
+    "tip": "Bargaining isn't done in Japanese shops, markets or restaurants. The price on the tag is the price you pay.",
+    "severity": "important"
+  },
+  {
+    "id": "shop-cash-tray",
+    "place_types": ["shop", "restaurant"],
+    "title": "Put money on the tray",
+    "tip": "At the register, place your cash or card on the small tray rather than handing it to the cashier. Your change will be returned the same way.",
+    "severity": "helpful"
+  },
+  {
+    "id": "shop-tax-free",
+    "place_types": ["shop"],
+    "title": "Bring your passport for tax-free shopping",
+    "tip": "Shops with a Tax-Free sign can refund consumption tax to visitors above a minimum spend. From 1 November 2026 Japan is moving to a refund system: you pay tax at the till and claim it back when you leave Japan, so keep your receipts.",
+    "severity": "helpful"
+  },
+  {
+    "id": "shop-bags",
+    "place_types": ["shop"],
+    "title": "Plastic bags cost extra",
+    "tip": "Shops and convenience stores charge a few yen for plastic bags. Carry a foldable shopping bag.",
+    "severity": "helpful"
+  },
+  {
+    "id": "street-rubbish",
+    "place_types": ["street", "temple", "shrine"],
+    "title": "Carry your rubbish with you",
+    "tip": "Public bins are rare. Keep a small bag for your rubbish and throw it away at your hotel or a convenience store, sorted into burnable, plastic and bottles/cans.",
+    "severity": "important"
+  },
+  {
+    "id": "street-smoking",
+    "place_types": ["street"],
+    "title": "Smoke only in smoking areas",
+    "tip": "Many cities ban smoking on the street and can fine you for it. Use the marked smoking areas, often near stations.",
+    "severity": "important"
+  },
+  {
+    "id": "street-geiko-maiko",
+    "place_types": ["street"],
+    "title": "Respect geiko and maiko in Kyoto",
+    "tip": "Never follow, block, touch or photograph geiko and maiko without permission. Some private lanes in Gion ban photography and can fine you.",
+    "severity": "important"
+  },
+  {
+    "id": "street-eating-walking",
+    "place_types": ["street", "shop"],
+    "title": "Avoid eating while walking",
+    "tip": "Finish street food at the stall, or eat in the convenience store's eat-in area. Some busy tourist streets ask visitors not to eat while walking.",
+    "severity": "helpful"
+  },
+  {
+    "id": "street-photo-spots",
+    "place_types": ["street"],
+    "title": "Follow photo-spot rules",
+    "tip": "Some popular photo spots have barriers or no-photo signs because of crowding. Don't stand in the road or on private property for a photo.",
+    "severity": "helpful"
+  },
+  {
+    "id": "street-crossing",
+    "place_types": ["street"],
+    "title": "Wait for the green light",
+    "tip": "People wait for the green light even when the road is empty. Crossing on red, especially in front of children, is frowned upon.",
+    "severity": "helpful"
+  },
+  {
+    "id": "street-cash",
+    "place_types": ["street", "shop", "temple", "shrine"],
+    "title": "Carry some cash",
+    "tip": "Cards work in most city shops, but small restaurants, temples, shrines and rural areas may be cash only. ATMs at 7-Eleven and post offices accept most foreign cards.",
+    "severity": "helpful"
+  },
+  {
+    "id": "street-bowing",
+    "place_types": ["street", "shop", "ryokan"],
+    "title": "A small bow goes a long way",
+    "tip": "A slight nod or bow is the normal way to greet, thank or apologise. A handshake is fine too if the other person offers one.",
+    "severity": "helpful"
+  },
+  {
+    "id": "street-emergency-numbers",
+    "place_types": ["street"],
+    "title": "Know the emergency numbers",
+    "tip": "Call 110 for the police and 119 for an ambulance or fire. The JNTO Visitor Hotline (050-3816-2787) helps tourists in English 24 hours a day.",
+    "severity": "helpful"
+  }
+]
