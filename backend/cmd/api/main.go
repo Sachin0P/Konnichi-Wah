@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/gemini"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/planner"
 
 	// Import the pq driver so that it can register itself with the database/sql
@@ -44,6 +45,13 @@ type config struct {
 	}
 	cors struct {
 		trustedOrigins []string
+	}
+	// The Gemini settings for the LLM planner. If apiKey is empty, the app
+	// runs with the built-in catalogue planner only.
+	gemini struct {
+		apiKey  string
+		model   string
+		timeout time.Duration
 	}
 }
 
@@ -85,6 +93,14 @@ func main() {
 		return nil
 	})
 
+	// Like the DSN, the API key has no default. The Makefile passes it in from
+	// the GEMINI_API_KEY environment variable.
+	flag.StringVar(&cfg.gemini.apiKey, "gemini-api-key", "", "Gemini API key (leave empty to use the catalogue planner only)")
+	// We default to gemini-3.6-flash rather than the newest Flash model because,
+	// on the free tier, the newest model was often overloaded (503) in testing.
+	flag.StringVar(&cfg.gemini.model, "gemini-model", "gemini-3.6-flash", "Gemini model name")
+	flag.DurationVar(&cfg.gemini.timeout, "gemini-timeout", 20*time.Second, "Gemini request timeout")
+
 	displayVersion := flag.Bool("version", false, "Display version and exit")
 
 	flag.Parse()
@@ -110,11 +126,29 @@ func main() {
 
 	logger.Info("database connection pool established")
 
+	// Use the LLM planner if we have an API key, with the catalogue as its
+	// fallback. Without a key (e.g. a teammate working on the app), use the
+	// catalogue on its own, so the API still works fully offline.
+	var p planner.Planner = planner.Catalogue{}
+
+	if cfg.gemini.apiKey != "" {
+		p = planner.Fallback{
+			Primary: planner.Gemini{
+				Client: gemini.New(gemini.DefaultBaseURL, cfg.gemini.apiKey, cfg.gemini.model, cfg.gemini.timeout),
+			},
+			Backup: planner.Catalogue{},
+			Logger: logger,
+		}
+		logger.Info("using gemini planner", "model", cfg.gemini.model)
+	} else {
+		logger.Warn("no gemini api key provided, using catalogue planner only")
+	}
+
 	app := &application{
 		config:  cfg,
 		logger:  logger,
 		models:  data.NewModels(db),
-		planner: planner.Catalogue{},
+		planner: p,
 	}
 
 	err = app.serve()

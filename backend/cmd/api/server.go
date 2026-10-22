@@ -16,12 +16,17 @@ func (app *application) serve() error {
 	// Declare an HTTP server using the same settings as in our main() function.
 	// The ErrorLog field routes any errors from Go's http.Server through our
 	// structured logger at the Error level.
+	//
+	// The WriteTimeout is longer than the book's 10 seconds, because the
+	// planner can wait up to -gemini-timeout (20s by default) for the LLM and
+	// then still needs time to fall back and write the response. Keep it
+	// comfortably above that flag's value.
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", app.config.port),
 		Handler:      app.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: 30 * time.Second,
 		ErrorLog:     slog.NewLogLogger(app.logger.Handler(), slog.LevelError),
 	}
 

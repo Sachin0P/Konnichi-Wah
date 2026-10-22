@@ -18,10 +18,12 @@ confirm:
 # DEVELOPMENT
 # ==================================================================================== #
 
-## run/api: run the cmd/api application
+port ?= 4000
+
+## run/api port=$1: run the cmd/api application (port defaults to 4000)
 .PHONY: run/api
 run/api:
-	go run ./cmd/api -db-dsn=${KONNICHIWAH_DB_DSN}
+	go run ./cmd/api -port=${port} -db-dsn=${KONNICHIWAH_DB_DSN} -gemini-api-key=${GEMINI_API_KEY}
 
 ## db/psql: connect to the database using psql
 .PHONY: db/psql

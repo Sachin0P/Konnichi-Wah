@@ -1,2 +1,6 @@
 # Copy this file to .envrc and fill in your local values. .envrc is gitignored.
 export KONNICHIWAH_DB_DSN=postgres://konnichiwah:<password>@localhost/konnichiwah?sslmode=disable
+
+# Optional. Get a free key at https://aistudio.google.com. Without it the API
+# uses the built-in catalogue planner.
+export GEMINI_API_KEY=
