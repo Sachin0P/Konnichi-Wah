@@ -152,7 +152,8 @@ Takes the questionnaire answers and returns suggested cities, plus suggestion ca
 
 - `cities[].days` always add up to `trip_days`.
 - `suggestions[].kind` is `place`, `activity` or `food`. Food suggestions always have `place_type: "restaurant"`.
-- `suggestions[].id` is unique **within this response only**. It isn't stable across calls, so don't store it as a long-term key.
+- Food suggestions never come from the LLM. They come from our hand-checked catalogue, filtered by the traveller's `diet` and `avoid` list, for the chosen cities. A city with nothing suitable (for example Jain in Osaka) gets no food cards; Google Places search will fill that gap later.
+- `suggestions[].id` is unique **within this response only**. It isn't stable across calls, so don't store it as a long-term key. LLM places are `s1`, `s2`…, and catalogue items use slugs like `tokyo-ts-tantan`.
 - `suggestions[].city` can be a day-trip town (for example `Nara` or `Hakone`) that isn't in `cities`.
 - `place_type` is always one of the [place types](#permitted-values), so every suggestion can be matched to etiquette rules.
 - `source` is `llm` (Gemini) or `catalogue` (the built-in fallback). The app doesn't need to show it, but it helps when debugging.

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"slices"
 	"testing"
 )
 
@@ -60,8 +61,28 @@ func TestGeminiSuggest(t *testing.T) {
 			if plan.Source != "llm" {
 				t.Errorf("got source %q; want %q", plan.Source, "llm")
 			}
-			if plan.Suggestions[0].ID != "s1" || plan.Suggestions[1].ID != "s2" {
-				t.Errorf("ids not assigned: %q, %q", plan.Suggestions[0].ID, plan.Suggestions[1].ID)
+			if plan.Suggestions[0].ID != "s1" {
+				t.Errorf("ids not assigned: got %q", plan.Suggestions[0].ID)
+			}
+
+			var ids []string
+			for _, s := range plan.Suggestions {
+				ids = append(ids, s.ID)
+			}
+
+			// The LLM's own food suggestion ("s2", T's Tantan) must be dropped,
+			// and food for its cities added from the catalogue instead. The
+			// request is veg, so pork ramen must not appear.
+			if slices.Contains(ids, "s2") {
+				t.Error("llm food suggestion was not dropped")
+			}
+			for _, id := range []string{"tokyo-ts-tantan", "kyoto-shigetsu"} {
+				if !slices.Contains(ids, id) {
+					t.Errorf("want catalogue food %q", id)
+				}
+			}
+			if slices.Contains(ids, "tokyo-ichiran") {
+				t.Error("veg traveller was given pork ramen")
 			}
 		})
 	}

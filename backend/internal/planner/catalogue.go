@@ -3,6 +3,7 @@ package planner
 import (
 	"context"
 	"slices"
+	"strings"
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 )
@@ -113,6 +114,27 @@ func allocateCities(req data.TripRequest) []data.CityPlan {
 		tokyo.Days = days - kyoto.Days - osaka.Days
 		return append([]data.CityPlan{tokyo, kyoto, osaka}, cities...)
 	}
+}
+
+// foodFor returns the catalogue's food suggestions for the given cities that
+// suit the traveller's diet. The Gemini planner uses this so that restaurant
+// suggestions always come from our hand-checked list and never from the LLM,
+// which can't be trusted to know whether a dish contains dashi or pork.
+func foodFor(cities []data.CityPlan, profile data.UserProfile) []data.Suggestion {
+	food := []data.Suggestion{}
+
+	for _, it := range catalogue {
+		if it.Kind != "food" || !canEat(profile, it) {
+			continue
+		}
+
+		// LLM city names may differ in case from ours ("tokyo" vs "Tokyo").
+		if slices.ContainsFunc(cities, func(c data.CityPlan) bool { return strings.EqualFold(c.Name, it.base) }) {
+			food = append(food, it.Suggestion)
+		}
+	}
+
+	return food
 }
 
 // canEat reports whether a traveller can eat at a food item, based on their
