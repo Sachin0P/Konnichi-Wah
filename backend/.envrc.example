@@ -1,0 +1,2 @@
+# Copy this file to .envrc and fill in your local values. .envrc is gitignored.
+export KONNICHIWAH_DB_DSN=postgres://konnichiwah:<password>@localhost/konnichiwah?sslmode=disable

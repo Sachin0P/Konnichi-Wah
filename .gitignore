@@ -1,0 +1,9 @@
+# Backend: compiled binaries and local secrets.
+backend/bin/
+backend/.envrc
+
+# Claude Code per-machine settings.
+.claude/settings.local.json
+
+# macOS.
+.DS_Store
