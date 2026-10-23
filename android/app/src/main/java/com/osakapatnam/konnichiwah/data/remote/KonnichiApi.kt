@@ -30,4 +30,8 @@ interface KonnichiApi {
 
     @PATCH("v1/itineraries/{id}")
     suspend fun updateItinerary(@Path("id") id: Long, @Body request: UpdateItineraryRequestDto): ItineraryEnvelope
+
+    // Usually 1-6 seconds; the backend caps it at 25.
+    @POST("v1/companion/chat")
+    suspend fun chat(@Body request: ChatRequestDto): ChatReplyEnvelope
 }

@@ -50,6 +50,7 @@ import com.osakapatnam.konnichiwah.ui.timeSlotLabel
 @Composable
 fun ItineraryScreen(
     onNewTrip: () -> Unit,
+    onAsk: () -> Unit,
     viewModel: ItineraryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -61,7 +62,10 @@ fun ItineraryScreen(
                 title = {
                     Text(state.itinerary?.title ?: "Your trip", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 },
-                actions = { TextButton(onClick = onNewTrip) { Text("New trip") } },
+                actions = {
+                    TextButton(onClick = onAsk) { Text("Ask") }
+                    TextButton(onClick = onNewTrip) { Text("New trip") }
+                },
             )
         },
     ) { padding ->
@@ -238,7 +242,14 @@ private fun StopCard(
                 )
                 Text(stop.placeName, style = MaterialTheme.typography.titleSmall)
                 if (stop.note.isNotBlank()) {
-                    Text(stop.note, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    // Two lines keep the day list compact; tapping the stop
+                    // opens its tips and shows the whole description too.
+                    Text(
+                        stop.note,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = if (expanded) Int.MAX_VALUE else 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
                 if (tips.isNotEmpty() && !expanded) {
                     TipsPreview(tips)

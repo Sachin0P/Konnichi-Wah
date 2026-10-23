@@ -198,3 +198,44 @@ data class CreateItineraryRequestDto(
 // A partial update: we only ever send the days.
 @Serializable
 data class UpdateItineraryRequestDto(val days: List<DayDto>)
+
+// Companion chat (POST /v1/companion/chat). The backend keeps no state: we
+// send the conversation so far plus context about the day.
+
+@Serializable
+data class ChatMessageDto(val role: String, val text: String)
+
+@Serializable
+data class ChatStopDto(
+    @SerialName("place_name") val placeName: String,
+    @SerialName("place_type") val placeType: String,
+    @SerialName("time_slot") val timeSlot: String,
+)
+
+@Serializable
+data class ChatContextDto(
+    val city: String = "",
+    @SerialName("day_index") val dayIndex: Int = 0,
+    val stops: List<ChatStopDto> = emptyList(),
+    val profile: UserProfileDto? = null,
+)
+
+@Serializable
+data class ChatRequestDto(
+    val messages: List<ChatMessageDto>,
+    val context: ChatContextDto,
+)
+
+// A Japanese phrase card to show staff.
+@Serializable
+data class PhraseDto(val english: String, val japanese: String, val romaji: String)
+
+@Serializable
+data class ChatReplyDto(
+    val text: String,
+    val phrases: List<PhraseDto> = emptyList(),
+    @SerialName("tools_used") val toolsUsed: List<String> = emptyList(),
+)
+
+@Serializable
+data class ChatReplyEnvelope(val reply: ChatReplyDto)

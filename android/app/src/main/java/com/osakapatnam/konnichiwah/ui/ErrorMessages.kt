@@ -10,6 +10,9 @@ fun ApiError.userMessage(): String = when (this) {
     is ApiError.Http -> when (status) {
         422 -> "Some of your answers weren't accepted. Please go back and check them."
         429 -> "Too many requests. Please wait a moment and try again."
+        // The backend's 503 messages are written for travellers ("the
+        // companion is busy right now, please try again in a minute").
+        503 -> message.replaceFirstChar { it.uppercase() } + "."
         else -> "Something went wrong on our side. Please try again."
     }
     is ApiError.BadResponse ->

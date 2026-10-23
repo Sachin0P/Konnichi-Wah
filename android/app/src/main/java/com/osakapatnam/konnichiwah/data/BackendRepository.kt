@@ -1,6 +1,8 @@
 package com.osakapatnam.konnichiwah.data
 
 import com.osakapatnam.konnichiwah.data.remote.ApiResult
+import com.osakapatnam.konnichiwah.data.remote.ChatReplyDto
+import com.osakapatnam.konnichiwah.data.remote.ChatRequestDto
 import com.osakapatnam.konnichiwah.data.remote.EtiquetteRuleDto
 import com.osakapatnam.konnichiwah.data.remote.HealthcheckDto
 import com.osakapatnam.konnichiwah.data.remote.KonnichiApi
@@ -27,4 +29,7 @@ class BackendRepository @Inject constructor(
 
     suspend fun suggest(request: TripRequestDto): ApiResult<PlanDto> =
         apiCall(json) { api.suggest(request).plan }
+
+    suspend fun chat(request: ChatRequestDto): ApiResult<ChatReplyDto> =
+        apiCall(json) { api.chat(request).reply }
 }

@@ -112,6 +112,28 @@ class ContractTest {
     }
 
     @Test
+    fun chatRequestAndReplyMatchTheBackendContract() {
+        val request = ChatRequestDto(
+            messages = listOf(ChatMessageDto("user", "Temple tips?")),
+            context = ChatContextDto(city = "Kyoto", dayIndex = 3, stops = listOf(ChatStopDto("Fushimi Inari Taisha", "shrine", "morning"))),
+        )
+
+        val js = json.encodeToJsonElement(ChatRequestDto.serializer(), request).jsonObject
+        val context = js["context"]!!.jsonObject
+
+        assertEquals(setOf("city", "day_index", "stops", "profile"), context.keys)
+        assertEquals(setOf("place_name", "place_type", "time_slot"), context["stops"]!!.jsonArray[0].jsonObject.keys)
+
+        val reply = json.decodeFromString(
+            ChatReplyEnvelope.serializer(),
+            """{"reply": {"text": "Show this card.", "phrases": [{"english": "e", "japanese": "日本語", "romaji": "r"}], "tools_used": ["show_diet_card"]}}""",
+        ).reply
+
+        assertEquals("日本語", reply.phrases.single().japanese)
+        assertEquals(listOf("show_diet_card"), reply.toolsUsed)
+    }
+
+    @Test
     fun everyEnumValueSerializesToTheBackendString() {
         // The full lists of permitted values from docs/api.md.
         fun <T> names(serializer: KSerializer<T>, values: List<T>) =
