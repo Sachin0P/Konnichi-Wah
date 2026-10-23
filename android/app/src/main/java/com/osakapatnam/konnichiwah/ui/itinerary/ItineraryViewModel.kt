@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.osakapatnam.konnichiwah.data.ItineraryRepository
 import com.osakapatnam.konnichiwah.data.LocalItinerary
+import com.osakapatnam.konnichiwah.data.Rulebook
+import com.osakapatnam.konnichiwah.data.RulebookAssets
 import com.osakapatnam.konnichiwah.data.remote.DayDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,17 +19,25 @@ data class ItineraryUiState(
     val loading: Boolean = true,
     val itinerary: LocalItinerary? = null,
     val syncing: Boolean = false,
+    // The bundled etiquette rulebook, for showing each stop's tips offline.
+    val rulebook: Rulebook? = null,
 )
 
 @HiltViewModel
 class ItineraryViewModel @Inject constructor(
     private val repository: ItineraryRepository,
+    private val rulebookAssets: RulebookAssets,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ItineraryUiState())
     val state: StateFlow<ItineraryUiState> = _state.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            val rulebook = rulebookAssets.rulebook()
+            _state.update { it.copy(rulebook = rulebook) }
+        }
+
         // The screen always shows Room's copy, so it works offline and updates
         // itself when a sync brings back the server's version.
         viewModelScope.launch {

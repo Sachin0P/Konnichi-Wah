@@ -91,6 +91,7 @@ GET /v1/etiquette?place_type=temple
 ```
 
 - `severity` is `important` (breaking the rule could cause real offence or get you refused entry) or `helpful`.
+- `cities` is only present on rules that apply in specific places (for example `"cities": ["Nara"]` for feeding the deer). Those rules are only attached to stops whose `city` matches, ignoring case. Rules without it apply everywhere.
 - Rule `id`s are stable slugs. Itinerary stops will refer to rules by these ids.
 - The same rules ship inside the app as `assets/etiquette.json`. The build copies them from `backend/rulebook/etiquette.json`.
 - An unknown `place_type` returns a 422.
@@ -170,7 +171,7 @@ Turns the plan's cities and the suggestions the user kept into a day-by-day itin
 - Each city gets its planned number of days, in route order.
 - Places and activities are spread evenly over the city's days. A day trip (e.g. Nara from Kyoto) starts a new day when the city has one free.
 - Streets, onsen and ryokan go in the `evening` slot; other sights fill the `morning` and `afternoon`. Food goes in `lunch`, then `dinner`.
-- Every stop gets `tip_ids` from the etiquette rulebook (up to 5, most important first) based on its `place_type`.
+- Every stop gets `tip_ids` from the etiquette rulebook (up to 5, most important first) based on its `place_type`, leaving out city-specific rules for other cities.
 
 ### Request
 

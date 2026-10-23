@@ -457,6 +457,7 @@
   {
     "id": "street-geiko-maiko",
     "place_types": ["street"],
+    "cities": ["Kyoto"],
     "title": "Respect geiko and maiko in Kyoto",
     "tip": "Never follow, block, touch or photograph geiko and maiko without permission. Some private lanes in Gion ban photography and can fine you.",
     "severity": "important"
@@ -513,6 +514,7 @@
   {
     "id": "park-nara-deer",
     "place_types": ["park"],
+    "cities": ["Nara"],
     "title": "Feed Nara's deer only deer crackers",
     "tip": "In Nara Park, feed the deer only the official shika senbei crackers sold there, never your own snacks. The deer can bite, butt or chase you, so keep children close and maps and paper out of reach.",
     "severity": "important"

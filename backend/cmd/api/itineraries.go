@@ -196,29 +196,35 @@ func (app *application) updateItineraryHandler(w http.ResponseWriter, r *http.Re
 }
 
 // attachTips sets each stop's TipIDs to the most important etiquette rules
-// for its place type. It looks each place type up once per request.
+// for its place type that apply in its city. It looks each place type up once
+// per request. The app does the same lookup offline (data/Tips.kt), so keep
+// the two in step.
 func (app *application) attachTips(days []data.Day) error {
-	tipsByType := make(map[string][]string)
+	rulesByType := make(map[string][]*data.EtiquetteRule)
 
 	for i := range days {
 		for j := range days[i].Stops {
 			stop := &days[i].Stops[j]
 
-			tips, ok := tipsByType[stop.PlaceType]
+			rules, ok := rulesByType[stop.PlaceType]
 			if !ok {
-				rules, err := app.models.EtiquetteRules.GetAll(stop.PlaceType)
+				var err error
+				rules, err = app.models.EtiquetteRules.GetAll(stop.PlaceType)
 				if err != nil {
 					return err
 				}
-
-				tips = []string{}
-				for _, rule := range rules[:min(maxTipsPerStop, len(rules))] {
-					tips = append(tips, rule.ID)
-				}
-				tipsByType[stop.PlaceType] = tips
+				rulesByType[stop.PlaceType] = rules
 			}
 
-			stop.TipIDs = tips
+			stop.TipIDs = []string{}
+			for _, rule := range rules {
+				if len(stop.TipIDs) == maxTipsPerStop {
+					break
+				}
+				if rule.AppliesIn(stop.City) {
+					stop.TipIDs = append(stop.TipIDs, rule.ID)
+				}
+			}
 		}
 	}
 

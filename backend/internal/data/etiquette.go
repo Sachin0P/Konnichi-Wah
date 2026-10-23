@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"regexp"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/validator"
@@ -27,12 +29,25 @@ var RuleIDRX = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 
 // EtiquetteRule is one rule from our hand-written rulebook. The struct tags
 // match the keys in rulebook/etiquette.json and in our JSON responses.
+//
+// Cities is optional: a rule that only makes sense in certain places (feeding
+// Nara's deer) lists them, and is only attached to stops there. Most rules
+// leave it out and apply everywhere.
 type EtiquetteRule struct {
 	ID         string   `json:"id"`
 	PlaceTypes []string `json:"place_types"`
+	Cities     []string `json:"cities,omitempty"`
 	Title      string   `json:"title"`
 	Tip        string   `json:"tip"`
 	Severity   string   `json:"severity"`
+}
+
+// AppliesIn reports whether the rule is relevant to a stop in the given city.
+func (r *EtiquetteRule) AppliesIn(city string) bool {
+	if len(r.Cities) == 0 {
+		return true
+	}
+	return slices.ContainsFunc(r.Cities, func(c string) bool { return strings.EqualFold(c, city) })
 }
 
 func ValidateEtiquetteRule(v *validator.Validator, rule *EtiquetteRule) {
@@ -44,6 +59,11 @@ func ValidateEtiquetteRule(v *validator.Validator, rule *EtiquetteRule) {
 	v.Check(validator.Unique(rule.PlaceTypes), "place_types", "must not contain duplicate values")
 	for _, placeType := range rule.PlaceTypes {
 		v.Check(validator.PermittedValue(placeType, PlaceTypes...), "place_types", fmt.Sprintf("contains unknown place type %q", placeType))
+	}
+
+	v.Check(validator.Unique(rule.Cities), "cities", "must not contain duplicate values")
+	for _, city := range rule.Cities {
+		v.Check(city != "" && len(city) <= 50, "cities", "must contain city names of 1 to 50 bytes")
 	}
 
 	v.Check(rule.Title != "", "title", "must be provided")
@@ -71,7 +91,7 @@ func (m EtiquetteRuleModel) GetAll(placeType string) ([]*EtiquetteRule, error) {
 	// before rules shared from other place types. PostgreSQL arrays are
 	// 1-indexed, so place_types[1] is the first element.
 	query := `
-		SELECT id, place_types, title, tip, severity
+		SELECT id, place_types, cities, title, tip, severity
 		FROM etiquette_rules
 		WHERE ($1 = '' OR $1 = ANY(place_types))
 		ORDER BY CASE severity WHEN 'important' THEN 0 ELSE 1 END, place_types[1] = $1 DESC, id`
@@ -100,6 +120,7 @@ func (m EtiquetteRuleModel) GetAll(placeType string) ([]*EtiquetteRule, error) {
 		err := rows.Scan(
 			&rule.ID,
 			pq.Array(&rule.PlaceTypes),
+			pq.Array(&rule.Cities),
 			&rule.Title,
 			&rule.Tip,
 			&rule.Severity,
@@ -147,11 +168,18 @@ func (m EtiquetteRuleModel) ReplaceAll(rules []*EtiquetteRule) error {
 	}
 
 	query := `
-		INSERT INTO etiquette_rules (id, place_types, title, tip, severity)
-		VALUES ($1, $2, $3, $4, $5)`
+		INSERT INTO etiquette_rules (id, place_types, cities, title, tip, severity)
+		VALUES ($1, $2, $3, $4, $5, $6)`
 
 	for _, rule := range rules {
-		args := []any{rule.ID, pq.Array(rule.PlaceTypes), rule.Title, rule.Tip, rule.Severity}
+		// A rule with no cities has a nil slice, which pq.Array() sends as
+		// NULL. The column is NOT NULL, so send an empty array instead.
+		cities := rule.Cities
+		if cities == nil {
+			cities = []string{}
+		}
+
+		args := []any{rule.ID, pq.Array(rule.PlaceTypes), pq.Array(cities), rule.Title, rule.Tip, rule.Severity}
 
 		_, err = tx.ExecContext(ctx, query, args...)
 		if err != nil {

@@ -54,6 +54,10 @@ func TestLoadRulesRejectsBadInput(t *testing.T) {
 			json: `[{"id": "Temple Shoes", "place_types": ["temple"], "title": "T", "tip": "T", "severity": "important"}]`,
 		},
 		{
+			name: "Empty city",
+			json: `[{"id": "a", "place_types": ["park"], "cities": [""], "title": "T", "tip": "T", "severity": "important"}]`,
+		},
+		{
 			name: "Duplicate id",
 			json: `[{"id": "a", "place_types": ["temple"], "title": "T", "tip": "T", "severity": "important"},
 			        {"id": "a", "place_types": ["shrine"], "title": "T", "tip": "T", "severity": "helpful"}]`,

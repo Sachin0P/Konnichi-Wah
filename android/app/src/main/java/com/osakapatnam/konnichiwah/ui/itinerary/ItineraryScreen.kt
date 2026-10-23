@@ -1,5 +1,6 @@
 package com.osakapatnam.konnichiwah.ui.itinerary
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +37,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.osakapatnam.konnichiwah.data.LocalItinerary
+import com.osakapatnam.konnichiwah.data.Rulebook
 import com.osakapatnam.konnichiwah.data.remote.DayDto
+import com.osakapatnam.konnichiwah.data.remote.EtiquetteRuleDto
 import com.osakapatnam.konnichiwah.data.remote.StopDto
 import com.osakapatnam.konnichiwah.ui.components.ChoiceChips
 import com.osakapatnam.konnichiwah.ui.components.Question
@@ -72,6 +76,7 @@ fun ItineraryScreen(
                 itinerary == null -> NoTrip(onNewTrip)
                 else -> TripContent(
                     itinerary = itinerary,
+                    rulebook = state.rulebook,
                     syncing = state.syncing,
                     onSyncNow = viewModel::syncNow,
                     onMoveUp = viewModel::moveUp,
@@ -115,6 +120,7 @@ private fun NoTrip(onNewTrip: () -> Unit) {
 @Composable
 private fun TripContent(
     itinerary: LocalItinerary,
+    rulebook: Rulebook?,
     syncing: Boolean,
     onSyncNow: () -> Unit,
     onMoveUp: (Int, Int) -> Unit,
@@ -123,6 +129,10 @@ private fun TripContent(
     onAddStop: (Int) -> Unit,
 ) {
     val lastDay = itinerary.days.lastIndex
+
+    // Which stops have their tips open, by stop id (so it survives a stop
+    // moving to another position or day).
+    var expanded by rememberSaveable { mutableStateOf(setOf<String>()) }
 
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -146,6 +156,9 @@ private fun TripContent(
             itemsIndexed(day.stops, key = { _, stop -> stop.id }) { stopIndex, stop ->
                 StopCard(
                     stop = stop,
+                    tips = rulebook?.tipsFor(stop).orEmpty(),
+                    expanded = stop.id in expanded,
+                    onToggleTips = { expanded = if (stop.id in expanded) expanded - stop.id else expanded + stop.id },
                     dayCity = day.city,
                     canMoveUp = dayIndex > 0 || stopIndex > 0,
                     canMoveDown = dayIndex < lastDay || stopIndex < day.stops.lastIndex,
@@ -196,6 +209,9 @@ private fun DayHeader(day: DayDto, onAdd: () -> Unit) {
 @Composable
 private fun StopCard(
     stop: StopDto,
+    tips: List<EtiquetteRuleDto>,
+    expanded: Boolean,
+    onToggleTips: () -> Unit,
     dayCity: String,
     canMoveUp: Boolean,
     canMoveDown: Boolean,
@@ -203,7 +219,12 @@ private fun StopCard(
     onMoveDown: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    OutlinedCard(modifier = Modifier.fillMaxWidth()) {
+    // Tapping the card opens and closes its culture tips.
+    OutlinedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = tips.isNotEmpty(), onClick = onToggleTips),
+    ) {
         Row(
             modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -219,6 +240,9 @@ private fun StopCard(
                 if (stop.note.isNotBlank()) {
                     Text(stop.note, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
+                if (tips.isNotEmpty() && !expanded) {
+                    TipsPreview(tips)
+                }
             }
 
             // Plain text arrows keep us free of an icon library dependency.
@@ -231,6 +255,53 @@ private fun StopCard(
             }
             IconButton(onClick = onDelete, modifier = Modifier.semantics { contentDescription = "Remove ${stop.placeName}" }) {
                 Text("✕")
+            }
+        }
+
+        if (expanded) {
+            TipsList(tips, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp))
+        }
+    }
+}
+
+// One line under a collapsed stop: its most important tip, and how many more
+// there are, e.g. "⚠ Remove your shoes · 4 more tips".
+@Composable
+private fun TipsPreview(tips: List<EtiquetteRuleDto>) {
+    val first = tips.first()
+    val more = tips.size - 1
+    val marker = if (first.severity == "important") "⚠ " else ""
+    val suffix = when (more) {
+        0 -> ""
+        1 -> " · 1 more tip"
+        else -> " · $more more tips"
+    }
+
+    Text(
+        "$marker${first.title}$suffix",
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.tertiary,
+        modifier = Modifier.padding(top = 4.dp),
+    )
+}
+
+@Composable
+private fun TipsList(tips: List<EtiquetteRuleDto>, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Culture tips", style = MaterialTheme.typography.labelLarge)
+        tips.forEach { rule ->
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (rule.severity == "important") {
+                        Text(
+                            "IMPORTANT",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    Text(rule.title, style = MaterialTheme.typography.titleSmall)
+                }
+                Text(rule.tip, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

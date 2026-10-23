@@ -103,14 +103,19 @@ data class HealthcheckDto(
     @SerialName("system_info") val systemInfo: Map<String, String>,
 )
 
+// cities is only set for rules that apply in specific places (e.g. Nara's
+// deer); an empty list means everywhere.
 @Serializable
 data class EtiquetteRuleDto(
     val id: String,
     @SerialName("place_types") val placeTypes: List<String>,
+    val cities: List<String> = emptyList(),
     val title: String,
     val tip: String,
     val severity: String,
-)
+) {
+    fun appliesIn(city: String): Boolean = cities.isEmpty() || cities.any { it.equals(city, ignoreCase = true) }
+}
 
 @Serializable
 data class EtiquetteEnvelope(
