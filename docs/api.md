@@ -7,6 +7,9 @@ This is the contract between the Android app and the Go backend in `backend/`. I
 - [GET /v1/healthcheck](#get-v1healthcheck)
 - [GET /v1/etiquette](#get-v1etiquette)
 - [POST /v1/plan/suggestions](#post-v1plansuggestions)
+- [POST /v1/itineraries](#post-v1itineraries)
+- [GET /v1/itineraries/:id](#get-v1itinerariesid)
+- [PATCH /v1/itineraries/:id](#patch-v1itinerariesid)
 - [Permitted values](#permitted-values)
 - [Running the backend for app development](#running-the-backend-for-app-development)
 - [Not built yet](#not-built-yet)
@@ -30,6 +33,7 @@ Every error uses the same envelope, with an `error` key. Its value is either a s
 | 400 | The request body is badly formed, or contains an unknown key | string |
 | 404 | No such route | string: `"the requested resource could not be found"` |
 | 405 | Wrong HTTP method for the route | string |
+| 409 | Edit conflict: another update saved first. Fetch the itinerary again and retry. | string |
 | 422 | Validation failed | object of field → message |
 | 429 | Rate limited | string: `"rate limit exceeded"` |
 | 500 | A bug on our side | string (generic; the details are only in the server log) |
@@ -159,6 +163,102 @@ Takes the questionnaire answers and returns suggested cities, plus suggestion ca
 - `source` is `llm` (Gemini) or `catalogue` (the built-in fallback). The app doesn't need to show it, but it helps when debugging.
 - Suggestions have no coordinates or Google place ids on purpose. Those will be looked up when the itinerary is created.
 
+## POST /v1/itineraries
+
+Turns the plan's cities and the suggestions the user kept into a day-by-day itinerary, then saves it. The arranging is deterministic (no LLM call), so the response is instant:
+
+- Each city gets its planned number of days, in route order.
+- Places and activities are spread evenly over the city's days. A day trip (e.g. Nara from Kyoto) starts a new day when the city has one free.
+- Streets, onsen and ryokan go in the `evening` slot; other sights fill the `morning` and `afternoon`. Food goes in `lunch`, then `dinner`.
+- Every stop gets `tip_ids` from the etiquette rulebook (up to 5, most important first) based on its `place_type`.
+
+### Request
+
+Send the `cities` and the selected `suggestions` exactly as they came from `POST /v1/plan/suggestions`.
+
+```json
+{
+  "title": "Amma & Appa in Japan",
+  "start_date": "2027-04-02",
+  "cities": [ { "name": "Tokyo", "days": 3, "reason": "..." } ],
+  "suggestions": [ { "id": "s1", "kind": "place", "name": "Senso-ji", "city": "Tokyo", "place_type": "temple", "reason": "..." } ]
+}
+```
+
+- `title` is optional. It defaults to `"My <n>-day Japan trip"`.
+- `start_date` is optional (`YYYY-MM-DD` or `null`).
+- `cities[].days` must add up to 1–30. `suggestions` needs 1–40 items.
+
+### Response: 201 Created
+
+Includes a `Location: /v1/itineraries/<id>` header.
+
+```json
+{
+  "itinerary": {
+    "id": 4,
+    "created_at": "2026-10-23T12:30:53+05:30",
+    "title": "My 5-day Japan trip",
+    "start_date": null,
+    "days": [
+      {
+        "index": 1,
+        "city": "Tokyo",
+        "stops": [
+          {
+            "id": "st_m4bmebcjzb6anhyf5yksqymh22",
+            "time_slot": "morning",
+            "place_name": "Senso-ji Temple, Asakusa",
+            "place_type": "temple",
+            "city": "Tokyo",
+            "note": "Tokyo's oldest temple...",
+            "lat": null,
+            "lng": null,
+            "google_place_id": null,
+            "tip_ids": ["temple-photos", "temple-sacred-objects", "temple-shoes", "ryokan-tatami", "street-rubbish"]
+          }
+        ]
+      }
+    ],
+    "version": 1
+  }
+}
+```
+
+- Stops are in visiting order. There is no separate `order` field: the position in the list is the order.
+- `stops[].city` can differ from `days[].city` on a day trip.
+- A day can have no stops (a free day).
+- `lat`, `lng` and `google_place_id` are `null` until we add Google Places lookups.
+- `tip_ids` refer to rule ids in `etiquette.json`. Look them up in the bundled rulebook; there's no need to call `/v1/etiquette`.
+
+## GET /v1/itineraries/:id
+
+Returns `{"itinerary": {...}}` in the same shape as above. An unknown or malformed id returns a 404.
+
+## PATCH /v1/itineraries/:id
+
+A partial update: send only the fields you're changing. After the user reorders, deletes or adds stops, send the whole `days` list.
+
+```json
+{ "days": [ { "index": 1, "city": "Tokyo", "stops": [ ... ] } ] }
+```
+
+```json
+{ "title": "Amma & Appa in Japan" }
+```
+
+```json
+{ "start_date": "" }
+```
+
+(An empty `start_date` clears the date.)
+
+- Days are renumbered by their position; any `index` you send is ignored.
+- **New stops need an `id` from the app** (a UUID is fine). Ids must be unique across the whole itinerary.
+- `time_slot` must be one of the [time slots](#permitted-values). `place_type` must be one of the place types.
+- **`tip_ids` are always recalculated by the server** from each stop's `place_type`. Whatever you send is replaced, so a stop the user adds gets real tips too.
+- Returns 200 with the updated itinerary (with `version` increased), 404 if the id doesn't exist, or 409 if another update saved at the same moment.
+
 ## Permitted values
 
 These exact strings are the contract. They are defined in `backend/internal/data/profiles.go`, `etiquette.go` and `plans.go`.
@@ -176,6 +276,7 @@ These exact strings are the contract. They are defined in `backend/internal/data
 | `place_type` | `temple`, `shrine`, `onsen`, `ryokan`, `restaurant`, `train`, `taxi`, `shop`, `street`, `park`, `attraction` |
 | `kind` | `place`, `activity`, `food` |
 | `severity` | `important`, `helpful` |
+| `time_slot` | `morning`, `lunch`, `afternoon`, `evening`, `dinner` |
 
 The app should send these as enums. When **reading** `place_type`, treat it as a plain string, so that a new place type added on the backend doesn't crash older app builds.
 
@@ -202,6 +303,5 @@ Debug builds allow plain HTTP to `localhost`, `127.0.0.1` and `10.0.2.2` only. R
 
 These endpoints are in the project brief but don't exist yet, so their shapes may change:
 
-- `POST /v1/itineraries`, `GET /v1/itineraries/:id`, `PATCH /v1/itineraries/:id`
 - `GET /v1/food?lat=&lng=`
 - `POST /v1/companion/chat`
