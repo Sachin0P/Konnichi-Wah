@@ -11,96 +11,109 @@ import (
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/gemini"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
+	"github.com/Sachin0P/Konnichi-Wah/backend/rulebook"
 )
 
-// fakeLLM replays scripted turns and records what it was sent.
-type fakeLLM struct {
-	turns     []*gemini.Turn
-	errs      []error // errs[i] is returned instead of turns[i], if set
-	inputs    [][]json.RawMessage
-	toolCount []int
+// turn is one scripted model response: an answer, tool calls, or an error.
+type turn struct {
+	text  string
+	calls []ToolCall
+	err   error
 }
 
-func (f *fakeLLM) Chat(ctx context.Context, instructions string, input []json.RawMessage, tools []gemini.Tool) (*gemini.Turn, error) {
-	i := len(f.inputs)
-	f.inputs = append(f.inputs, slices.Clone(input))
-	f.toolCount = append(f.toolCount, len(tools))
-	if i < len(f.errs) && f.errs[i] != nil {
-		return nil, f.errs[i]
-	}
-	return f.turns[min(i, len(f.turns)-1)], nil
+// fakeLLM replays scripted turns and records what the companion did.
+type fakeLLM struct {
+	turns      []turn
+	calls      int
+	allowTools []bool
+	results    []string // JSON of each tool result, in order
 }
+
+func (f *fakeLLM) Start(instructions string, history []data.ChatMessage, tools []Tool) Conversation {
+	return f
+}
+
+func (f *fakeLLM) Next(ctx context.Context, allowTools bool) (string, []ToolCall, error) {
+	t := f.turns[min(f.calls, len(f.turns)-1)]
+	f.calls++
+	f.allowTools = append(f.allowTools, allowTools)
+	return t.text, t.calls, t.err
+}
+
+func (f *fakeLLM) AddToolResult(call ToolCall, result any) {
+	js, _ := json.Marshal(result)
+	f.results = append(f.results, string(js))
+}
+
+func (f *fakeLLM) lastResult() string { return f.results[len(f.results)-1] }
 
 type fakeRules []*data.EtiquetteRule
 
 func (f fakeRules) GetAll(placeType string) ([]*data.EtiquetteRule, error) { return f, nil }
 
 type fakeTransit struct {
-	near  []*transit.LatLng
-	times []time.Time
-	night bool // if true, no routes before 05:00 Japan time
+	near        []*transit.LatLng
+	times       []time.Time
+	night       bool   // if true, no routes before 05:00 Japan time
+	unreachable string // a place name the router can't reach
 }
 
+// Places are put at made-up coordinates: Lat 1 for the unreachable place, 0
+// for everything else.
 func (f *fakeTransit) Geocode(ctx context.Context, name string, near *transit.LatLng) (*transit.Place, error) {
 	f.near = append(f.near, near)
 	if name == "Atlantis" {
 		return nil, transit.ErrNotFound
 	}
-	return &transit.Place{Name: name, Location: transit.LatLng{Lat: 35, Lng: 139}}, nil
+	loc := transit.LatLng{}
+	if name == f.unreachable {
+		loc.Lat = 1
+	}
+	return &transit.Place{Name: name, Location: loc}, nil
 }
 
 func (f *fakeTransit) Route(ctx context.Context, from, to transit.LatLng, departAt time.Time) ([]transit.Option, error) {
 	f.times = append(f.times, departAt)
-	if f.night && departAt.In(japan).Hour() < 5 {
+	if (f.night && departAt.In(japan).Hour() < 5) || to.Lat == 1 {
 		return []transit.Option{}, nil
 	}
 	return []transit.Option{{Minutes: 30, Legs: []transit.Leg{{Mode: "subway", Line: "G Ginza Line"}}}}, nil
 }
 
-func TestTrainRouteAtNightLooksUpTheMorningTrains(t *testing.T) {
-	llm := &fakeLLM{turns: []*gemini.Turn{
+func TestTrainRouteFallsBackToTheMainStation(t *testing.T) {
+	llm := &fakeLLM{turns: []turn{
 		call("get_train_route", `{"from": "Kyoto Station", "to": "Nara Park", "to_city": "Nara"}`),
-		text("No trains now; the first one leaves at 6."),
+		text("Take the train to Nara Station, then walk."),
 	}}
-	tr := &fakeTransit{night: true}
 
-	c := newCompanion(llm, tr, nil)
-	c.Now = func() time.Time { return time.Date(2026, 10, 26, 2, 15, 0, 0, japan) }
-
-	if _, err := c.Reply(context.Background(), ask("Kyoto to Nara?")); err != nil {
+	_, err := newCompanion(t, llm, &fakeTransit{unreachable: "Nara Park"}, nil).Reply(context.Background(), ask("Kyoto to Nara Park?"))
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	if len(tr.times) != 2 || tr.times[1].Hour() != 6 {
-		t.Fatalf("route lookups at %v; want now and then 06:00", tr.times)
-	}
-	if result := lastResult(t, llm.inputs[1]); !strings.Contains(result, "first trains after 6:00") || !strings.Contains(result, "Ginza Line") {
-		t.Errorf("got %s", result)
-	}
-
-	// The Nara end of the trip must be searched near Nara, not Kyoto.
-	if *tr.near[1] != cityCentres["nara"] {
-		t.Errorf("destination searched near %v", tr.near[1])
+	if r := llm.lastResult(); !strings.Contains(r, "Nara Station, the main station in Nara") || !strings.Contains(r, "Ginza Line") {
+		t.Errorf("got %s", r)
 	}
 }
 
-func text(s string) *gemini.Turn { return &gemini.Turn{Status: "completed", Text: s} }
+func text(s string) turn { return turn{text: s} }
 
-func call(name, args string) *gemini.Turn {
-	step := json.RawMessage(`{"type": "function_call", "id": "c1", "name": "` + name + `"}`)
-	return &gemini.Turn{
-		Status: "requires_action",
-		Steps:  []json.RawMessage{step},
-		Calls:  []gemini.FunctionCall{{ID: "c1", Name: name, Arguments: json.RawMessage(args)}},
-	}
+func call(name, args string) turn {
+	return turn{calls: []ToolCall{{ID: "c1", Name: name, Arguments: json.RawMessage(args)}}}
 }
 
-func newCompanion(llm *fakeLLM, tr *fakeTransit, rules fakeRules) Companion {
+func newCompanion(t *testing.T, llm *fakeLLM, tr *fakeTransit, rules fakeRules) Companion {
+	t.Helper()
+	cards, err := data.LoadPhraseCards(rulebook.Files)
+	if err != nil {
+		t.Fatal(err)
+	}
 	return Companion{
-		LLM:     llm,
-		Rules:   rules,
-		Transit: tr,
-		Now:     func() time.Time { return time.Date(2026, 10, 26, 1, 0, 0, 0, time.UTC) },
+		LLM:       llm,
+		Rules:     rules,
+		Transit:   tr,
+		DietCards: cards,
+		Now:       func() time.Time { return time.Date(2026, 10, 26, 1, 0, 0, 0, time.UTC) },
 	}
 }
 
@@ -111,25 +124,10 @@ func ask(question string) data.ChatRequest {
 	}
 }
 
-// lastResult returns the JSON the model was sent back for its last tool call.
-func lastResult(t *testing.T, input []json.RawMessage) string {
-	t.Helper()
-	var step struct {
-		Type   string `json:"type"`
-		Result []struct {
-			Text string `json:"text"`
-		} `json:"result"`
-	}
-	if err := json.Unmarshal(input[len(input)-1], &step); err != nil || step.Type != "function_result" {
-		t.Fatalf("last input step is not a function result: %s", input[len(input)-1])
-	}
-	return step.Result[0].Text
-}
-
 func TestReplyWithoutTools(t *testing.T) {
-	llm := &fakeLLM{turns: []*gemini.Turn{text("  Konnichiwa!  ")}}
+	llm := &fakeLLM{turns: []turn{text("  Konnichiwa!  ")}}
 
-	reply, err := newCompanion(llm, &fakeTransit{}, nil).Reply(context.Background(), ask("hello"))
+	reply, err := newCompanion(t, llm, &fakeTransit{}, nil).Reply(context.Background(), ask("hello"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,13 +137,13 @@ func TestReplyWithoutTools(t *testing.T) {
 }
 
 func TestReplyRunsTrainRouteTool(t *testing.T) {
-	llm := &fakeLLM{turns: []*gemini.Turn{
+	llm := &fakeLLM{turns: []turn{
 		call("get_train_route", `{"from": "Asakusa Station", "to": "Shibuya Station"}`),
 		text("Take the Ginza Line, about 30 minutes."),
 	}}
 	tr := &fakeTransit{}
 
-	reply, err := newCompanion(llm, tr, nil).Reply(context.Background(), ask("How do I get to Shibuya?"))
+	reply, err := newCompanion(t, llm, tr, nil).Reply(context.Background(), ask("How do I get to Shibuya?"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,11 +151,8 @@ func TestReplyRunsTrainRouteTool(t *testing.T) {
 	if !slices.Equal(reply.ToolsUsed, []string{"get_train_route"}) {
 		t.Errorf("tools used: %v", reply.ToolsUsed)
 	}
-
-	// The second model call must include the model's own step and our result.
-	result := lastResult(t, llm.inputs[1])
-	if !strings.Contains(result, "Ginza Line") {
-		t.Errorf("route result not sent to model: %s", result)
+	if !strings.Contains(llm.lastResult(), "Ginza Line") {
+		t.Errorf("route result not sent to model: %s", llm.lastResult())
 	}
 
 	// No city given in the arguments, so both searches use today's city.
@@ -167,18 +162,39 @@ func TestReplyRunsTrainRouteTool(t *testing.T) {
 }
 
 func TestReplyReportsUnknownPlaceToTheModel(t *testing.T) {
-	llm := &fakeLLM{turns: []*gemini.Turn{
-		call("get_train_route", `{"from": "Asakusa", "to": "Atlantis"}`),
-		text("I couldn't find Atlantis."),
-	}}
+	llm := &fakeLLM{turns: []turn{call("get_train_route", `{"from": "Asakusa", "to": "Atlantis"}`), text("I couldn't find Atlantis.")}}
 
-	_, err := newCompanion(llm, &fakeTransit{}, nil).Reply(context.Background(), ask("Route to Atlantis?"))
-	if err != nil {
+	if _, err := newCompanion(t, llm, &fakeTransit{}, nil).Reply(context.Background(), ask("Route to Atlantis?")); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(llm.lastResult(), "could not find a place called Atlantis") {
+		t.Errorf("got %s", llm.lastResult())
+	}
+}
+
+func TestTrainRouteAtNightLooksUpTheMorningTrains(t *testing.T) {
+	llm := &fakeLLM{turns: []turn{
+		call("get_train_route", `{"from": "Kyoto Station", "to": "Nara Park", "to_city": "Nara"}`),
+		text("No trains now; the first one leaves at 6."),
+	}}
+	tr := &fakeTransit{night: true}
+
+	c := newCompanion(t, llm, tr, nil)
+	c.Now = func() time.Time { return time.Date(2026, 10, 26, 2, 15, 0, 0, japan) }
+
+	if _, err := c.Reply(context.Background(), ask("Kyoto to Nara?")); err != nil {
 		t.Fatal(err)
 	}
 
-	if result := lastResult(t, llm.inputs[1]); !strings.Contains(result, "could not find a place called Atlantis") {
-		t.Errorf("got %s", result)
+	if len(tr.times) != 2 || tr.times[1].Hour() != 6 {
+		t.Fatalf("route lookups at %v; want now and then 06:00", tr.times)
+	}
+	if r := llm.lastResult(); !strings.Contains(r, "first trains after 6:00") || !strings.Contains(r, "Ginza Line") {
+		t.Errorf("got %s", r)
+	}
+	// The Nara end of the trip must be searched near Nara, not Kyoto.
+	if *tr.near[1] != cityCentres["nara"] {
+		t.Errorf("destination searched near %v", tr.near[1])
 	}
 }
 
@@ -187,104 +203,178 @@ func TestEtiquetteToolFiltersCityRules(t *testing.T) {
 		{ID: "park-nara-deer", Cities: []string{"Nara"}, Title: "Feed the deer only deer crackers", Severity: "important"},
 		{ID: "park-trails", Title: "Stay on the marked paths", Severity: "helpful"},
 	}
-	llm := &fakeLLM{turns: []*gemini.Turn{call("get_etiquette", `{"place_type": "park"}`), text("Stay on the paths.")}}
+	llm := &fakeLLM{turns: []turn{call("get_etiquette", `{"place_type": "park"}`), text("Stay on the paths.")}}
 
-	_, err := newCompanion(llm, &fakeTransit{}, rules).Reply(context.Background(), ask("Park manners?"))
+	if _, err := newCompanion(t, llm, &fakeTransit{}, rules).Reply(context.Background(), ask("Park manners?")); err != nil {
+		t.Fatal(err)
+	}
+	if r := llm.lastResult(); strings.Contains(r, "deer") || !strings.Contains(r, "marked paths") {
+		t.Errorf("Tokyo park got the wrong rules: %s", r)
+	}
+}
+
+func TestDietCardsComeFromTheCheckedFile(t *testing.T) {
+	tests := []struct {
+		name  string
+		diet  string
+		avoid []string
+		want  []string // English of the cards shown, by prefix
+	}{
+		{name: "Jain", diet: "jain", avoid: []string{"onion_garlic"}, want: []string{"I am Jain.", "Does this contain dashi"}},
+		{name: "Veg", diet: "veg", want: []string{"I am vegetarian. I can't", "Does this contain dashi"}},
+		{name: "Non-veg avoiding beef and pork", diet: "non_veg", avoid: []string{"beef", "pork"}, want: []string{"I can't eat beef.", "I can't eat pork"}},
+		{name: "Halal avoiding seafood", diet: "halal", avoid: []string{"pork", "seafood"}, want: []string{"I am Muslim.", "I can't eat fish or seafood.", "Does this contain dashi"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// The model asks for the card with a different diet than the
+			// saved profile: the saved profile must win.
+			llm := &fakeLLM{turns: []turn{call("show_diet_card", `{"diet": "non_veg"}`)}}
+
+			req := ask("How do I explain my diet?")
+			req.Context.Profile = &data.UserProfile{Diet: tt.diet, Avoid: tt.avoid}
+
+			reply, err := newCompanion(t, llm, &fakeTransit{}, nil).Reply(context.Background(), req)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(reply.Phrases) != len(tt.want) {
+				t.Fatalf("got %d cards: %+v", len(reply.Phrases), reply.Phrases)
+			}
+			for i, prefix := range tt.want {
+				if !strings.HasPrefix(reply.Phrases[i].English, prefix) {
+					t.Errorf("card %d = %q; want prefix %q", i, reply.Phrases[i].English, prefix)
+				}
+			}
+
+			// The cards are the answer: no second model call.
+			if llm.calls != 1 || reply.Text != phraseCardReply {
+				t.Errorf("got %d model calls and text %q", llm.calls, reply.Text)
+			}
+		})
+	}
+}
+
+func TestJainCardSaysJaina(t *testing.T) {
+	// A cheaper model once wrote ジャイアン ("Gian", the Doraemon character)
+	// instead of ジャイナ for Jain. The checked card must never do that.
+	cards, err := data.LoadPhraseCards(rulebook.Files)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	result := lastResult(t, llm.inputs[1])
-	if strings.Contains(result, "deer") || !strings.Contains(result, "marked paths") {
-		t.Errorf("Tokyo park got the wrong rules: %s", result)
+	for _, c := range cards {
+		if c.Diet == "jain" && (!strings.Contains(c.Japanese, "ジャイナ教徒") || strings.Contains(c.Japanese, "ジャイアン")) {
+			t.Errorf("Jain card is wrong: %s", c.Japanese)
+		}
 	}
 }
 
 func TestPhraseCardAnswersInOneCall(t *testing.T) {
-	llm := &fakeLLM{turns: []*gemini.Turn{
-		call("show_phrase_card", `{"english": "No fish stock, please", "japanese": "だしは入れないでください", "romaji": "Dashi wa irenaide kudasai"}`),
+	llm := &fakeLLM{turns: []turn{
+		call("show_phrase_card", `{"english": "Where is the toilet?", "japanese": "トイレはどこですか？", "romaji": "Toire wa doko desu ka?"}`),
 	}}
 
-	reply, err := newCompanion(llm, &fakeTransit{}, nil).Reply(context.Background(), ask("How do I say no fish stock?"))
+	reply, err := newCompanion(t, llm, &fakeTransit{}, nil).Reply(context.Background(), ask("How do I ask for the toilet?"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	want := []data.Phrase{{English: "No fish stock, please", Japanese: "だしは入れないでください", Romaji: "Dashi wa irenaide kudasai"}}
-	if !slices.Equal(reply.Phrases, want) {
-		t.Errorf("got %+v", reply.Phrases)
-	}
-
-	// The card is the answer, so we must not spend a second model call.
-	if len(llm.inputs) != 1 || reply.Text != phraseCardReply {
-		t.Errorf("got %d model calls and text %q", len(llm.inputs), reply.Text)
+	want := []data.Phrase{{English: "Where is the toilet?", Japanese: "トイレはどこですか？", Romaji: "Toire wa doko desu ka?"}}
+	if !slices.Equal(reply.Phrases, want) || llm.calls != 1 || reply.Text != phraseCardReply {
+		t.Errorf("got %+v after %d calls", reply, llm.calls)
 	}
 }
 
 func TestPhraseCardRejectsRomajiAsJapanese(t *testing.T) {
-	llm := &fakeLLM{turns: []*gemini.Turn{
+	llm := &fakeLLM{turns: []turn{
 		call("show_phrase_card", `{"english": "Thank you", "japanese": "arigatou", "romaji": "arigatou"}`),
 		text("Say arigatou gozaimasu."),
 	}}
 
-	reply, err := newCompanion(llm, &fakeTransit{}, nil).Reply(context.Background(), ask("How do I say thanks?"))
+	reply, err := newCompanion(t, llm, &fakeTransit{}, nil).Reply(context.Background(), ask("How do I say thanks?"))
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// No card, and the model was told why so it could answer in text.
-	if len(reply.Phrases) != 0 || !strings.Contains(lastResult(t, llm.inputs[1]), "Japanese script") {
+	if len(reply.Phrases) != 0 || !strings.Contains(llm.lastResult(), "Japanese script") {
 		t.Errorf("got phrases %+v", reply.Phrases)
 	}
 }
 
-func TestRetryWaitsAsLongAsGoogleAsks(t *testing.T) {
-	llm := &fakeLLM{
-		turns: []*gemini.Turn{nil, text("Here you go.")},
-		errs:  []error{&gemini.APIError{StatusCode: 429, Message: "Rate limit exceeded. Please retry in 2s or upgrade your tier."}},
-	}
+func TestReplyRetriesOnceWhenOverloaded(t *testing.T) {
+	llm := &fakeLLM{turns: []turn{
+		{err: &gemini.APIError{StatusCode: 503, Message: "high demand"}},
+		text("Here you go."),
+	}}
 
-	start := time.Now()
-	_, err := newCompanion(llm, &fakeTransit{}, nil).Reply(context.Background(), ask("hi"))
+	reply, err := newCompanion(t, llm, &fakeTransit{}, nil).Reply(context.Background(), ask("hi"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if waited := time.Since(start); waited < 2*time.Second {
-		t.Errorf("retried after %v; want at least the 2s Google asked for", waited)
+	if reply.Text != "Here you go." || llm.calls != 2 {
+		t.Errorf("got %q after %d calls", reply.Text, llm.calls)
 	}
 }
 
-func TestReplyRetriesOnceWhenOverloaded(t *testing.T) {
-	llm := &fakeLLM{
-		turns: []*gemini.Turn{nil, text("Here you go.")},
-		errs:  []error{&gemini.APIError{StatusCode: 503, Message: "high demand"}},
-	}
+func TestRetryWaitsAsLongAsAsked(t *testing.T) {
+	llm := &fakeLLM{turns: []turn{
+		{err: &gemini.APIError{StatusCode: 429, Message: "Rate limit exceeded. Please retry in 2s."}},
+		text("Here you go."),
+	}}
 
-	reply, err := newCompanion(llm, &fakeTransit{}, nil).Reply(context.Background(), ask("hi"))
-	if err != nil {
+	start := time.Now()
+	if _, err := newCompanion(t, llm, &fakeTransit{}, nil).Reply(context.Background(), ask("hi")); err != nil {
 		t.Fatal(err)
 	}
-	if reply.Text != "Here you go." || len(llm.inputs) != 2 {
-		t.Errorf("got %q after %d calls", reply.Text, len(llm.inputs))
+	if waited := time.Since(start); waited < 2*time.Second {
+		t.Errorf("retried after %v; want at least 2s", waited)
+	}
+}
+
+func TestNoRetryWhenTodaysQuotaIsGone(t *testing.T) {
+	llm := &fakeLLM{turns: []turn{{err: gemini.ErrNoModels}}}
+
+	_, err := newCompanion(t, llm, &fakeTransit{}, nil).Reply(context.Background(), ask("hi"))
+	if !OutOfQuota(err) || llm.calls != 1 {
+		t.Errorf("got %v after %d calls", err, llm.calls)
 	}
 }
 
 func TestReplyStopsAToolLoop(t *testing.T) {
-	// A model that only ever asks for tools: after maxToolRounds we call it
-	// once more with no tools, and use whatever it says.
-	llm := &fakeLLM{turns: []*gemini.Turn{call("get_etiquette", `{"place_type": "temple"}`)}}
-	llm.turns = append(slices.Repeat(llm.turns, maxToolRounds), text("Remove your shoes."))
+	// A model that only ever asks for tools: after maxToolRounds we ask once
+	// more with tools disallowed, and use whatever it says.
+	turns := slices.Repeat([]turn{call("get_etiquette", `{"place_type": "temple"}`)}, maxToolRounds)
+	llm := &fakeLLM{turns: append(turns, text("Remove your shoes."))}
 
-	reply, err := newCompanion(llm, &fakeTransit{}, fakeRules{}).Reply(context.Background(), ask("Temple tips?"))
+	reply, err := newCompanion(t, llm, &fakeTransit{}, fakeRules{}).Reply(context.Background(), ask("Temple tips?"))
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	if len(llm.inputs) != maxToolRounds+1 || llm.toolCount[maxToolRounds] != 0 {
-		t.Errorf("got %d calls, last with %d tools", len(llm.inputs), llm.toolCount[len(llm.toolCount)-1])
+	if llm.calls != maxToolRounds+1 || llm.allowTools[maxToolRounds] || reply.Text != "Remove your shoes." {
+		t.Errorf("got %d calls, last allowTools=%v, text %q", llm.calls, llm.allowTools[len(llm.allowTools)-1], reply.Text)
 	}
-	if reply.Text != "Remove your shoes." {
-		t.Errorf("got %q", reply.Text)
+}
+
+func TestTrimRepeat(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{
+			// The real glitch from testing: two drafts glued together.
+			in:   "Carry a small bag and take any rubbish back with you. Stay on the paths.Carry a small bag and bring any rubbish back with you. Stay on the marked paths.",
+			want: "Carry a small bag and take any rubbish back with you. Stay on the paths.",
+		},
+		{
+			// Repeating a phrase mid-sentence is fine, so leave it alone.
+			in:   "Take the Ginza Line to Ueno, then take the Ginza Line back if you get lost on the way.",
+			want: "Take the Ginza Line to Ueno, then take the Ginza Line back if you get lost on the way.",
+		},
+		{in: "Remove your shoes.", want: "Remove your shoes."},
+	}
+
+	for _, tt := range tests {
+		if got := trimRepeat(tt.in); got != tt.want {
+			t.Errorf("trimRepeat(%q)\n got %q\nwant %q", tt.in, got, tt.want)
+		}
 	}
 }
 

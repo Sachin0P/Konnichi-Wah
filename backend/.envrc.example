@@ -4,3 +4,7 @@ export KONNICHIWAH_DB_DSN=postgres://konnichiwah:<password>@localhost/konnichiwa
 # Optional. Get a free key at https://aistudio.google.com. Without it the API
 # uses the built-in catalogue planner.
 export GEMINI_API_KEY=
+
+# Optional. Get a free key at https://console.groq.com. Used for the companion
+# chat; without it the chat runs on Gemini (slower, 20 requests a day).
+export GROQ_API_KEY=

@@ -14,8 +14,10 @@ import (
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/companion"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/gemini"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/groq"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/planner"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
+	"github.com/Sachin0P/Konnichi-Wah/backend/rulebook"
 
 	// Import the pq driver so that it can register itself with the database/sql
 	// package. We alias the import to the blank identifier because we never use
@@ -52,6 +54,13 @@ type config struct {
 	// The Gemini settings for the LLM planner. If apiKey is empty, the app
 	// runs with the built-in catalogue planner only.
 	gemini struct {
+		apiKey  string
+		models  []string
+		timeout time.Duration
+	}
+	// The Groq settings for the companion chat. If apiKey is empty, the
+	// companion runs on Gemini instead (or is off without either key).
+	groq struct {
 		apiKey  string
 		models  []string
 		timeout time.Duration
@@ -107,18 +116,15 @@ func main() {
 	// was often overloaded (503) in testing. (gemini-3.5-flash shares 3.6's
 	// quota, so listing both gains nothing.)
 	cfg.gemini.models = []string{"gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"}
-	flag.Func("gemini-models", "Gemini models to use, best first, comma separated", func(val string) error {
-		cfg.gemini.models = nil
-		for _, m := range strings.Split(val, ",") {
-			if m = strings.TrimSpace(m); m != "" {
-				cfg.gemini.models = append(cfg.gemini.models, m)
-			}
-		}
-		if len(cfg.gemini.models) == 0 {
-			return errors.New("must name at least one model")
-		}
-		return nil
-	})
+	flag.Func("gemini-models", "Gemini models to use, best first, comma separated", modelList(&cfg.gemini.models))
+
+	// Groq is the companion's default: it answers in about a second, and its
+	// free tier allows around 1,000 requests a day per model against
+	// Gemini's 20. gpt-oss-120b handles tool calls well.
+	flag.StringVar(&cfg.groq.apiKey, "groq-api-key", "", "Groq API key for the companion chat (falls back to Gemini if empty)")
+	cfg.groq.models = []string{"openai/gpt-oss-120b", "qwen/qwen3.8-27b", "openai/gpt-oss-20b"}
+	flag.Func("groq-models", "Groq models to use, best first, comma separated", modelList(&cfg.groq.models))
+	flag.DurationVar(&cfg.groq.timeout, "groq-timeout", 15*time.Second, "Groq request timeout")
 	flag.DurationVar(&cfg.gemini.timeout, "gemini-timeout", 20*time.Second, "Gemini request timeout")
 
 	displayVersion := flag.Bool("version", false, "Display version and exit")
@@ -151,31 +157,57 @@ func main() {
 	// catalogue on its own, so the API still works fully offline.
 	models := data.NewModels(db)
 
+	// The checked diet cards are embedded in the binary. A broken file is a
+	// bug we want to hear about at startup, not when a traveller asks.
+	dietCards, err := data.LoadPhraseCards(rulebook.Files)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	// The planner uses Gemini (for its JSON schema output) with the
+	// catalogue as fallback, or the catalogue alone without a key.
 	var p planner.Planner = planner.Catalogue{}
-	var c *companion.Companion
+	var geminiClient *gemini.Client
 
 	if cfg.gemini.apiKey != "" {
-		llm := gemini.New(gemini.DefaultBaseURL, cfg.gemini.apiKey, cfg.gemini.models, cfg.gemini.timeout)
-
+		geminiClient = gemini.New(gemini.DefaultBaseURL, cfg.gemini.apiKey, cfg.gemini.models, cfg.gemini.timeout)
 		p = planner.Fallback{
-			Primary: planner.Gemini{Client: llm},
+			Primary: planner.Gemini{Client: geminiClient},
 			Backup:  planner.Catalogue{},
 			Logger:  logger,
 		}
+		logger.Info("using gemini planner", "models", strings.Join(cfg.gemini.models, ","))
+	} else {
+		logger.Warn("no gemini api key provided, using catalogue planner only")
+	}
 
+	// The companion prefers Groq, falls back to Gemini, and is off without
+	// either key (the chat endpoint then returns 503).
+	var chatLLM companion.LLM
+	switch {
+	case cfg.groq.apiKey != "":
+		chatLLM = companion.GroqLLM{Client: groq.New(groq.DefaultBaseURL, cfg.groq.apiKey, cfg.groq.models, cfg.groq.timeout)}
+		logger.Info("using groq companion", "models", strings.Join(cfg.groq.models, ","))
+	case geminiClient != nil:
+		chatLLM = companion.GeminiLLM{Client: geminiClient}
+		logger.Info("using gemini companion")
+	default:
+		logger.Warn("no groq or gemini api key provided, companion chat is off")
+	}
+
+	var c *companion.Companion
+	if chatLLM != nil {
 		// Transitous needs no key. Name the app in the User-Agent, as its
 		// usage policy asks, but never include personal data.
 		c = &companion.Companion{
-			LLM:     llm,
-			Rules:   models.EtiquetteRules,
-			Transit: transit.New(transit.DefaultBaseURL, "KonnichiWah/"+version+" (hackathon prototype; github.com/Sachin0P/Konnichi-Wah)", 10*time.Second),
-			Now:     time.Now,
-			Logger:  logger,
+			LLM:       chatLLM,
+			Rules:     models.EtiquetteRules,
+			Transit:   transit.New(transit.DefaultBaseURL, "KonnichiWah/"+version+" (hackathon prototype; github.com/Sachin0P/Konnichi-Wah)", 10*time.Second),
+			DietCards: dietCards,
+			Now:       time.Now,
+			Logger:    logger,
 		}
-
-		logger.Info("using gemini planner and companion", "models", strings.Join(cfg.gemini.models, ","))
-	} else {
-		logger.Warn("no gemini api key provided, using catalogue planner only and no companion")
 	}
 
 	app := &application{
@@ -190,6 +222,23 @@ func main() {
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
+	}
+}
+
+// modelList returns a flag.Func callback that parses a comma-separated list of
+// model names into dst.
+func modelList(dst *[]string) func(string) error {
+	return func(val string) error {
+		*dst = nil
+		for _, m := range strings.Split(val, ",") {
+			if m = strings.TrimSpace(m); m != "" {
+				*dst = append(*dst, m)
+			}
+		}
+		if len(*dst) == 0 {
+			return errors.New("must name at least one model")
+		}
+		return nil
 	}
 }
 

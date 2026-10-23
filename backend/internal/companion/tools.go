@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
-	"github.com/Sachin0P/Konnichi-Wah/backend/internal/gemini"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
 )
 
@@ -36,8 +36,8 @@ var cityCentres = map[string]transit.LatLng{
 }
 
 // toolDeclarations tells the model which tools exist and what arguments they
-// take. The place type enum comes from the rulebook's list, as in the planner.
-var toolDeclarations = []gemini.Tool{
+// take. The enums come from the same lists we validate against elsewhere.
+var toolDeclarations = []Tool{
 	{
 		Name:        "get_etiquette",
 		Description: "Get etiquette rules from the app's rulebook for a kind of place, most important first.",
@@ -45,7 +45,7 @@ var toolDeclarations = []gemini.Tool{
 			"type": "object",
 			"properties": map[string]any{
 				"place_type": map[string]any{"type": "string", "enum": data.PlaceTypes},
-				"city":       map[string]any{"type": "string", "description": "City the traveller is in, e.g. Kyoto. Some rules only apply in certain cities."},
+				"city":       map[string]any{"type": "string", "description": "City where the place is, e.g. Nara for Nara Park. Some rules only apply in certain cities."},
 			},
 			"required": []string{"place_type"},
 		},
@@ -66,8 +66,19 @@ var toolDeclarations = []gemini.Tool{
 		},
 	},
 	{
+		Name:        "show_diet_card",
+		Description: "Show the traveller's checked Japanese diet cards (what they can't eat) to show restaurant staff. Uses their saved diet unless you pass one.",
+		Parameters: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"diet":  map[string]any{"type": "string", "enum": data.Diets},
+				"avoid": map[string]any{"type": "array", "items": map[string]any{"type": "string", "enum": data.AvoidItems}},
+			},
+		},
+	},
+	{
 		Name:        "show_phrase_card",
-		Description: "Show the traveller a large card with a Japanese phrase they can show to staff. You provide the translation.",
+		Description: "Show the traveller a large card with a Japanese phrase they can show to staff. You provide the translation. Not for diet: use show_diet_card.",
 		Parameters: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -80,6 +91,9 @@ var toolDeclarations = []gemini.Tool{
 	},
 }
 
+// maxPhrases caps the cards in one reply, so a confused model can't flood it.
+const maxPhrases = 3
+
 // tools runs tool calls for one Reply. Errors are returned to the model as
 // {"error": "..."} rather than failing the request, so it can explain the
 // problem to the traveller ("I couldn't find that station").
@@ -90,7 +104,7 @@ type tools struct {
 	reply     *data.ChatReply
 }
 
-func (t tools) run(ctx context.Context, call gemini.FunctionCall) any {
+func (t tools) run(ctx context.Context, call ToolCall) any {
 	var result any
 	var err error
 
@@ -99,6 +113,8 @@ func (t tools) run(ctx context.Context, call gemini.FunctionCall) any {
 		result, err = t.etiquette(call.Arguments)
 	case "get_train_route":
 		result, err = t.trainRoute(ctx, call.Arguments)
+	case "show_diet_card":
+		result, err = t.dietCard(call.Arguments)
 	case "show_phrase_card":
 		result, err = t.phraseCard(call.Arguments)
 	default:
@@ -162,47 +178,155 @@ func (t tools) trainRoute(ctx context.Context, args json.RawMessage) (any, error
 
 	from, err := t.companion.Transit.Geocode(ctx, in.From, centre(fromCity))
 	if err != nil {
-		return nil, placeError(in.From, err)
+		return nil, t.placeError(in.From, err)
 	}
 	to, err := t.companion.Transit.Geocode(ctx, in.To, centre(toCity))
 	if err != nil {
-		return nil, placeError(in.To, err)
-	}
-
-	at := departAt(t.now, in.DepartTime)
-
-	options, err := t.companion.Transit.Route(ctx, from.Location, to.Location, at)
-	if err != nil {
-		return nil, errors.New("route service unavailable")
+		return nil, t.placeError(in.To, err)
 	}
 
 	result := map[string]any{"from": from.Name, "to": to.Name}
+	var notes []string
 
-	// Trains in Japan stop around midnight and restart around 5am. Someone
-	// asking at 2am almost certainly wants the morning trains, so look those
-	// up rather than just saying "no route", and tell the model we did.
-	if len(options) == 0 && at.Hour() < 5 {
-		morning := time.Date(at.Year(), at.Month(), at.Day(), 6, 0, 0, 0, japan)
+	options, night, err := t.route(ctx, from.Location, to.Location, departAt(t.now, in.DepartTime))
+	if err != nil {
+		return nil, err
+	}
 
-		options, err = t.companion.Transit.Route(ctx, from.Location, to.Location, morning)
-		if err != nil {
-			return nil, errors.New("route service unavailable")
+	// Some landmarks (big parks, hilltop shrines) are too far from any stop
+	// for the router to reach. Route to the city's main station instead and
+	// say so, so the model can add "then walk or take a bus".
+	if len(options) == 0 {
+		if station, err := t.companion.Transit.Geocode(ctx, toCity+" Station", centre(toCity)); err == nil {
+			options, night, err = t.route(ctx, from.Location, station.Location, departAt(t.now, in.DepartTime))
+			if err != nil {
+				return nil, err
+			}
+			if len(options) > 0 {
+				result["to"] = station.Name
+				notes = append(notes, "There's no direct route to "+in.To+". These go to "+station.Name+", the main station in "+toCity+"; from there walk, take a local bus or a taxi.")
+			}
 		}
-		result["note"] = "No trains run at this time of night. These options are for the first trains after 6:00; a taxi is the only way to go now."
 	}
 
 	if len(options) == 0 {
 		return nil, errors.New("no public transport route found")
 	}
 
+	// Name both ends of every option, and say plainly where it ends, so the
+	// model doesn't present the last walk out of a station as a walk to the
+	// sight the traveller asked about.
+	end, _ := result["to"].(string)
+	for i := range options {
+		options[i].Label(from.Name, end)
+	}
+	result["route_ends_at"] = end
+
+	if night {
+		notes = append(notes, "No trains run at this time of night. These options are for the first trains after 6:00; a taxi is the only way to go now.")
+	}
+	if len(notes) > 0 {
+		result["note"] = strings.Join(notes, " ")
+	}
+
 	result["options"] = options
 	return result, nil
+}
+
+// route looks up options leaving at the given time. Trains in Japan stop
+// around midnight and restart around 5am, so someone asking at 2am almost
+// certainly wants the morning trains: if nothing runs now, it looks up the
+// first trains after 6:00 instead and reports night as true.
+func (t tools) route(ctx context.Context, from, to transit.LatLng, at time.Time) (options []transit.Option, night bool, err error) {
+	options, err = t.companion.Transit.Route(ctx, from, to, at)
+	if err != nil {
+		t.companion.log("transit route failed", "error", err)
+		return nil, false, errors.New("route service unavailable")
+	}
+
+	if len(options) == 0 && at.Hour() < 5 {
+		morning := time.Date(at.Year(), at.Month(), at.Day(), 6, 0, 0, 0, japan)
+		options, err = t.companion.Transit.Route(ctx, from, to, morning)
+		if err != nil {
+			t.companion.log("transit route failed", "error", err)
+			return nil, false, errors.New("route service unavailable")
+		}
+		return options, len(options) > 0, nil
+	}
+
+	return options, false, nil
+}
+
+// dietCovers lists the avoid items each diet's card already covers, so we
+// don't add a separate "no pork" card for a vegetarian.
+var dietCovers = map[string][]string{
+	"veg":        {"beef", "pork", "seafood", "egg"},
+	"jain":       {"beef", "pork", "seafood", "egg", "onion_garlic"},
+	"eggetarian": {"beef", "pork", "seafood"},
+	"halal":      {"pork"},
+}
+
+// dietCard picks the traveller's checked diet cards: the card for their diet,
+// then a card for each avoid item it doesn't cover, then (for anyone who
+// can't have fish stock) the "does this contain dashi?" question.
+func (t tools) dietCard(args json.RawMessage) (any, error) {
+	var in struct {
+		Diet  string   `json:"diet"`
+		Avoid []string `json:"avoid"`
+	}
+	_ = json.Unmarshal(args, &in) // both fields are optional
+
+	// Prefer the saved profile: it's what the traveller told us, rather than
+	// what the model inferred from the conversation.
+	diet, avoid := in.Diet, in.Avoid
+	if p := t.chat.Profile; p != nil {
+		diet, avoid = p.Diet, p.Avoid
+	}
+	if diet == "" {
+		return nil, errors.New("diet unknown: ask the traveller about their diet first")
+	}
+
+	var cards []data.PhraseCard
+	find := func(match func(data.PhraseCard) bool) {
+		for _, c := range t.companion.DietCards {
+			if match(c) {
+				cards = append(cards, c)
+				return
+			}
+		}
+	}
+
+	find(func(c data.PhraseCard) bool { return c.Diet == diet })
+	for _, item := range avoid {
+		if !slices.Contains(dietCovers[diet], item) {
+			find(func(c data.PhraseCard) bool { return c.Avoid == item })
+		}
+	}
+	if diet == "veg" || diet == "jain" || diet == "eggetarian" || slices.Contains(avoid, "seafood") {
+		find(func(c data.PhraseCard) bool { return c.Ask == "dashi" })
+	}
+
+	if len(cards) == 0 {
+		return nil, errors.New("no diet card needed: they eat everything")
+	}
+
+	shown := []string{}
+	for _, c := range cards {
+		if len(t.reply.Phrases) == maxPhrases {
+			break
+		}
+		t.reply.Phrases = append(t.reply.Phrases, c.Phrase())
+		shown = append(shown, c.English)
+	}
+
+	return map[string]any{"status": "shown", "cards": shown}, nil
 }
 
 // phraseCard checks a phrase the model translated and adds it to the reply as
 // a card. The model translates (it's good at it, and it saves a whole extra
 // rate-limited call); we only check the card is usable: every part present,
 // not too long, and the "Japanese" actually written in Japanese script.
+// Diet statements never come here; they use the checked cards above.
 func (t tools) phraseCard(args json.RawMessage) (any, error) {
 	var in data.Phrase
 	if err := json.Unmarshal(args, &in); err != nil {
@@ -220,12 +344,10 @@ func (t tools) phraseCard(args json.RawMessage) (any, error) {
 		return nil, errors.New("phrase is too long for a card")
 	case !hasJapaneseScript(in.Japanese):
 		return nil, errors.New("japanese must be written in Japanese script")
-	}
-
-	// Phrase cards are capped so a confused model can't flood the reply.
-	if len(t.reply.Phrases) >= 3 {
+	case len(t.reply.Phrases) >= maxPhrases:
 		return nil, errors.New("too many phrase cards in one reply")
 	}
+
 	t.reply.Phrases = append(t.reply.Phrases, in)
 
 	return map[string]string{"status": "shown"}, nil
@@ -267,10 +389,14 @@ func centre(city string) *transit.LatLng {
 	return nil
 }
 
-func placeError(name string, err error) error {
+// placeError turns a geocoding error into a message for the model. The model
+// only needs to know whether the place exists; the real error goes to the
+// log so we can debug it.
+func (t tools) placeError(name string, err error) error {
 	if errors.Is(err, transit.ErrNotFound) {
 		return errors.New("could not find a place called " + name)
 	}
+	t.companion.log("transit geocode failed", "place", name, "error", err)
 	return errors.New("place search unavailable")
 }
 

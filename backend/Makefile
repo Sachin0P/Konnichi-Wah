@@ -23,7 +23,7 @@ port ?= 4000
 ## run/api port=$1: run the cmd/api application (port defaults to 4000)
 .PHONY: run/api
 run/api:
-	go run ./cmd/api -port=${port} -db-dsn=${KONNICHIWAH_DB_DSN} -gemini-api-key=${GEMINI_API_KEY}
+	go run ./cmd/api -port=${port} -db-dsn=${KONNICHIWAH_DB_DSN} -gemini-api-key=${GEMINI_API_KEY} -groq-api-key=${GROQ_API_KEY}
 
 ## db/psql: connect to the database using psql
 .PHONY: db/psql

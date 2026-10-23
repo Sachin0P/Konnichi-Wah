@@ -47,6 +47,21 @@ type Option struct {
 	Legs      []Leg  `json:"legs"`
 }
 
+// Label replaces Transitous's "START" and "END" placeholders with the real
+// names of the journey's two ends. Without it, a final "walk 1 min -> END"
+// leg reads as if it reached the sight, when it only reaches the station
+// exit.
+func (o *Option) Label(from, to string) {
+	for i := range o.Legs {
+		if o.Legs[i].From == "START" {
+			o.Legs[i].From = from
+		}
+		if o.Legs[i].To == "END" {
+			o.Legs[i].To = to
+		}
+	}
+}
+
 type Leg struct {
 	Mode     string `json:"mode"`
 	Line     string `json:"line,omitempty"`
@@ -119,26 +134,47 @@ func (c *Client) Geocode(ctx context.Context, name string, near *LatLng) (*Place
 		return nil, err
 	}
 
+	// Keep matches in Japan and, with a city to aim for, near it (not a
+	// "Nara Park" in Tokyo when we're in Nara).
+	var candidates []Place
 	for _, m := range matches {
 		if m.Country != "JP" {
 			continue
 		}
-		// With a city to aim for, skip matches far away from it (a "Nara
-		// Park" in Tokyo when we're in Nara).
 		if near != nil && distanceKm(*near, LatLng{m.Lat, m.Lon}) > 60 {
 			continue
 		}
-
-		place := &Place{Name: m.Name, Location: LatLng{m.Lat, m.Lon}}
-		c.store(key, place, 24*time.Hour)
-		return place, nil
+		candidates = append(candidates, Place{Name: m.Name, Location: LatLng{m.Lat, m.Lon}})
 	}
 
-	return nil, ErrNotFound
+	if len(candidates) == 0 {
+		return nil, ErrNotFound
+	}
+
+	// Prefer an exact name match over the search's top hit: for "Nara Park"
+	// the top hit was "Nara Park Hotel", which is nowhere near the park.
+	place := candidates[0]
+	for _, p := range candidates {
+		if normalizeName(p.Name) == normalizeName(query) {
+			place = p
+			break
+		}
+	}
+
+	c.store(key, &place, 24*time.Hour)
+	return &place, nil
+}
+
+// normalizeName makes names comparable: "Sensō-ji" and "senso ji" match.
+func normalizeName(s string) string {
+	r := strings.NewReplacer("ō", "o", "ū", "u", "ā", "a", "ē", "e", "ī", "i", "-", "", " ", "", "‐", "")
+	return r.Replace(strings.ToLower(s))
 }
 
 // Route returns up to three ways to travel between two points, leaving at
-// departAt.
+// departAt. Transitous names the two ends "START" and "END"; we leave those
+// for the caller to replace with real names (see Option.Label), since only
+// the caller knows what the points are.
 func (c *Client) Route(ctx context.Context, from, to LatLng, departAt time.Time) ([]Option, error) {
 	// Round the time to 10 minutes so that repeated questions hit the cache.
 	departAt = departAt.Truncate(10 * time.Minute)
@@ -206,10 +242,10 @@ func (c *Client) Route(ctx context.Context, from, to LatLng, departAt time.Time)
 				Minutes: leg.Duration / 60,
 			}
 			if leg.Mode != "WALK" {
-				l.Line = strings.TrimSpace(leg.RouteShortName + " " + leg.RouteLongName)
-				l.Operator = leg.AgencyName
+				l.Line = lineName(leg.RouteShortName, leg.RouteLongName)
+				l.Operator = operatorName(leg.AgencyName, leg.Mode)
 				l.Towards = leg.Headsign
-				signature = append(signature, l.Line)
+				signature = append(signature, l.Operator+" "+l.Line)
 			}
 			option.Legs = append(option.Legs, l)
 		}
@@ -279,6 +315,61 @@ func (c *Client) store(key string, value any, ttl time.Duration) {
 		clear(c.cache)
 	}
 	c.cache[key] = cacheEntry{value: value, expires: time.Now().Add(ttl)}
+}
+
+// operators translates the Japanese operator names in the Kansai data. (The
+// Tokyo data already has English, e.g. "東京メトロ Tokyo Metro".)
+var operators = map[string]string{
+	"近畿日本鉄道":    "Kintetsu",
+	"京阪電気鉄道":    "Keihan",
+	"阪急電鉄":      "Hankyu",
+	"阪神電気鉄道":    "Hanshin",
+	"南海電気鉄道":    "Nankai",
+	"京福電気鉄道":    "Randen (Keifuku)",
+	"叡山電鉄":      "Eizan Railway",
+	"大阪市高速電気軌道": "Osaka Metro",
+	"西日本旅客鉄道":   "JR West",
+	"東海旅客鉄道":    "JR Central",
+}
+
+// operatorName returns an English operator name. Kyoto's city transport
+// bureau runs both the subway and the buses, so the mode decides which.
+func operatorName(agency, mode string) string {
+	if agency == "京都市交通局" {
+		if mode == "BUS" {
+			return "Kyoto City Bus"
+		}
+		return "Kyoto City Subway"
+	}
+	if en, ok := operators[agency]; ok {
+		return en
+	}
+	return agency
+}
+
+// trainNames translates the Japanese train and service names we've seen.
+var trainNames = strings.NewReplacer(
+	"のぞみ", "Nozomi ", "ひかり", "Hikari ", "こだま", "Kodama ",
+	"みずほ", "Mizuho ", "さくら", "Sakura ", "はやぶさ", "Hayabusa ",
+	"みやこ路快速", "Miyakoji Rapid ", "大和路快速", "Yamatoji Rapid ",
+	"新快速", "Special Rapid ", "快速", "Rapid ", "普通", "Local ",
+	"号", "",
+)
+
+// lineName builds a readable line name. In the Kansai data the short name is
+// sometimes just a numeric trip id ("7391371"), which means nothing to a
+// traveller, so it's dropped. Service names are translated, and the
+// full-width route letters (Ｄ, Ｑ) are removed.
+func lineName(short, long string) string {
+	if long != "" {
+		return strings.TrimSpace(short + " " + long)
+	}
+	if strings.Trim(short, "0123456789") == "" {
+		return ""
+	}
+
+	name := strings.TrimLeftFunc(short, func(r rune) bool { return r >= 'Ａ' && r <= 'Ｚ' })
+	return strings.Join(strings.Fields(trainNames.Replace(name)), " ")
 }
 
 // stripStation removes a trailing "station" or 駅, and reports whether it did.

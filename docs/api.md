@@ -10,6 +10,7 @@ This is the contract between the Android app and the Go backend in `backend/`. I
 - [POST /v1/itineraries](#post-v1itineraries)
 - [GET /v1/itineraries/:id](#get-v1itinerariesid)
 - [PATCH /v1/itineraries/:id](#patch-v1itinerariesid)
+- [POST /v1/companion/chat](#post-v1companionchat)
 - [Permitted values](#permitted-values)
 - [Running the backend for app development](#running-the-backend-for-app-development)
 - [Not built yet](#not-built-yet)
@@ -37,6 +38,7 @@ Every error uses the same envelope, with an `error` key. Its value is either a s
 | 422 | Validation failed | object of field → message |
 | 429 | Rate limited | string: `"rate limit exceeded"` |
 | 500 | A bug on our side | string (generic; the details are only in the server log) |
+| 503 | The AI service is busy, out of today's free quota, or not configured (companion chat only) | string, safe to show the user |
 
 ```json
 { "error": "body contains unknown key \"profle\"" }
@@ -260,6 +262,59 @@ A partial update: send only the fields you're changing. After the user reorders,
 - **`tip_ids` are always recalculated by the server** from each stop's `place_type`. Whatever you send is replaced, so a stop the user adds gets real tips too.
 - Returns 200 with the updated itinerary (with `version` increased), 404 if the id doesn't exist, or 409 if another update saved at the same moment.
 
+## POST /v1/companion/chat
+
+Answers one message in the in-trip companion chat. The backend keeps no chat state: send the conversation so far, ending with the traveller's new message, plus context about their day.
+
+Answers usually take 1–6 seconds. The backend calls the LLM (Groq, or Gemini as a fallback) with tools:
+
+- `get_train_route`: live timetable routes from Transitous. The model never states routes from memory.
+- `get_etiquette`: our rulebook.
+- `show_diet_card`: the hand-checked cards from `backend/rulebook/phrases.json`, picked from the traveller's saved diet.
+- `show_phrase_card`: other phrases ("Where is the toilet?"), translated by the model and checked to be in Japanese script.
+
+### Request
+
+```json
+{
+  "messages": [
+    { "role": "user", "text": "How do we get from Kyoto Station to Nara Park tomorrow at 9am?" }
+  ],
+  "context": {
+    "city": "Kyoto",
+    "day_index": 5,
+    "stops": [ { "place_name": "Fushimi Inari Taisha", "place_type": "shrine", "time_slot": "morning" } ],
+    "profile": { "...": "the same object as in /v1/plan/suggestions" }
+  }
+}
+```
+
+- `messages`: 1–20 messages, each with `role` set to `user` or `assistant` and `text` up to 2000 bytes. The last message must be from the user. Send the reply texts back as `assistant` messages; phrase cards aren't part of the history.
+- `context` and all its fields are optional, but the answers are much better with them. `profile` is what makes `show_diet_card` work.
+
+### Response: 200 OK
+
+```json
+{
+  "reply": {
+    "text": "Show this card to the staff. Tap it to make the Japanese bigger.",
+    "phrases": [
+      {
+        "english": "I am Jain. I can't eat meat, fish, seafood, eggs or dashi (fish stock), or onion, garlic or root vegetables such as potato and carrot.",
+        "japanese": "私はジャイナ教徒です。肉、魚、魚介類、卵、だしは食べられません。玉ねぎ、にんにく、じゃがいもやにんじんなどの根菜も食べられません。",
+        "romaji": "Watashi wa Jaina-kyōto desu. ..."
+      }
+    ],
+    "tools_used": ["show_diet_card"]
+  }
+}
+```
+
+- `text` is plain text: no markdown.
+- `phrases` holds 0–3 cards to show large to staff.
+- `tools_used` tells the app where the answer came from, so it can show "Live train times" or "From our etiquette rulebook".
+- A 503 means the chat is busy (try again in a minute), out of today's free quota, or not configured. Show its `error` message to the user.
+
 ## Permitted values
 
 These exact strings are the contract. They are defined in `backend/internal/data/profiles.go`, `etiquette.go` and `plans.go`.
@@ -304,5 +359,4 @@ Debug builds allow plain HTTP to `localhost`, `127.0.0.1` and `10.0.2.2` only. R
 
 These endpoints are in the project brief but don't exist yet, so their shapes may change:
 
-- `GET /v1/food?lat=&lng=`
-- `POST /v1/companion/chat`
+- `GET /v1/food?lat=&lng=` (and the companion's `find_places` / `find_food` tools)

@@ -13,6 +13,7 @@ import (
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/gemini"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/groq"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
 )
 
@@ -23,12 +24,38 @@ const maxToolRounds = 4
 // ErrEmptyReply is returned if the model finishes without saying anything.
 var ErrEmptyReply = errors.New("companion: empty reply from llm")
 
-// The interfaces below are the parts of each dependency the companion uses.
-// The handler passes the real clients; the tests pass fakes.
-
-type LLM interface {
-	Chat(ctx context.Context, instructions string, input []json.RawMessage, tools []gemini.Tool) (*gemini.Turn, error)
+// Tool and ToolCall are provider-neutral: the LLM adapters (llm_gemini.go,
+// llm_groq.go) translate them to and from each provider's format.
+type Tool struct {
+	Name        string
+	Description string
+	Parameters  map[string]any
 }
+
+type ToolCall struct {
+	ID        string
+	Name      string
+	Arguments json.RawMessage
+}
+
+// LLM starts a conversation with a chat model. Each provider keeps the
+// conversation in its own format (Gemini needs its own steps echoed back
+// exactly; Groq uses OpenAI-style messages), so the companion only sees this
+// interface.
+type LLM interface {
+	Start(instructions string, history []data.ChatMessage, tools []Tool) Conversation
+}
+
+type Conversation interface {
+	// Next sends the conversation so far and returns either the model's
+	// answer or the tools it wants called. With allowTools false, the model
+	// must answer.
+	Next(ctx context.Context, allowTools bool) (text string, calls []ToolCall, err error)
+	// AddToolResult records a tool's result, ready for the next call.
+	AddToolResult(call ToolCall, result any)
+}
+
+// The interfaces below are the parts of our own data and APIs the tools use.
 
 type Rules interface {
 	GetAll(placeType string) ([]*data.EtiquetteRule, error)
@@ -42,14 +69,15 @@ type Transit interface {
 // Companion answers a traveller's questions during the trip. It runs the
 // function-calling loop: the model decides which tools to call, we run them
 // against our own data and APIs, and the model writes the answer from the
-// results. Routes and etiquette always come from tools, never from the
-// model's memory.
+// results. Routes, etiquette and diet cards always come from tools, never
+// from the model's memory.
 type Companion struct {
-	LLM     LLM
-	Rules   Rules
-	Transit Transit
-	Now     func() time.Time // time.Now, or a fixed time in tests
-	Logger  *slog.Logger     // optional; logs each model and tool call
+	LLM       LLM
+	Rules     Rules
+	Transit   Transit
+	DietCards []data.PhraseCard // checked phrase cards from rulebook/phrases.json
+	Now       func() time.Time  // time.Now, or a fixed time in tests
+	Logger    *slog.Logger      // optional; logs each model and tool call
 }
 
 func (c Companion) log(msg string, args ...any) {
@@ -61,38 +89,29 @@ func (c Companion) log(msg string, args ...any) {
 // Reply answers the last message in the conversation.
 func (c Companion) Reply(ctx context.Context, req data.ChatRequest) (*data.ChatReply, error) {
 	now := c.Now().In(japan)
-	instructions := buildInstructions(req.Context, now)
-
-	input := make([]json.RawMessage, 0, len(req.Messages))
-	for _, m := range req.Messages {
-		if m.Role == "user" {
-			input = append(input, gemini.UserInput(m.Text))
-		} else {
-			input = append(input, gemini.ModelOutput(m.Text))
-		}
-	}
+	conv := c.LLM.Start(buildInstructions(req.Context, now), req.Messages, toolDeclarations)
 
 	reply := &data.ChatReply{Phrases: []data.Phrase{}, ToolsUsed: []string{}}
 	t := tools{companion: c, chat: req.Context, now: now, reply: reply}
 
 	for range maxToolRounds {
-		turn, err := c.chat(ctx, instructions, input, toolDeclarations)
+		text, calls, err := c.next(ctx, conv, true)
 		if err != nil {
 			return nil, err
 		}
 
-		if len(turn.Calls) == 0 {
-			return finish(reply, turn.Text)
+		if len(calls) == 0 {
+			return finish(reply, text)
 		}
 
-		// Send the model's own steps back unchanged, then a result for each
-		// tool it asked for.
-		input = append(input, turn.Steps...)
-		for _, call := range turn.Calls {
+		for _, call := range calls {
 			start := time.Now()
-			result := gemini.FunctionResult(call, t.run(ctx, call))
-			c.log("companion tool call", "tool", call.Name, "args", string(call.Arguments), "result_bytes", len(result), "duration", time.Since(start))
-			input = append(input, result)
+			result := t.run(ctx, call)
+			conv.AddToolResult(call, result)
+
+			size, _ := json.Marshal(result)
+			c.log("companion tool call", "tool", call.Name, "args", string(call.Arguments), "result_bytes", len(size), "duration", time.Since(start))
+
 			if !slices.Contains(reply.ToolsUsed, call.Name) {
 				reply.ToolsUsed = append(reply.ToolsUsed, call.Name)
 			}
@@ -101,63 +120,83 @@ func (c Companion) Reply(ctx context.Context, req data.ChatRequest) (*data.ChatR
 		// If the model only asked to show phrase cards, the cards are the
 		// answer: reply now instead of spending another (rate-limited) model
 		// call just to say "show this to staff".
-		if onlyPhraseCards(turn.Calls) && len(reply.Phrases) > 0 {
-			return finish(reply, cmp.Or(strings.TrimSpace(turn.Text), phraseCardReply))
+		if onlyPhraseCards(calls) && len(reply.Phrases) > 0 {
+			return finish(reply, cmp.Or(strings.TrimSpace(text), phraseCardReply))
 		}
 	}
 
-	// The model is still asking for tools. Ask once more with no tools
-	// available, so it has to answer with what it has.
-	turn, err := c.chat(ctx, instructions, input, nil)
+	// The model is still asking for tools. Ask once more without allowing
+	// tools, so it has to answer with what it has.
+	text, _, err := c.next(ctx, conv, false)
 	if err != nil {
 		return nil, err
 	}
-	return finish(reply, turn.Text)
+	return finish(reply, text)
 }
 
-// chat calls the model, retrying once if it's overloaded or rate limited,
-// which happens often on the free tier (5 requests a minute in testing). We
-// wait as long as Google suggests, up to maxRetryWait, provided the request's
-// deadline leaves time for the retry itself.
-func (c Companion) chat(ctx context.Context, instructions string, input []json.RawMessage, decls []gemini.Tool) (*gemini.Turn, error) {
-	size := len(instructions)
-	for _, step := range input {
-		size += len(step)
-	}
-	start := time.Now()
-	turn, err := c.LLM.Chat(ctx, instructions, input, decls)
-	c.log("companion model call", "input_steps", len(input), "input_bytes", size, "duration", time.Since(start), "error", err)
+// retryable is implemented by both providers' API errors.
+type retryable interface {
+	Temporary() bool
+	RetryAfter() time.Duration
+}
 
-	// Retrying can't help once every model's daily quota is used up.
-	var apiErr *gemini.APIError
-	if !errors.As(err, &apiErr) || !apiErr.Temporary() || errors.Is(err, gemini.ErrNoModels) {
-		return turn, err
+// OutOfQuota reports whether err means today's free quota is used up, so
+// there's no point retrying until tomorrow.
+func OutOfQuota(err error) bool {
+	if errors.Is(err, gemini.ErrNoModels) || errors.Is(err, groq.ErrNoModels) {
+		return true
 	}
+	var r retryable
+	return errors.As(err, &r) && r.Temporary() && r.RetryAfter() > 2*time.Minute
+}
 
-	wait := min(max(apiErr.RetryAfter(), 1500*time.Millisecond), maxRetryWait)
-	if deadline, ok := ctx.Deadline(); ok && time.Until(deadline) < wait+5*time.Second {
-		return nil, err
-	}
-
-	select {
-	case <-time.After(wait):
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-
-	return c.LLM.Chat(ctx, instructions, input, decls)
+// Busy reports whether err is a temporary overload or rate limit.
+func Busy(err error) bool {
+	var r retryable
+	return errors.As(err, &r) && r.Temporary()
 }
 
 // maxRetryWait caps how long we'll wait for a rate limit to clear.
 const maxRetryWait = 8 * time.Second
 
+// next calls the model, retrying once if it's overloaded or rate limited. We
+// wait as long as the provider suggests, up to maxRetryWait, provided the
+// request's deadline leaves time for the retry itself.
+func (c Companion) next(ctx context.Context, conv Conversation, allowTools bool) (string, []ToolCall, error) {
+	start := time.Now()
+	text, calls, err := conv.Next(ctx, allowTools)
+	c.log("companion model call", "allow_tools", allowTools, "duration", time.Since(start), "error", err)
+
+	if err == nil || !Busy(err) || OutOfQuota(err) {
+		return text, calls, err
+	}
+
+	var r retryable
+	errors.As(err, &r)
+	wait := min(max(r.RetryAfter(), 1500*time.Millisecond), maxRetryWait)
+	if deadline, ok := ctx.Deadline(); ok && time.Until(deadline) < wait+5*time.Second {
+		return "", nil, err
+	}
+
+	select {
+	case <-time.After(wait):
+	case <-ctx.Done():
+		return "", nil, ctx.Err()
+	}
+
+	start = time.Now()
+	text, calls, err = conv.Next(ctx, allowTools)
+	c.log("companion model call", "allow_tools", allowTools, "duration", time.Since(start), "error", err, "retry", true)
+	return text, calls, err
+}
+
 // phraseCardReply is what we say when the model's whole answer is a phrase
 // card and it didn't add any text of its own.
 const phraseCardReply = "Show this card to the staff. Tap it to make the Japanese bigger."
 
-func onlyPhraseCards(calls []gemini.FunctionCall) bool {
+func onlyPhraseCards(calls []ToolCall) bool {
 	for _, call := range calls {
-		if call.Name != "show_phrase_card" {
+		if call.Name != "show_phrase_card" && call.Name != "show_diet_card" {
 			return false
 		}
 	}
@@ -165,11 +204,35 @@ func onlyPhraseCards(calls []gemini.FunctionCall) bool {
 }
 
 func finish(reply *data.ChatReply, text string) (*data.ChatReply, error) {
-	reply.Text = strings.TrimSpace(text)
+	reply.Text = trimRepeat(strings.TrimSpace(text))
 	if reply.Text == "" {
 		return nil, ErrEmptyReply
 	}
 	return reply, nil
+}
+
+// trimRepeat cuts a reply that the model wrote twice. Groq's gpt-oss models
+// occasionally return two drafts glued together, e.g. "...give them
+// food.Carry a small bag...". If the opening words show up again straight
+// after the end of a sentence, keep only the first draft.
+func trimRepeat(text string) string {
+	words := strings.Fields(text)
+	if len(words) < 8 {
+		return text
+	}
+	opening := strings.Join(words[:3], " ")
+
+	rest := text[len(opening):]
+	i := strings.Index(rest, opening)
+	if i <= 0 {
+		return text
+	}
+
+	before := strings.TrimRight(rest[:i], " ")
+	if strings.HasSuffix(before, ".") || strings.HasSuffix(before, "!") || strings.HasSuffix(before, "?") {
+		return strings.TrimSpace(text[:len(opening)+i])
+	}
+	return text
 }
 
 // buildInstructions writes the system prompt, including what we know about
@@ -222,6 +285,8 @@ var dietRules = map[string]string{
 	"non_veg":    "non-vegetarian: eats anything except the items they avoid",
 }
 
+// The prompt is kept compact on purpose: it's sent with every model call, and
+// Groq's free tier allows only a few thousand tokens per minute.
 const baseInstructions = `You are the travel companion in Konnichi-Wah!, an app for Indian travellers in Japan. The traveller is in Japan right now and reads your answer on their phone.
 
 How to answer:
@@ -229,9 +294,10 @@ How to answer:
 - Keep it short: 1 to 4 sentences, practical and specific, like a friend who lives in Japan.
 
 Rules you must follow:
-- Getting around: for any question about getting somewhere by train, subway or bus, call get_train_route. Never give lines, times, transfers or fares from memory. Give the line names in English and how long it takes. If the tool finds no route, say so and suggest asking station staff or taking a taxi.
-- Etiquette: call get_etiquette and base etiquette advice only on the rules it returns.
-- Japanese phrases: when the traveller wants to say or ask something in Japanese, translate it into short, polite Japanese (desu/masu form) and call show_phrase_card with the English, the Japanese and Hepburn romaji. The app shows it as a large card to show staff, so don't repeat the Japanese in your answer. For diet requests, be explicit: e.g. "no meat, no fish, no dashi (fish stock)".
-- Food: respect the traveller's diet strictly. Warn that dashi (fish stock) is in miso soup, udon and soba broth and many sauces. You can't search for restaurants yet: point to food stops in today's plan, or suggest a phrase card to check with staff.
+- Getting around: for any question about getting somewhere by train, subway or bus, call get_train_route. Never give lines, times, transfers or fares from memory. Give the line names in English and how long it takes. The route ends exactly at route_ends_at: if that's a station rather than the sight they asked about, say they'll need to walk or take a bus from there, without guessing how long. Only mention walking times that appear in the route. The route has lines, stations and minutes only: never invent station exits, street names, landmarks or turn-by-turn walking directions; for a walk, say how long it takes and suggest following the signs or a map app. If the tool finds no route, say so and suggest asking station staff or taking a taxi.
+- Etiquette: call get_etiquette with the city where the place is (Nara for Nara Park, even if they're staying in Kyoto), and base etiquette advice only on the rules it returns. If the rules don't cover the question, say you don't have a tip for that rather than guessing.
+- Diet: whenever the traveller needs to explain their diet or what they can't eat, call show_diet_card. Never translate diet statements yourself: those cards are checked and must be exact.
+- Other Japanese phrases: translate into short, polite Japanese (desu/masu form) and call show_phrase_card with the English, the Japanese and Hepburn romaji. The app shows it as a large card, so don't repeat the Japanese in your answer.
+- Food: respect the traveller's diet strictly, and warn that dashi (fish stock) is in miso soup, udon and soba broth and many sauces. You can't search for restaurants yet: point to food stops in today's plan.
 - Shops and sights: you can't search for places yet. Only name well-known places you are sure exist, and say to check opening hours.
 - If you don't know, say so. Never make up prices, opening hours, addresses or routes.`

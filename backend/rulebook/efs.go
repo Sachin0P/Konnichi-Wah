@@ -5,11 +5,15 @@ import (
 )
 
 // The rulebook lives at the module root (not under internal/) so that the
-// Android build can copy the same etiquette.json into the app's assets. That
-// gives us one source of truth for the online and offline rules.
+// Android build can copy the same files into the app's assets. That gives us
+// one source of truth for the online and offline content:
 //
-// The go:embed directive below embeds the file into our Go binaries, so the
-// seed command works without needing the file on disk at runtime.
+//   - etiquette.json: the etiquette rules.
+//   - phrases.json: hand-checked Japanese diet cards. These are shown to
+//     restaurant staff, so they're never machine-translated on the fly.
 //
-//go:embed "etiquette.json"
+// The go:embed directive below embeds the files into our Go binaries, so they
+// work without the files on disk at runtime.
+//
+//go:embed "etiquette.json" "phrases.json"
 var Files embed.FS

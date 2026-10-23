@@ -1,0 +1,72 @@
+[
+  {
+    "id": "diet-veg",
+    "diet": "veg",
+    "english": "I am vegetarian. I can't eat meat, fish, seafood or eggs, or dashi (fish stock).",
+    "japanese": "私はベジタリアンです。肉、魚、魚介類、卵は食べられません。だし（かつおや煮干しのだし）も食べられません。",
+    "romaji": "Watashi wa bejitarian desu. Niku, sakana, gyokairui, tamago wa taberaremasen. Dashi (katsuo ya niboshi no dashi) mo taberaremasen."
+  },
+  {
+    "id": "diet-jain",
+    "diet": "jain",
+    "english": "I am Jain. I can't eat meat, fish, seafood, eggs or dashi (fish stock), or onion, garlic or root vegetables such as potato and carrot.",
+    "japanese": "私はジャイナ教徒です。肉、魚、魚介類、卵、だしは食べられません。玉ねぎ、にんにく、じゃがいもやにんじんなどの根菜も食べられません。",
+    "romaji": "Watashi wa Jaina-kyōto desu. Niku, sakana, gyokairui, tamago, dashi wa taberaremasen. Tamanegi, ninniku, jagaimo ya ninjin nado no konsai mo taberaremasen."
+  },
+  {
+    "id": "diet-eggetarian",
+    "diet": "eggetarian",
+    "english": "I am vegetarian, but I can eat eggs. I can't eat meat, fish, seafood or dashi (fish stock).",
+    "japanese": "私はベジタリアンですが、卵は食べられます。肉、魚、魚介類、だしは食べられません。",
+    "romaji": "Watashi wa bejitarian desu ga, tamago wa taberaremasu. Niku, sakana, gyokairui, dashi wa taberaremasen."
+  },
+  {
+    "id": "diet-halal",
+    "diet": "halal",
+    "english": "I am Muslim. I can't eat pork or have alcohol, and meat must be halal. Please don't use cooking sake or mirin.",
+    "japanese": "私はイスラム教徒です。豚肉とアルコールは口にできません。肉はハラールのものしか食べられません。料理酒やみりんも使わないでください。",
+    "romaji": "Watashi wa Isuramu-kyōto desu. Butaniku to arukōru wa kuchi ni dekimasen. Niku wa harāru no mono shika taberaremasen. Ryōrishu ya mirin mo tsukawanaide kudasai."
+  },
+  {
+    "id": "avoid-beef",
+    "avoid": "beef",
+    "english": "I can't eat beef.",
+    "japanese": "牛肉は食べられません。",
+    "romaji": "Gyūniku wa taberaremasen."
+  },
+  {
+    "id": "avoid-pork",
+    "avoid": "pork",
+    "english": "I can't eat pork, including lard and pork extract.",
+    "japanese": "豚肉は食べられません。ラードや豚のエキスも食べられません。",
+    "romaji": "Butaniku wa taberaremasen. Rādo ya buta no ekisu mo taberaremasen."
+  },
+  {
+    "id": "avoid-seafood",
+    "avoid": "seafood",
+    "english": "I can't eat fish or seafood.",
+    "japanese": "魚と魚介類は食べられません。",
+    "romaji": "Sakana to gyokairui wa taberaremasen."
+  },
+  {
+    "id": "avoid-egg",
+    "avoid": "egg",
+    "english": "I can't eat eggs.",
+    "japanese": "卵は食べられません。",
+    "romaji": "Tamago wa taberaremasen."
+  },
+  {
+    "id": "avoid-onion-garlic",
+    "avoid": "onion_garlic",
+    "english": "I can't eat onion or garlic.",
+    "japanese": "玉ねぎとにんにくは食べられません。",
+    "romaji": "Tamanegi to ninniku wa taberaremasen."
+  },
+  {
+    "id": "ask-dashi",
+    "ask": "dashi",
+    "english": "Does this contain dashi (fish stock)?",
+    "japanese": "これにだし（魚のだし）は入っていますか？",
+    "romaji": "Kore ni dashi (sakana no dashi) wa haitte imasu ka?"
+  }
+]

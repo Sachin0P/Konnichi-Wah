@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/companion"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
-	"github.com/Sachin0P/Konnichi-Wah/backend/internal/gemini"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/validator"
 )
 
@@ -46,12 +46,11 @@ func (app *application) createChatReplyHandler(w http.ResponseWriter, r *http.Re
 
 	reply, err := app.companion.Reply(ctx, input)
 	if err != nil {
-		var apiErr *gemini.APIError
 		switch {
-		case errors.Is(err, gemini.ErrNoModels):
+		case companion.OutOfQuota(err):
 			app.logError(r, err)
 			app.serviceUnavailableResponse(w, r, "the companion has used up today's free AI quota, please try again tomorrow")
-		case errors.As(err, &apiErr) && apiErr.Temporary():
+		case companion.Busy(err):
 			app.logError(r, err)
 			app.serviceUnavailableResponse(w, r, "the companion is busy right now, please try again in a minute")
 		case errors.Is(err, context.DeadlineExceeded):

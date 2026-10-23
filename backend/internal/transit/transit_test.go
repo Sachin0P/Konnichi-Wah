@@ -29,6 +29,65 @@ func TestStripStation(t *testing.T) {
 	}
 }
 
+func TestLineAndOperatorNames(t *testing.T) {
+	tests := []struct {
+		short, long, want string
+	}{
+		{"G", "東京メトロ銀座線 Tokyo Metro Ginza Line", "G 東京メトロ銀座線 Tokyo Metro Ginza Line"},
+		{"のぞみ355号", "", "Nozomi 355"},
+		{"Ｄみやこ路快速605号", "", "Miyakoji Rapid 605"},
+		{"Ｑ大和路快速305号", "", "Yamatoji Rapid 305"},
+		{"7391371", "", ""},
+	}
+	for _, tt := range tests {
+		if got := lineName(tt.short, tt.long); got != tt.want {
+			t.Errorf("lineName(%q, %q) = %q; want %q", tt.short, tt.long, got, tt.want)
+		}
+	}
+
+	if got := operatorName("近畿日本鉄道", "REGIONAL_RAIL"); got != "Kintetsu" {
+		t.Errorf("got %q", got)
+	}
+	if got := operatorName("京都市交通局", "BUS"); got != "Kyoto City Bus" {
+		t.Errorf("got %q", got)
+	}
+	if got := operatorName("東京メトロ Tokyo Metro", "SUBWAY"); got != "東京メトロ Tokyo Metro" {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestOptionLabel(t *testing.T) {
+	o := Option{Legs: []Leg{
+		{Mode: "walk", From: "START", To: "京都"},
+		{Mode: "regional_rail", From: "京都", To: "奈良"},
+		{Mode: "walk", From: "奈良", To: "END"},
+	}}
+
+	o.Label("Kyoto Station", "NARA")
+
+	if o.Legs[0].From != "Kyoto Station" || o.Legs[2].To != "NARA" || o.Legs[1].From != "京都" {
+		t.Errorf("got %+v", o.Legs)
+	}
+}
+
+func TestGeocodePrefersAnExactNameMatch(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`[
+			{"name": "Nara Park Hotel", "type": "PLACE", "country": "JP", "lat": 34.684, "lon": 135.770},
+			{"name": "Nara Park", "type": "PLACE", "country": "JP", "lat": 34.676, "lon": 135.853}
+		]`))
+	}))
+	defer ts.Close()
+
+	place, err := New(ts.URL, "test-agent", 5*time.Second).Geocode(context.Background(), "nara park", &LatLng{34.685, 135.805})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if place.Name != "Nara Park" {
+		t.Errorf("got %q; want the park, not the hotel", place.Name)
+	}
+}
+
 func TestGeocodeSkipsWrongCountryAndFarAwayMatches(t *testing.T) {
 	calls := 0
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
