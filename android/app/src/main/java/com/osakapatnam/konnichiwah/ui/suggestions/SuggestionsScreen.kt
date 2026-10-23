@@ -26,9 +26,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -39,17 +39,25 @@ import com.osakapatnam.konnichiwah.data.remote.PlanDto
 import com.osakapatnam.konnichiwah.data.remote.SuggestionDto
 import com.osakapatnam.konnichiwah.ui.kindLabel
 import com.osakapatnam.konnichiwah.ui.placeTypeLabel
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SuggestionsScreen(
     onEditAnswers: () -> Unit,
+    onItineraryBuilt: () -> Unit,
     viewModel: SuggestionsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+
+    // Show a failed build as a snackbar, once.
+    val buildError = (state as? SuggestionsUiState.Loaded)?.buildError
+    LaunchedEffect(buildError) {
+        if (buildError != null) {
+            snackbarHostState.showSnackbar(buildError)
+            viewModel.buildErrorShown()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -63,17 +71,14 @@ fun SuggestionsScreen(
             val loaded = state as? SuggestionsUiState.Loaded
             if (loaded != null) {
                 Button(
-                    onClick = {
-                        // The itinerary builder is the next part of milestone 4.
-                        scope.launch { snackbarHostState.showSnackbar("The itinerary builder is coming next.") }
-                    },
-                    enabled = loaded.selectedIds.isNotEmpty(),
+                    onClick = { viewModel.buildItinerary(onItineraryBuilt) },
+                    enabled = loaded.selectedIds.isNotEmpty() && !loaded.building,
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
                         .padding(16.dp),
                 ) {
-                    Text("Build itinerary (${loaded.selectedIds.size} selected)")
+                    Text(if (loaded.building) "Building your itinerary…" else "Build itinerary (${loaded.selectedIds.size} selected)")
                 }
             }
         },

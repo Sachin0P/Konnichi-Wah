@@ -95,3 +95,5 @@ fun kindLabel(kind: String): String = when (kind) {
 }
 
 fun placeTypeLabel(placeType: String): String = placeType.replaceFirstChar { it.uppercase() }
+
+fun timeSlotLabel(timeSlot: String): String = timeSlot.replaceFirstChar { it.uppercase() }

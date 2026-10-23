@@ -2,7 +2,9 @@ package com.osakapatnam.konnichiwah.data.remote
 
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 // One method per backend endpoint (see docs/api.md). Each response is wrapped
@@ -19,4 +21,13 @@ interface KonnichiApi {
     // Can take 10-20 seconds while the backend waits for the LLM.
     @POST("v1/plan/suggestions")
     suspend fun suggest(@Body request: TripRequestDto): PlanEnvelope
+
+    @POST("v1/itineraries")
+    suspend fun createItinerary(@Body request: CreateItineraryRequestDto): ItineraryEnvelope
+
+    @GET("v1/itineraries/{id}")
+    suspend fun getItinerary(@Path("id") id: Long): ItineraryEnvelope
+
+    @PATCH("v1/itineraries/{id}")
+    suspend fun updateItinerary(@Path("id") id: Long, @Body request: UpdateItineraryRequestDto): ItineraryEnvelope
 }

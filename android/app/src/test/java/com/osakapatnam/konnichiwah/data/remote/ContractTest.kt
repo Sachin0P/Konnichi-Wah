@@ -3,6 +3,8 @@ package com.osakapatnam.konnichiwah.data.remote
 import com.osakapatnam.konnichiwah.di.NetworkModule
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -67,6 +69,46 @@ class ContractTest {
 
         assertEquals("castle", plan.suggestions.single().placeType)
         assertEquals(3, plan.cities.single().days)
+    }
+
+    @Test
+    fun itineraryResponseParses() {
+        // The example from docs/api.md, including the fields the app doesn't
+        // model yet (created_at).
+        val body = """
+            {"itinerary": {"id": 4, "created_at": "2026-10-23T12:30:53+05:30", "title": "My 5-day Japan trip",
+              "start_date": null, "version": 1,
+              "days": [{"index": 1, "city": "Tokyo", "stops": [
+                {"id": "st_m4bm", "time_slot": "morning", "place_name": "Senso-ji Temple, Asakusa",
+                 "place_type": "temple", "city": "Tokyo", "note": "Tokyo's oldest temple...",
+                 "lat": null, "lng": null, "google_place_id": null,
+                 "tip_ids": ["temple-photos", "temple-shoes"]}]}]}}
+        """
+
+        val itinerary = json.decodeFromString(ItineraryEnvelope.serializer(), body).itinerary
+        val stop = itinerary.days.single().stops.single()
+
+        assertEquals(4L, itinerary.id)
+        assertEquals("morning", stop.timeSlot)
+        assertEquals(listOf("temple-photos", "temple-shoes"), stop.tipIds)
+        assertEquals(null, stop.lat)
+    }
+
+    @Test
+    fun updateRequestSendsEveryStopField() {
+        // The backend's strict decoder rejects unknown keys, and we send
+        // defaults too, so the PATCH body must use exactly the API's names.
+        val request = UpdateItineraryRequestDto(
+            days = listOf(DayDto(1, "Kyoto", listOf(StopDto("id-1", "evening", "Gion walk", "street", "Kyoto")))),
+        )
+
+        val stop = json.encodeToJsonElement(UpdateItineraryRequestDto.serializer(), request)
+            .jsonObject["days"]!!.jsonArray[0].jsonObject["stops"]!!.jsonArray[0].jsonObject
+
+        assertEquals(
+            setOf("id", "time_slot", "place_name", "place_type", "city", "note", "lat", "lng", "google_place_id", "tip_ids"),
+            stop.keys,
+        )
     }
 
     @Test

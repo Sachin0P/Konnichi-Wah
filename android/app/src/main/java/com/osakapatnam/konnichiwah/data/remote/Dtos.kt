@@ -143,3 +143,53 @@ data class PlanDto(
 
 @Serializable
 data class PlanEnvelope(val plan: PlanDto)
+
+// Itineraries (POST/GET/PATCH /v1/itineraries).
+
+// Stop order is the position in the list; there's no separate order field.
+// lat, lng and googlePlaceId stay null until the backend adds Google Places.
+// tipIds are always set by the server from placeType.
+@Serializable
+data class StopDto(
+    val id: String,
+    @SerialName("time_slot") val timeSlot: String,
+    @SerialName("place_name") val placeName: String,
+    @SerialName("place_type") val placeType: String,
+    val city: String,
+    val note: String = "",
+    val lat: Double? = null,
+    val lng: Double? = null,
+    @SerialName("google_place_id") val googlePlaceId: String? = null,
+    @SerialName("tip_ids") val tipIds: List<String> = emptyList(),
+)
+
+@Serializable
+data class DayDto(
+    val index: Int,
+    val city: String,
+    val stops: List<StopDto>,
+)
+
+@Serializable
+data class ItineraryDto(
+    val id: Long,
+    val title: String,
+    @SerialName("start_date") val startDate: String? = null,
+    val days: List<DayDto>,
+    val version: Int,
+)
+
+@Serializable
+data class ItineraryEnvelope(val itinerary: ItineraryDto)
+
+@Serializable
+data class CreateItineraryRequestDto(
+    val title: String,
+    @SerialName("start_date") val startDate: String? = null,
+    val cities: List<CityPlanDto>,
+    val suggestions: List<SuggestionDto>,
+)
+
+// A partial update: we only ever send the days.
+@Serializable
+data class UpdateItineraryRequestDto(val days: List<DayDto>)

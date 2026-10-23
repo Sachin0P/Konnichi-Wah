@@ -45,6 +45,12 @@ android {
     }
 }
 
+// Export Room's schema to app/schemas so database changes show up in code
+// review and we can write migrations later.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 // Copy the etiquette rulebook from the backend into the app's assets, so the
 // app and the API always ship the same rules and tips work offline. The
 // backend's file is the single source of truth; don't edit the copy.
@@ -96,6 +102,10 @@ dependencies {
     implementation(libs.okhttp.logging)
 
     implementation(libs.androidx.datastore.preferences)
+
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 
     testImplementation(libs.junit)
     debugImplementation(libs.androidx.compose.ui.tooling)
