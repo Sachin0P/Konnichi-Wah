@@ -59,8 +59,9 @@ The food feature targets **Indian-palatable** food, not only vegetarian food.
 ### 3.5 AI Companion (in-trip chat)
 - A chat screen. Each request includes context: today's itinerary day, the current/next stop, the taste profile, and (optionally) the user's location.
 - The agent can call **tools** (server-side function calling):
-  - `get_train_route(from, to, depart_time)` → Google Routes API (transit mode)
-  - `find_food(near_lat, near_lng, taste_profile)` → Google Places + Desi Match scoring
+  - `get_train_route(from, to, depart_time)` → Transitous (transit mode; see 4. External APIs)
+  - `find_food(near_lat, near_lng, taste_profile)` → OpenStreetMap (Overpass) + Desi Match scoring
+  - `find_places(query, near)` → OpenStreetMap (Overpass): shops and sights, e.g. "figure shops near me"
   - `get_etiquette(place_type)` → our rulebook
   - `translate_phrase(text)` → returns Japanese plus romaji
 - Answers must be short and practical, e.g. *"Take the JR Chuo Line to Kanda, then the Ginza Line to Asakusa (~30 min). Tip: stand on the left of escalators in Tokyo."*
@@ -95,7 +96,10 @@ The food feature targets **Indian-palatable** food, not only vegetarian food.
 - **Database:** PostgreSQL (users, saved itineraries, etiquette rules, cached place results); migrations with `golang-migrate`.
 - **Auth:** Firebase Auth on the app; the backend verifies Firebase ID tokens in middleware.
 - **LLM:** called **only from the backend**. API keys must **never** be in the APK. Use structured JSON output with a JSON schema for the planner and function calling for the companion.
-- **External APIs:** Google Routes API (transit), Google Places API (New). NAVITIME is a future upgrade; don't build it now.
+- **External APIs:** Transitous for transit routes and OpenStreetMap (Overpass API) for places and food. NAVITIME is a future upgrade; don't build it now.
+  - *Changed from Google Routes API + Places API (New), 2026-10-23.* Google Maps Platform needs a billing account with a card, and its transit directions appear not to cover Japan. Transitous (free, no key) returned real routes for JR, Tokyo Metro, the Shinkansen and Kintetsu in testing, but Kyoto city buses have gaps and some names are Japanese-only.
+  - Transitous is a volunteer service for open-source and non-profit use, run best-effort: cache results, keep request volume low, and send a descriptive User-Agent (no personal data). For a public launch, switch to NAVITIME or a self-hosted instance.
+  - Public Overpass servers are community-run and often slow: use short timeouts and fall back to our catalogue when they fail.
 
 ## 5. API endpoints (v1)
 

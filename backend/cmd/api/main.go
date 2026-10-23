@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -10,9 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/companion"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/gemini"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/planner"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
 
 	// Import the pq driver so that it can register itself with the database/sql
 	// package. We alias the import to the blank identifier because we never use
@@ -50,7 +53,7 @@ type config struct {
 	// runs with the built-in catalogue planner only.
 	gemini struct {
 		apiKey  string
-		model   string
+		models  []string
 		timeout time.Duration
 	}
 }
@@ -60,12 +63,14 @@ type config struct {
 // build out the app.
 //
 // The planner field is an interface, so we can switch from the built-in
-// catalogue to a real LLM planner without touching the handlers.
+// catalogue to a real LLM planner without touching the handlers. The
+// companion is nil when there's no LLM configured.
 type application struct {
-	config  config
-	logger  *slog.Logger
-	models  data.Models
-	planner planner.Planner
+	config    config
+	logger    *slog.Logger
+	models    data.Models
+	planner   planner.Planner
+	companion *companion.Companion
 }
 
 func main() {
@@ -96,9 +101,24 @@ func main() {
 	// Like the DSN, the API key has no default. The Makefile passes it in from
 	// the GEMINI_API_KEY environment variable.
 	flag.StringVar(&cfg.gemini.apiKey, "gemini-api-key", "", "Gemini API key (leave empty to use the catalogue planner only)")
-	// We default to gemini-3.6-flash rather than the newest Flash model because,
-	// on the free tier, the newest model was often overloaded (503) in testing.
-	flag.StringVar(&cfg.gemini.model, "gemini-model", "gemini-3.6-flash", "Gemini model name")
+	// A comma-separated list of models, best first. When one model's daily
+	// free quota runs out, the client moves on to the next. We start with
+	// gemini-3.6-flash rather than the newest Flash model because the newest
+	// was often overloaded (503) in testing. (gemini-3.5-flash shares 3.6's
+	// quota, so listing both gains nothing.)
+	cfg.gemini.models = []string{"gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"}
+	flag.Func("gemini-models", "Gemini models to use, best first, comma separated", func(val string) error {
+		cfg.gemini.models = nil
+		for _, m := range strings.Split(val, ",") {
+			if m = strings.TrimSpace(m); m != "" {
+				cfg.gemini.models = append(cfg.gemini.models, m)
+			}
+		}
+		if len(cfg.gemini.models) == 0 {
+			return errors.New("must name at least one model")
+		}
+		return nil
+	})
 	flag.DurationVar(&cfg.gemini.timeout, "gemini-timeout", 20*time.Second, "Gemini request timeout")
 
 	displayVersion := flag.Bool("version", false, "Display version and exit")
@@ -129,26 +149,41 @@ func main() {
 	// Use the LLM planner if we have an API key, with the catalogue as its
 	// fallback. Without a key (e.g. a teammate working on the app), use the
 	// catalogue on its own, so the API still works fully offline.
+	models := data.NewModels(db)
+
 	var p planner.Planner = planner.Catalogue{}
+	var c *companion.Companion
 
 	if cfg.gemini.apiKey != "" {
+		llm := gemini.New(gemini.DefaultBaseURL, cfg.gemini.apiKey, cfg.gemini.models, cfg.gemini.timeout)
+
 		p = planner.Fallback{
-			Primary: planner.Gemini{
-				Client: gemini.New(gemini.DefaultBaseURL, cfg.gemini.apiKey, cfg.gemini.model, cfg.gemini.timeout),
-			},
-			Backup: planner.Catalogue{},
-			Logger: logger,
+			Primary: planner.Gemini{Client: llm},
+			Backup:  planner.Catalogue{},
+			Logger:  logger,
 		}
-		logger.Info("using gemini planner", "model", cfg.gemini.model)
+
+		// Transitous needs no key. Name the app in the User-Agent, as its
+		// usage policy asks, but never include personal data.
+		c = &companion.Companion{
+			LLM:     llm,
+			Rules:   models.EtiquetteRules,
+			Transit: transit.New(transit.DefaultBaseURL, "KonnichiWah/"+version+" (hackathon prototype; github.com/Sachin0P/Konnichi-Wah)", 10*time.Second),
+			Now:     time.Now,
+			Logger:  logger,
+		}
+
+		logger.Info("using gemini planner and companion", "models", strings.Join(cfg.gemini.models, ","))
 	} else {
-		logger.Warn("no gemini api key provided, using catalogue planner only")
+		logger.Warn("no gemini api key provided, using catalogue planner only and no companion")
 	}
 
 	app := &application{
-		config:  cfg,
-		logger:  logger,
-		models:  data.NewModels(db),
-		planner: p,
+		config:    cfg,
+		logger:    logger,
+		models:    models,
+		planner:   p,
+		companion: c,
 	}
 
 	err = app.serve()

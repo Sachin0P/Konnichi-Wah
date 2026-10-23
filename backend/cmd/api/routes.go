@@ -25,6 +25,8 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/itineraries/:id", app.showItineraryHandler)
 	router.HandlerFunc(http.MethodPatch, "/v1/itineraries/:id", app.updateItineraryHandler)
 
+	router.HandlerFunc(http.MethodPost, "/v1/companion/chat", app.createChatReplyHandler)
+
 	// recoverPanic must be the outermost middleware, so that it catches panics
 	// in all the middleware and handlers below it.
 	return app.recoverPanic(app.enableCORS(app.rateLimit(router)))

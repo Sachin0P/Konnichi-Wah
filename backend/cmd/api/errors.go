@@ -72,6 +72,12 @@ func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Requ
 	app.errorResponse(w, r, http.StatusConflict, message)
 }
 
+// The serviceUnavailableResponse() method is used when a service we depend on
+// (like the LLM) is busy or not set up. The client can try again later.
+func (app *application) serviceUnavailableResponse(w http.ResponseWriter, r *http.Request, message string) {
+	app.errorResponse(w, r, http.StatusServiceUnavailable, message)
+}
+
 func (app *application) rateLimitExceededResponse(w http.ResponseWriter, r *http.Request) {
 	message := "rate limit exceeded"
 	app.errorResponse(w, r, http.StatusTooManyRequests, message)
