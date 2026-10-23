@@ -111,6 +111,66 @@ func TestCatalogueFood(t *testing.T) {
 	}
 }
 
+func TestCatalogueReadsNotes(t *testing.T) {
+	tests := []struct {
+		name    string
+		notes   string
+		want    []string
+		notWant []string
+	}{
+		{
+			// "food" is the only interest, so without the notes there'd be no
+			// anime shops at all.
+			name:  "Figurines",
+			notes: "I love buying anime figurines, especially rare ones",
+			want:  []string{"tokyo-akihabara", "tokyo-nakano-broadway", "tokyo-ikebukuro-otome-road", "osaka-den-den-town"},
+		},
+		{
+			name:  "Gundam",
+			notes: "My son is crazy about GUNDAM",
+			want:  []string{"tokyo-gundam-base", "tokyo-nakano-broadway"},
+		},
+		{
+			// "figure out" must not count as an interest in figures.
+			name:    "Unrelated use of figure",
+			notes:   "We need to figure out the trains",
+			notWant: []string{"tokyo-nakano-broadway", "tokyo-ikebukuro-otome-road", "tokyo-gundam-base"},
+		},
+		{
+			name:    "No notes",
+			notWant: []string{"tokyo-akihabara", "tokyo-nakano-broadway", "osaka-den-den-town"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := newRequest("veg", nil, []string{"food"}, 10, 4)
+			req.Profile.Notes = tt.notes
+
+			plan, err := Catalogue{}.Suggest(context.Background(), req)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var ids []string
+			for _, s := range plan.Suggestions {
+				ids = append(ids, s.ID)
+			}
+
+			for _, id := range tt.want {
+				if !slices.Contains(ids, id) {
+					t.Errorf("want %q in suggestions", id)
+				}
+			}
+			for _, id := range tt.notWant {
+				if slices.Contains(ids, id) {
+					t.Errorf("did not want %q in suggestions", id)
+				}
+			}
+		})
+	}
+}
+
 func TestAllocateCities(t *testing.T) {
 	tests := []struct {
 		name      string

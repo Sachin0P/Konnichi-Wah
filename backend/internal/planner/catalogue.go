@@ -31,6 +31,13 @@ type item struct {
 	// every plan has the classic sights for its cities.
 	essential bool
 
+	// keywords include an item when the traveller's free-text notes mention
+	// any of them (case-insensitive substring match), even if no interest
+	// matches. "I love buying figurines" brings in the figure shops this way.
+	// Gemini reads the notes itself; this keeps the fallback from ignoring
+	// them entirely.
+	keywords []string
+
 	// months limits an item to certain months (e.g. the Snow Festival). An
 	// empty slice means any month.
 	months []int
@@ -51,6 +58,8 @@ func (c Catalogue) Suggest(ctx context.Context, req data.TripRequest) (*data.Pla
 		Source:      "catalogue",
 	}
 
+	notes := strings.ToLower(req.Profile.Notes)
+
 	for _, it := range catalogue {
 		if !slices.ContainsFunc(plan.Cities, func(c data.CityPlan) bool { return c.Name == it.base }) {
 			continue
@@ -64,7 +73,7 @@ func (c Catalogue) Suggest(ctx context.Context, req data.TripRequest) (*data.Pla
 			if !canEat(req.Profile, it) {
 				continue
 			}
-		} else if !it.essential && !overlaps(it.interests, req.Profile.Interests) {
+		} else if !it.essential && !overlaps(it.interests, req.Profile.Interests) && !mentions(notes, it.keywords) {
 			continue
 		}
 
@@ -160,6 +169,16 @@ func canEat(profile data.UserProfile, it item) bool {
 	return !overlaps(it.contains, excluded)
 }
 
+// mentions reports whether the (lowercased) notes contain any of the keywords.
+func mentions(notes string, keywords []string) bool {
+	return slices.ContainsFunc(keywords, func(k string) bool { return strings.Contains(notes, k) })
+}
+
+// collectorKeywords are words in the notes that mean the traveller wants
+// anime figures, manga and collectibles. "figurine" and "figures" rather than
+// "figure", so "I need to figure out trains" doesn't send anyone to Nakano.
+var collectorKeywords = []string{"figurine", "figures", "figure shop", "manga", "gundam", "gunpla", "anime goods", "anime merch", "collectible", "retro game"}
+
 // overlaps reports whether the two slices have any value in common.
 func overlaps(a, b []string) bool {
 	return slices.ContainsFunc(a, func(s string) bool { return slices.Contains(b, s) })
@@ -185,7 +204,22 @@ var catalogue = []item{
 	{
 		Suggestion: data.Suggestion{ID: "tokyo-akihabara", Kind: "activity", Name: "Akihabara", City: "Tokyo", PlaceType: "shop",
 			Reason: "Tokyo's anime, manga and electronics district, full of figure shops and arcades."},
-		base: "Tokyo", interests: []string{"anime", "shopping"},
+		base: "Tokyo", interests: []string{"anime", "shopping"}, keywords: append([]string{"electronics", "arcade"}, collectorKeywords...),
+	},
+	{
+		Suggestion: data.Suggestion{ID: "tokyo-nakano-broadway", Kind: "activity", Name: "Nakano Broadway", City: "Tokyo", PlaceType: "shop",
+			Reason: "A retro shopping arcade full of Mandarake stores for vintage, second-hand and rare figures and manga."},
+		base: "Tokyo", interests: []string{"anime"}, keywords: collectorKeywords,
+	},
+	{
+		Suggestion: data.Suggestion{ID: "tokyo-ikebukuro-otome-road", Kind: "activity", Name: "Ikebukuro: Animate and Otome Road", City: "Tokyo", PlaceType: "shop",
+			Reason: "Floors of new anime figures and character goods at Animate, plus second-hand shops along Otome Road."},
+		base: "Tokyo", keywords: collectorKeywords,
+	},
+	{
+		Suggestion: data.Suggestion{ID: "tokyo-gundam-base", Kind: "activity", Name: "DiverCity Tokyo Plaza, Odaiba", City: "Tokyo", PlaceType: "shop",
+			Reason: "The life-size Gundam statue outside, and official Gundam model kit shops inside."},
+		base: "Tokyo", keywords: []string{"gundam", "gunpla", "model kit", "mecha"},
 	},
 	{
 		Suggestion: data.Suggestion{ID: "tokyo-ghibli-museum", Kind: "place", Name: "Ghibli Museum, Mitaka", City: "Tokyo", PlaceType: "attraction",
@@ -330,6 +364,11 @@ var catalogue = []item{
 		Suggestion: data.Suggestion{ID: "osaka-usj", Kind: "activity", Name: "Universal Studios Japan", City: "Osaka", PlaceType: "attraction",
 			Reason: "Super Nintendo World and the Wizarding World of Harry Potter. Book Express Passes early for busy days."},
 		base: "Osaka", interests: []string{"anime"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "osaka-den-den-town", Kind: "activity", Name: "Den Den Town, Nipponbashi", City: "Osaka", PlaceType: "shop",
+			Reason: "Osaka's answer to Akihabara: streets of figure, manga, retro game and hobby shops."},
+		base: "Osaka", interests: []string{"anime"}, keywords: collectorKeywords,
 	},
 	{
 		Suggestion: data.Suggestion{ID: "osaka-kuromon-market", Kind: "activity", Name: "Kuromon Market", City: "Osaka", PlaceType: "shop",
