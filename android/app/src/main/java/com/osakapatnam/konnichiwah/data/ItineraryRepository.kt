@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
+import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,6 +24,8 @@ data class LocalItinerary(
     val localId: Long,
     val serverId: Long?,
     val title: String,
+    // "YYYY-MM-DD", or null until the traveller sets their dates.
+    val startDate: String?,
     val days: List<DayDto>,
     val pendingSync: Boolean,
 )
@@ -72,6 +75,19 @@ class ItineraryRepository @Inject constructor(
         sync(localId)
     }
 
+    // Same as updateDays: saved on the phone first, then synced.
+    suspend fun setStartDate(localId: Long, startDate: LocalDate) {
+        val entity = dao.get(localId) ?: return
+        dao.update(
+            entity.copy(
+                startDate = startDate.toString(),
+                pendingSync = true,
+                updatedAt = System.nanoTime(),
+            ),
+        )
+        sync(localId)
+    }
+
     // Sends pending local edits to the server. Returns true once the server
     // has the latest version.
     suspend fun sync(localId: Long): Boolean = syncMutex.withLock {
@@ -81,7 +97,7 @@ class ItineraryRepository @Inject constructor(
 
         val days = json.decodeFromString<List<DayDto>>(entity.daysJson)
         val result = apiCall(json) {
-            api.updateItinerary(serverId, UpdateItineraryRequestDto(days)).itinerary
+            api.updateItinerary(serverId, UpdateItineraryRequestDto(days, entity.startDate)).itinerary
         }
 
         if (result !is ApiResult.Success) return false
@@ -117,6 +133,7 @@ class ItineraryRepository @Inject constructor(
         localId = localId,
         serverId = serverId,
         title = title,
+        startDate = startDate,
         days = json.decodeFromString(daysJson),
         pendingSync = pendingSync,
     )

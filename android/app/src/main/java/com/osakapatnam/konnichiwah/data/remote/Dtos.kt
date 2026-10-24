@@ -195,9 +195,13 @@ data class CreateItineraryRequestDto(
     val suggestions: List<SuggestionDto>,
 )
 
-// A partial update: we only ever send the days.
+// A partial update of the days and the start date. A null start date is sent
+// as null, which the server reads as "not changing it".
 @Serializable
-data class UpdateItineraryRequestDto(val days: List<DayDto>)
+data class UpdateItineraryRequestDto(
+    val days: List<DayDto>,
+    @SerialName("start_date") val startDate: String? = null,
+)
 
 // Companion chat (POST /v1/companion/chat). The backend keeps no state: we
 // send the conversation so far plus context about the day.

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import javax.inject.Inject
 
 data class ItineraryUiState(
@@ -61,6 +62,17 @@ class ItineraryViewModel @Inject constructor(
     fun add(dayIndex: Int, placeName: String, placeType: String, timeSlot: String) {
         if (placeName.isBlank()) return
         edit { addStop(it, dayIndex, placeName, placeType, timeSlot) }
+    }
+
+    // Setting the dates also schedules the day-before reminders (see
+    // KonnichiApp).
+    fun setStartDate(date: LocalDate) {
+        val itinerary = _state.value.itinerary ?: return
+        viewModelScope.launch {
+            _state.update { it.copy(syncing = true) }
+            repository.setStartDate(itinerary.localId, date)
+            _state.update { it.copy(syncing = false) }
+        }
     }
 
     fun syncNow() {
