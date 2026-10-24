@@ -99,8 +99,14 @@ func (app *application) listPlacesHandler(w http.ResponseWriter, r *http.Request
 			return
 		}
 		for _, p := range found {
+			name := p.Name
+			var nameJa string
+			if data.HasJapaneseRune(name) {
+				nameJa = name
+				name = data.EnglishPlaceName(name, p.Kind)
+			}
 			results = append(results, data.PlaceSummary{
-				Name: p.Name, Kind: p.Kind, Lat: p.Lat, Lng: p.Lng, Address: p.Address,
+				Name: name, NameJa: nameJa, Kind: p.Kind, Lat: p.Lat, Lng: p.Lng, Address: p.Address,
 				DistanceM: data.DistanceM(centre.Lat, centre.Lng, p.Lat, p.Lng),
 			})
 		}

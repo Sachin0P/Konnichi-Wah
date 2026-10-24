@@ -162,9 +162,16 @@ func (c *Client) Timetable(ctx context.Context, stationName string, lat, lng flo
 		if towardsVal == "" {
 			towardsVal, _ = splitName(st.TripTo.Name)
 		}
-		if hasJapaneseRune(towardsVal) && c.Stations != nil {
-			if en := c.Stations.EnglishWithin(towardsVal, lat, lng, 500); en != "" {
-				towardsVal = en
+		if hasJapaneseRune(towardsVal) {
+			cleanTowards := CleanStationName(towardsVal)
+			if c.Stations != nil {
+				if en := c.Stations.EnglishWithin(cleanTowards, lat, lng, 500); en != "" {
+					towardsVal = en
+				} else {
+					towardsVal = RomanizeStation(cleanTowards)
+				}
+			} else {
+				towardsVal = RomanizeStation(cleanTowards)
 			}
 		}
 

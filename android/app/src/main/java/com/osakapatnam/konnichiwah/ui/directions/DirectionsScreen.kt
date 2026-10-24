@@ -464,8 +464,9 @@ private fun modeEmoji(mode: String): String = when (mode) {
 // "Sendagaya 千駄ケ谷 (JB12)": the English name, the Japanese on the signs,
 // and the station number.
 private fun stopLabel(s: JourneyStopDto): String = buildString {
-    append(s.name)
-    if (!s.nameJa.isNullOrBlank()) append(" ").append(s.nameJa)
+    val (en, ja) = com.osakapatnam.konnichiwah.ui.JapaneseTransliterator.resolveStop(s.name, s.nameJa)
+    append(en)
+    if (ja.isNotBlank() && ja != en) append(" ").append(ja)
     if (!s.code.isNullOrBlank()) append(" (").append(s.code).append(")")
 }
 

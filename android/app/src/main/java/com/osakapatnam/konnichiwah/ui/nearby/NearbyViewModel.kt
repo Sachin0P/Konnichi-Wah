@@ -61,16 +61,11 @@ class NearbyViewModel @Inject constructor(
             _state.update { it.copy(kind = kind, loading = true, apiError = null, message = null) }
 
             val here = location.current()
-            if (here == null) {
-                _state.update { it.copy(loading = false, message = R.string.dir_no_fix) }
-                return@launch
-            }
-
             val city = itineraries.latest.first()?.days?.firstOrNull()?.city.orEmpty().ifBlank { "Tokyo" }
-            val point = if (here.latitude in 24.0..46.0 && here.longitude in 122.0..146.0) {
+            val point = if (here != null && here.latitude in 24.0..46.0 && here.longitude in 122.0..146.0) {
                 RouteEnd.Point(here.latitude, here.longitude)
             } else {
-                // If the phone is outside Japan (e.g. testing in India), search near the city centre
+                // If the phone is outside Japan or GPS has no fix, search near the city centre
                 when (city.lowercase()) {
                     "kyoto" -> RouteEnd.Point(34.985, 135.758)
                     "osaka" -> RouteEnd.Point(34.702, 135.496)

@@ -135,10 +135,17 @@ func (c *Client) Directions(ctx context.Context, from, to LatLng, fromName, toNa
 		}
 		en, ja := splitName(p.Name)
 		// A name only in Japanese: look for the English in the station
-		// snapshot.
+		// snapshot or romanize.
 		if ja == "" && hasJapaneseRune(en) {
-			if english := c.Stations.English(en, p.Lat, p.Lon); english != "" {
-				en, ja = english, en
+			cleanJa := CleanStationName(en)
+			if c.Stations != nil {
+				if english := c.Stations.English(cleanJa, p.Lat, p.Lon); english != "" {
+					en, ja = english, cleanJa
+				} else {
+					en, ja = RomanizeStation(cleanJa), cleanJa
+				}
+			} else {
+				en, ja = RomanizeStation(cleanJa), cleanJa
 			}
 		}
 		return Stop{Name: en, NameJa: ja, Code: p.StopCode, Lat: p.Lat, Lng: p.Lon}
@@ -191,8 +198,15 @@ func (c *Client) Directions(ctx context.Context, from, to LatLng, fromName, toNa
 				l.Operator = operatorName(leg.AgencyName, leg.Mode)
 				l.Towards = towards(leg.Headsign)
 				if hasJapaneseRune(l.Towards) {
-					if en := c.Stations.EnglishWithin(l.Towards, leg.To.Lat, leg.To.Lon, 60); en != "" {
-						l.Towards = en
+					cleanTowards := CleanStationName(l.Towards)
+					if c.Stations != nil {
+						if en := c.Stations.EnglishWithin(cleanTowards, leg.To.Lat, leg.To.Lon, 100); en != "" {
+							l.Towards = en
+						} else {
+							l.Towards = RomanizeStation(cleanTowards)
+						}
+					} else {
+						l.Towards = RomanizeStation(cleanTowards)
 					}
 				}
 				l.Stops = len(leg.IntermediateStops) + 1
@@ -275,7 +289,10 @@ func modeName(mode string) string {
 func splitName(name string) (en, ja string) {
 	i := strings.IndexByte(name, ' ')
 	if i > 0 && hasJapaneseRune(name[:i]) && !hasJapaneseRune(name[i+1:]) {
-		return strings.TrimSpace(name[i+1:]), name[:i]
+		return strings.TrimSpace(name[i+1:]), strings.TrimSpace(name[:i])
+	}
+	if i > 0 && !hasJapaneseRune(name[:i]) && hasJapaneseRune(name[i+1:]) {
+		return strings.TrimSpace(name[:i]), strings.TrimSpace(name[i+1:])
 	}
 	return name, ""
 }

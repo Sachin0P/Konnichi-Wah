@@ -1,7 +1,5 @@
 package transit
 
-import "strings"
-
 // StationNames gives English names to the stations that the timetable data
 // names only in Japanese (the Kansai operators and the Toei subway). It's
 // built from the OpenStreetMap station snapshot, osmdata/stations.json, where
@@ -46,16 +44,54 @@ func (s *StationNames) EnglishWithin(ja string, lat, lng, km float64) string {
 	if s == nil {
 		return ""
 	}
+	clean := CleanStationName(ja)
+	if clean == "" {
+		return ""
+	}
 	best, bestKm := "", km
-	for _, st := range s.byName[stationKey(ja)] {
+	for _, st := range s.byName[clean] {
+		if lat == 0 && lng == 0 {
+			return st.english
+		}
 		if d := distanceKm(LatLng{lat, lng}, LatLng{st.lat, st.lng}); d < bestKm {
 			best, bestKm = st.english, d
 		}
 	}
-	return best
+	if best != "" {
+		return best
+	}
+
+	// If no match within the tight distance, but entries exist for this exact cleaned name:
+	// If all entries for this name share the same English name (e.g. all "神田" are "Kanda"),
+	// return that English name.
+	if entries := s.byName[clean]; len(entries) > 0 {
+		firstEn := entries[0].english
+		allSame := true
+		for _, e := range entries[1:] {
+			if e.english != firstEn {
+				allSame = false
+				break
+			}
+		}
+		if allSame {
+			return firstEn
+		}
+		fallbackKm := 50.0
+		for _, st := range entries {
+			if d := distanceKm(LatLng{lat, lng}, LatLng{st.lat, st.lng}); d < fallbackKm {
+				best, fallbackKm = st.english, d
+			}
+		}
+		if best != "" {
+			return best
+		}
+		return firstEn
+	}
+
+	return ""
 }
 
-// stationKey matches names with or without a trailing 駅 ("京都駅" and "京都").
+// stationKey matches names with or without a trailing 駅, company prefixes, or parenthesized notes.
 func stationKey(name string) string {
-	return strings.TrimSuffix(strings.TrimSpace(name), "駅")
+	return CleanStationName(name)
 }

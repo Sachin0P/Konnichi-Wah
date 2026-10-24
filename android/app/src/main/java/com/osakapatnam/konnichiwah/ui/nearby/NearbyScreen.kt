@@ -68,14 +68,15 @@ fun NearbyScreen(
     // What to search for once the permission is granted.
     var pending by remember { mutableStateOf<String?>(null) }
     val askLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
-        if (granted.values.any { it }) viewModel.search(pending) else viewModel.locationDenied()
+        if (granted.values.any { it }) viewModel.search(pending)
     }
     val search: (String?) -> Unit = { kind ->
-        if (viewModel.hasLocationPermission) {
-            viewModel.search(kind)
-        } else {
+        viewModel.search(kind)
+        if (!viewModel.hasLocationPermission) {
             pending = kind
-            askLocation.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            runCatching {
+                askLocation.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+            }
         }
     }
 
@@ -171,10 +172,17 @@ private fun kindLabel(kind: String): Int = when (kind) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PlaceCard(place: PlaceSummaryDto, onCall: (String) -> Unit, onDirections: () -> Unit) {
+    val displayName = if (com.osakapatnam.konnichiwah.ui.JapaneseTransliterator.hasJapanese(place.name)) {
+        com.osakapatnam.konnichiwah.ui.JapaneseTransliterator.englishPlaceName(place.name, place.kind)
+    } else {
+        place.name
+    }
+    val displayJa = place.nameJa?.takeIf { it.isNotBlank() } ?: place.name.takeIf { com.osakapatnam.konnichiwah.ui.JapaneseTransliterator.hasJapanese(it) }
+
     KCard(modifier = Modifier.fillMaxWidth()) {
-        Text(place.name, style = MaterialTheme.typography.titleSmall)
-        if (!place.nameJa.isNullOrBlank()) {
-            Text(place.nameJa, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(displayName, style = MaterialTheme.typography.titleSmall)
+        if (!displayJa.isNullOrBlank() && displayJa != displayName) {
+            Text(displayJa, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         val distance = if (place.distanceM < 1000) stringResource(R.string.food_metres, place.distanceM) else stringResource(R.string.food_km, place.distanceM / 1000.0)

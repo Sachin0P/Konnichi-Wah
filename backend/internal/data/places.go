@@ -318,6 +318,9 @@ func Summarize(p *NearbyPlace, kind string) PlaceSummary {
 	}
 	if p.NameEn != "" && p.NameEn != p.Name {
 		s.Name, s.NameJa = p.NameEn, p.Name
+	} else if HasJapaneseRune(s.Name) {
+		s.NameJa = s.Name
+		s.Name = EnglishPlaceName(s.Name, kind)
 	}
 	return s
 }
