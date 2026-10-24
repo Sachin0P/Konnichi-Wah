@@ -17,6 +17,7 @@ import com.osakapatnam.konnichiwah.data.remote.PlaceSuggestionDto
 import com.osakapatnam.konnichiwah.data.remote.PlacesDto
 import com.osakapatnam.konnichiwah.data.remote.PlanDto
 import com.osakapatnam.konnichiwah.data.remote.SpiceLevel
+import com.osakapatnam.konnichiwah.data.remote.TimetableDto
 import com.osakapatnam.konnichiwah.data.remote.TripRequestDto
 import com.osakapatnam.konnichiwah.data.remote.UserProfileDto
 import com.osakapatnam.konnichiwah.data.remote.apiCall
@@ -65,6 +66,12 @@ class BackendRepository @Inject constructor(
 
     suspend fun suggestPlaces(query: String, city: String, lat: Double?, lng: Double?): ApiResult<List<PlaceSuggestionDto>> =
         apiCall(json) { api.suggestPlaces(query, city, lat, lng).suggestions }
+
+    // Fetches live departures from a station by name or coordinates.
+    suspend fun timetable(station: String?, lat: Double?, lng: Double?, city: String?, n: Int = 10): ApiResult<TimetableDto> =
+        apiCall(json) {
+            api.timetable(station = station, lat = lat, lng = lng, city = city, n = n).timetable
+        }
 
     // The AI translation of a menu's lines, one for each line sent, in order.
     // Any failure (no internet, the AI busy) is the caller's cue to translate

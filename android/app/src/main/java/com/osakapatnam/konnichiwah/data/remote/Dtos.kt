@@ -395,6 +395,33 @@ data class DirectionsDto(
 @Serializable
 data class DirectionsEnvelope(val directions: DirectionsDto)
 
+@Serializable
+data class DepartureDto(
+    val time: String,
+    @SerialName("minutes_until") val minutesUntil: Int = 0,
+    val line: String,
+    @SerialName("line_code") val lineCode: String? = null,
+    @SerialName("line_color") val lineColor: String? = null,
+    val towards: String = "",
+    val platform: String? = null,
+    val operator: String? = null,
+    val mode: String = "train",
+    @SerialName("real_time") val realTime: Boolean = false,
+)
+
+@Serializable
+data class TimetableDto(
+    val station: String,
+    @SerialName("station_en") val stationEn: String? = null,
+    @SerialName("station_ja") val stationJa: String? = null,
+    val lat: Double,
+    val lng: Double,
+    val departures: List<DepartureDto> = emptyList(),
+)
+
+@Serializable
+data class TimetableEnvelope(val timetable: TimetableDto)
+
 // Places nearby (GET /v1/places): help from our snapshot by kind, or anything
 // else by search.
 

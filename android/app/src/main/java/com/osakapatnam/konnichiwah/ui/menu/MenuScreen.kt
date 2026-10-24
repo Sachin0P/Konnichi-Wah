@@ -333,7 +333,7 @@ private fun Results(
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Summary(lines.isEmpty(), found)
+            Summary(lines.isEmpty(), found, translatedBy)
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 PrimaryButton(stringResource(R.string.menu_my_cards), onClick = onDietCards, modifier = Modifier.weight(1f))
@@ -390,7 +390,7 @@ private fun Results(
 // The verdict at the top: pink with the warning words if any were found,
 // otherwise a cream card that still says to check.
 @Composable
-private fun Summary(empty: Boolean, found: List<MenuConcern>) {
+private fun Summary(empty: Boolean, found: List<MenuConcern>, translatedBy: TranslatedBy?) {
     val (title, detail) = when {
         empty -> stringResource(R.string.menu_no_text) to stringResource(R.string.menu_no_text_hint)
         found.isNotEmpty() -> stringResource(R.string.menu_may_contain, found.map { stringResource(it.label) }.joinToString()) to
@@ -403,7 +403,7 @@ private fun Summary(empty: Boolean, found: List<MenuConcern>) {
         color = if (found.isNotEmpty()) Palette.Petal else Palette.Card,
         border = if (found.isNotEmpty()) BorderStroke(0.dp, Color.Transparent) else BorderStroke(1.dp, Palette.Line),
     ) {
-        StatusDot(stringResource(R.string.menu_offline))
+        StatusDot(stringResource(if (translatedBy == TranslatedBy.AI) R.string.menu_ai_translated else R.string.menu_offline))
         Text(title, fontFamily = DisplayFont, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 8.dp))
         Text(detail, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
     }

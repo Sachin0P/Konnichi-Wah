@@ -37,6 +37,8 @@ func (app *application) translateMenuHandler(w http.ResponseWriter, r *http.Requ
 	ctx, cancel := context.WithTimeout(r.Context(), app.config.replyTimeout())
 	defer cancel()
 
+	app.logger.Info("menu request received", "count", len(input.Lines), "language", input.Language, "lines", input.Lines)
+
 	lines, err := app.menu.Translate(ctx, input)
 	if err != nil {
 		app.logError(r, err)

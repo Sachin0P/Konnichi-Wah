@@ -49,6 +49,16 @@ interface KonnichiApi {
         @Query("depart") depart: String?,
     ): DirectionsEnvelope
 
+    // Live departures from a station by name or coordinates.
+    @GET("v1/transit/timetable")
+    suspend fun timetable(
+        @Query("station") station: String?,
+        @Query("lat") lat: Double?,
+        @Query("lng") lng: Double?,
+        @Query("city") city: String?,
+        @Query("n") n: Int = 10,
+    ): TimetableEnvelope
+
     // kind (hospital, pharmacy, ...) or q, near a point or a named place.
     @GET("v1/places")
     suspend fun places(

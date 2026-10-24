@@ -17,6 +17,7 @@ import com.osakapatnam.konnichiwah.data.remote.ApiError
 import com.osakapatnam.konnichiwah.data.remote.ApiResult
 import com.osakapatnam.konnichiwah.data.remote.DirectionsDto
 import com.osakapatnam.konnichiwah.data.remote.PlaceSuggestionDto
+import com.osakapatnam.konnichiwah.data.remote.TimetableDto
 import com.osakapatnam.konnichiwah.ui.DirectionsRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -46,6 +47,10 @@ data class DirectionsUiState(
     val toSuggestions: List<PlaceSuggestionDto> = emptyList(),
     val stationGuides: List<StationGuideDto> = emptyList(),
     val viewingGuide: StationGuideDto? = null,
+    val timetable: TimetableDto? = null,
+    val loadingTimetable: Boolean = false,
+    val timetableError: String? = null,
+    val showTimetable: Boolean = false,
 ) {
     val canSearch: Boolean get() = toText.isNotBlank() && (fromHere || fromText.isNotBlank()) && !loading
 }
@@ -208,6 +213,52 @@ class DirectionsViewModel @Inject constructor(
     // first city, else Tokyo.
     private suspend fun city(): String =
         route.city.ifBlank { itineraries.latest.first()?.days?.firstOrNull()?.city.orEmpty() }.ifBlank { "Tokyo" }
+
+    fun toggleTimetable() {
+        val show = !_state.value.showTimetable
+        _state.update { it.copy(showTimetable = show) }
+        if (show && _state.value.timetable == null) {
+            refreshTimetable()
+        }
+    }
+
+    fun refreshTimetable(stationOverride: String? = null, latOverride: Double? = null, lngOverride: Double? = null) {
+        viewModelScope.launch {
+            _state.update { it.copy(loadingTimetable = true, timetableError = null, showTimetable = true) }
+            val current = _state.value
+            val currentCity = city()
+
+            val station = stationOverride
+                ?: if (!current.fromHere && current.fromText.isNotBlank()) current.fromText
+                else if (current.toText.isNotBlank()) current.toText
+                else null
+
+            val point = when {
+                latOverride != null && lngOverride != null -> RouteEnd.Point(latOverride, lngOverride)
+                current.fromHere && stationOverride == null -> location.current()?.let { RouteEnd.Point(it.latitude, it.longitude) }
+                fromPoint != null && stationOverride == null -> fromPoint
+                else -> null
+            }
+
+            val result = backend.timetable(
+                station = station.takeIf { point == null || stationOverride != null },
+                lat = point?.lat,
+                lng = point?.lng,
+                city = currentCity,
+                n = 10,
+            )
+
+            when (result) {
+                is ApiResult.Success -> _state.update { it.copy(timetable = result.value, loadingTimetable = false) }
+                is ApiResult.Failure -> _state.update {
+                    it.copy(
+                        loadingTimetable = false,
+                        timetableError = "Could not load live timetable right now."
+                    )
+                }
+            }
+        }
+    }
 }
 
 // The kind of suggestion that comes from the traveller's own trip.

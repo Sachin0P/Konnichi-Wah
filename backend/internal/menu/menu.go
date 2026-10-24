@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/groq"
@@ -37,23 +38,56 @@ type Translator struct {
 	LLM LLM
 }
 
+// maxChunkSize is the maximum number of lines sent to the LLM in one prompt.
+// Keeping it small (15 lines) prevents token exhaustion, response truncation,
+// and line-skipping by local and cloud models.
+const maxChunkSize = 15
+
 // Translate returns one translated line for each line of the menu, in order.
 func (t Translator) Translate(ctx context.Context, req data.MenuRequest) ([]data.MenuLine, error) {
+	if len(req.Lines) == 0 {
+		return []data.MenuLine{}, nil
+	}
+
+	if len(req.Lines) <= maxChunkSize {
+		return t.translateChunk(ctx, req.Lines, req.Language)
+	}
+
+	allLines := make([]data.MenuLine, 0, len(req.Lines))
+	for i := 0; i < len(req.Lines); i += maxChunkSize {
+		end := i + maxChunkSize
+		if end > len(req.Lines) {
+			end = len(req.Lines)
+		}
+		chunk := req.Lines[i:end]
+
+		chunkLines, err := t.translateChunk(ctx, chunk, req.Language)
+		if err != nil {
+			return nil, err
+		}
+		allLines = append(allLines, chunkLines...)
+	}
+
+	return allLines, nil
+}
+
+func (t Translator) translateChunk(ctx context.Context, lines []string, language string) ([]data.MenuLine, error) {
 	var input strings.Builder
-	for i, line := range req.Lines {
+	for i, line := range lines {
 		fmt.Fprintf(&input, "%d. %s\n", i+1, line)
 	}
 
 	instructions := baseInstructions
-	if req.Language == "hi" {
+	if language == "hi" {
 		instructions += hindiInstructions
 	}
 
-	// About 60 tokens a line is plenty for a translation and a short note.
+	// 500 + 80 tokens per line is generous for translation and a short note.
+	maxTokens := 500 + 80*len(lines)
 	reply, err := t.LLM.JSON(ctx, []groq.Message{
 		{Role: "system", Content: instructions},
 		{Role: "user", Content: input.String()},
-	}, 400+60*len(req.Lines))
+	}, maxTokens)
 	if err != nil {
 		return nil, err
 	}
@@ -69,14 +103,37 @@ func (t Translator) Translate(ctx context.Context, req data.MenuRequest) ([]data
 		out.Lines[i].Japanese = strings.TrimSpace(out.Lines[i].Japanese)
 		out.Lines[i].Text = strings.TrimSpace(out.Lines[i].Text)
 		out.Lines[i].Note = strings.TrimSpace(out.Lines[i].Note)
+
+		// If the model left text empty for a price or numeric line, keep the original line
+		if out.Lines[i].Text == "" && i < len(lines) && isPriceOrSymbol(lines[i]) {
+			out.Lines[i].Text = lines[i]
+		}
 	}
 
 	v := validator.New()
-	if data.ValidateMenuLines(v, out.Lines, len(req.Lines)); !v.Valid() {
+	if data.ValidateMenuLines(v, out.Lines, len(lines)); !v.Valid() {
 		return nil, fmt.Errorf("%w: %v", ErrBadOutput, v.Errors)
 	}
 
 	return out.Lines, nil
+}
+
+func isPriceOrSymbol(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return true
+	}
+	hasDigit := false
+	for _, r := range s {
+		if unicode.IsDigit(r) {
+			hasDigit = true
+		} else if r == '¥' || r == '￥' || r == '円' || r == '$' || r == '€' || r == ',' || r == '.' || r == '-' || r == ' ' {
+			continue
+		} else {
+			return false
+		}
+	}
+	return hasDigit
 }
 
 const baseInstructions = `You translate Japanese restaurant menus for Indian travellers in Japan.
@@ -85,7 +142,7 @@ You get the numbered lines that text recognition read from one photo of a menu, 
 
 For every input line, give:
 - japanese: your best reading of the line in Japanese, with recognition mistakes fixed. If you can't tell, copy the line.
-- text: the line in natural English. Use the usual English name for well-known dishes (Oyakodon, Tempura, Edamame, Tonkatsu) rather than a word-by-word translation. Keep prices as they are (¥850). If the line is just a price, a number or unreadable, give it as it is.
+- text: the line in natural English. Use the usual English name for well-known dishes (Oyakodon, Tempura, Edamame, Tonkatsu) rather than a word-by-word translation. Keep prices as they are (¥850). If the line is just a price, a number or unreadable, repeat it in text. 'text' MUST NOT be empty.
 - note: for a dish, what it is in under 12 words, e.g. "chicken and egg simmered with onion, on rice". For anything else (headings, prices, notices), an empty string.
 
 Don't add warnings or advice about ingredients or diets; the app does that.

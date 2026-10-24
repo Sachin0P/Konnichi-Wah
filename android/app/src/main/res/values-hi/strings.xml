@@ -234,6 +234,7 @@
 
     <string name="menu_title">मेन्यू रीडर</string>
     <string name="menu_offline">बिना इंटरनेट चलता है</string>
+    <string name="menu_ai_translated">AI द्वारा अनुवादित</string>
     <string name="menu_reading">मेन्यू पढ़ा जा रहा है…</string>
     <string name="menu_model_missing">इंटरनेट होने पर मेन्यू का अनुवाद AI करता है। बिना इंटरनेट के अनुवाद के लिए, एक बार ऑफ़लाइन अनुवादक डाउनलोड करें (लगभग 30 MB)। चेतावनियाँ हमेशा काम करती हैं।</string>
     <string name="menu_model_downloading">अनुवाद डाउनलोड हो रहा है…</string>
@@ -353,6 +354,14 @@
     <string name="dir_staff_card_title">स्टेशन स्टाफ़ को यह दिखाएँ</string>
     <string name="dir_staff_card_hint">यह स्क्रीन किसी भी स्टेशन कर्मचारी या टिकट काउंटर पर दिखाएँ।</string>
     <string name="dir_try_guide">विज़ुअल गाइड देखें (शिबुया → असाकुसा)</string>
+    <string name="dir_timetable_title">लाइव समय सारिणी</string>
+    <string name="dir_timetable_btn">🚆 लाइव समय सारिणी</string>
+    <string name="dir_timetable_refresh">रिफ्रेश करें</string>
+    <string name="dir_timetable_loading">लाइव ट्रेन समय लोड हो रहा है…</string>
+    <string name="dir_timetable_empty">फिलहाल कोई आगामी ट्रेन नहीं मिली।</string>
+    <string name="dir_timetable_departures">%s से ट्रेनें</string>
+    <string name="dir_timetable_in_mins">%d मिनट में</string>
+    <string name="dir_timetable_due">अभी निकलने वाली है</string>
 
     <string name="near_title">आसपास मदद</string>
     <string name="near_subtitle">अस्पताल, पुलिस बूथ, ATM और भी बहुत कुछ, OpenStreetMap से।</string>

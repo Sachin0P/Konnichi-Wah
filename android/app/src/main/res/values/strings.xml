@@ -245,6 +245,7 @@
     <!-- Menu reader -->
     <string name="menu_title">Menu reader</string>
     <string name="menu_offline">Works offline</string>
+    <string name="menu_ai_translated">Translated by AI</string>
     <string name="menu_reading">Reading the menu…</string>
     <string name="menu_model_missing">With internet, menus are translated by AI. To translate without internet too, download the offline translator once (about 30 MB). Warnings always work.</string>
     <string name="menu_model_downloading">Downloading the translation…</string>
@@ -366,6 +367,14 @@
     <string name="dir_staff_card_title">Show to Station Staff</string>
     <string name="dir_staff_card_hint">Show this screen to any station staff member or at the ticket counter.</string>
     <string name="dir_try_guide">Try visual guide (Shibuya → Asakusa)</string>
+    <string name="dir_timetable_title">Live Timetable</string>
+    <string name="dir_timetable_btn">🚆 Live Timetable</string>
+    <string name="dir_timetable_refresh">Refresh</string>
+    <string name="dir_timetable_loading">Fetching live train times…</string>
+    <string name="dir_timetable_empty">No upcoming trains found right now.</string>
+    <string name="dir_timetable_departures">%s departures</string>
+    <string name="dir_timetable_in_mins">in %d min</string>
+    <string name="dir_timetable_due">Due now</string>
 
     <!-- Help nearby -->
     <string name="near_title">Help nearby</string>

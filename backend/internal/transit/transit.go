@@ -459,7 +459,11 @@ func (c *Client) Route(ctx context.Context, from, to LatLng, departAt time.Time)
 }
 
 func (c *Client) get(ctx context.Context, path string, params url.Values, dst any) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path+"?"+params.Encode(), nil)
+	return c.getURL(ctx, c.baseURL+path+"?"+params.Encode(), dst)
+}
+
+func (c *Client) getURL(ctx context.Context, rawURL string, dst any) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
 		return err
 	}
@@ -477,7 +481,7 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, dst an
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("transit: %s returned status %d", path, res.StatusCode)
+		return fmt.Errorf("transit: %s returned status %d", rawURL, res.StatusCode)
 	}
 
 	return json.Unmarshal(body, dst)

@@ -172,6 +172,25 @@ func (app *application) readFloat(qs url.Values, key string, defaultValue float6
 	return f
 }
 
+// The readInt() helper reads an integer from the query string. If the key
+// isn't there it returns the default; if the value isn't an integer, it records
+// an error message in the provided Validator instance.
+func (app *application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultValue
+	}
+
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddError(key, "must be an integer")
+		return defaultValue
+	}
+
+	return i
+}
+
 // The readString() helper returns a string value from the query string, or the
 // provided default value if no matching key could be found.
 func (app *application) readString(qs url.Values, key string, defaultValue string) string {

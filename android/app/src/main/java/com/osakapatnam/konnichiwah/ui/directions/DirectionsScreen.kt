@@ -12,11 +12,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -54,10 +57,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.remote.ApiError
+import com.osakapatnam.konnichiwah.data.remote.DepartureDto
 import com.osakapatnam.konnichiwah.data.remote.JourneyDto
 import com.osakapatnam.konnichiwah.data.remote.JourneyLegDto
 import com.osakapatnam.konnichiwah.data.remote.JourneyStopDto
 import com.osakapatnam.konnichiwah.data.remote.PlaceSuggestionDto
+import com.osakapatnam.konnichiwah.data.remote.TimetableDto
 import com.osakapatnam.konnichiwah.ui.components.BackLink
 import com.osakapatnam.konnichiwah.ui.components.KCard
 import com.osakapatnam.konnichiwah.ui.components.MapLine
@@ -162,6 +167,30 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
                         .fillMaxWidth()
                         .padding(top = 12.dp),
                 )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    PillButton(
+                        text = stringResource(R.string.dir_timetable_btn),
+                        onClick = viewModel::toggleTimetable,
+                        tone = if (state.showTimetable) Tone.MAROON else Tone.PETAL,
+                    )
+                }
+            }
+        }
+
+        if (state.showTimetable) {
+            item {
+                TimetableCard(
+                    timetable = state.timetable,
+                    loading = state.loadingTimetable,
+                    error = state.timetableError,
+                    onRefresh = viewModel::refreshTimetable,
+                )
             }
         }
 
@@ -223,6 +252,21 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
                             onClick = { viewModel.viewGuide(guide) },
                             tone = Tone.MAROON,
                         )
+                    }
+                    journey.legs.firstOrNull { it.mode != "walk" }?.let { transitLeg ->
+                        item {
+                            PillButton(
+                                stringResource(R.string.dir_timetable_departures, transitLeg.from.name),
+                                onClick = {
+                                    viewModel.refreshTimetable(
+                                        stationOverride = transitLeg.from.name,
+                                        latOverride = transitLeg.from.lat,
+                                        lngOverride = transitLeg.from.lng,
+                                    )
+                                },
+                                tone = Tone.PETAL,
+                            )
+                        }
                     }
                 }
             }
@@ -675,4 +719,186 @@ private fun LineBadge(leg: JourneyLegDto) {
 private fun textOn(background: Color): Color {
     val luminance = 0.299 * background.red + 0.587 * background.green + 0.114 * background.blue
     return if (luminance > 0.6) Color(0xFF1B1B1B) else Color.White
+}
+
+private fun parseHexColor(hex: String?): Color {
+    if (hex.isNullOrBlank()) return Palette.Maroon
+    val clean = hex.removePrefix("#")
+    return try {
+        Color(android.graphics.Color.parseColor("#$clean"))
+    } catch (_: Exception) {
+        Palette.Maroon
+    }
+}
+
+@Composable
+fun TimetableCard(
+    timetable: TimetableDto?,
+    loading: Boolean,
+    error: String?,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    KCard(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = timetable?.station?.let { stringResource(R.string.dir_timetable_departures, it) }
+                        ?: stringResource(R.string.dir_timetable_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = "Live station departures · MOTIS / Transitous",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = onRefresh, enabled = !loading) {
+                Text(stringResource(R.string.dir_timetable_refresh))
+            }
+        }
+
+        if (loading) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    stringResource(R.string.dir_timetable_loading),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        } else if (error != null) {
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(vertical = 8.dp),
+            )
+        } else if (timetable != null) {
+            if (timetable.departures.isEmpty()) {
+                Text(
+                    stringResource(R.string.dir_timetable_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 12.dp),
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    timetable.departures.forEach { dep ->
+                        DepartureRow(dep)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DepartureRow(dep: DepartureDto) {
+    val lineColor = parseHexColor(dep.lineColor)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = dep.time,
+                fontWeight = FontWeight.Bold,
+                fontSize = 17.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            val minsText = if (dep.minutesUntil <= 0) {
+                stringResource(R.string.dir_timetable_due)
+            } else {
+                stringResource(R.string.dir_timetable_in_mins, dep.minutesUntil)
+            }
+            Text(
+                text = minsText,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (dep.minutesUntil <= 3) Palette.Sun else Palette.Green,
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(36.dp)
+                .background(lineColor, RoundedCornerShape(2.dp))
+        )
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                if (!dep.lineCode.isNullOrBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .background(lineColor, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = dep.lineCode,
+                            color = textOn(lineColor),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                Text(
+                    text = dep.line,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (dep.towards.isNotBlank()) {
+                Text(
+                    text = stringResource(R.string.dir_towards, dep.towards),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+
+        if (!dep.platform.isNullOrBlank()) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Palette.Petal)
+                    .padding(horizontal = 6.dp, vertical = 3.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.dir_platform, dep.platform),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Palette.Maroon,
+                )
+            }
+        }
+    }
 }

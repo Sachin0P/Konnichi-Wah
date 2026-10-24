@@ -55,6 +55,19 @@ func TestTranslateAsksForHindi(t *testing.T) {
 	}
 }
 
+func TestTranslatePriceFallback(t *testing.T) {
+	// If the model left text empty for a price line, it should fall back to the price string
+	llm := &fakeLLM{reply: `{"lines": [{"japanese": "450 円", "text": "", "note": ""}]}`}
+
+	lines, err := (Translator{LLM: llm}).Translate(context.Background(), data.MenuRequest{Lines: []string{"450 円"}})
+	if err != nil {
+		t.Fatalf("expected success with price fallback, got: %v", err)
+	}
+	if len(lines) != 1 || lines[0].Text != "450 円" {
+		t.Errorf("expected text '450 円', got %+v", lines)
+	}
+}
+
 // A reply the app can't line up with its photo must be refused, so the app
 // falls back to its own translation rather than labelling the wrong lines.
 func TestTranslateRejectsBadOutput(t *testing.T) {
