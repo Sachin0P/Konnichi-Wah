@@ -13,6 +13,15 @@ Indian travellers don't skip Japan because of the price. They skip it because of
 
 ---
 
+## App Screenshots & Features in Action
+
+| 📅 Day Plan & Hotel Stays | 🚅 Smart Transit Directions | 🧭 Visual Boarding Guide | 📷 Menu OCR & Diet Safety |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/plan_hotel_recommendation.jpg" width="260" alt="Plan Panel with Live AI Hotel Recommendation" /> | <img src="docs/screenshots/transit_directions.jpg" width="260" alt="Transit Directions with IC Card Instructions" /> | <img src="docs/screenshots/visual_boarding_guide.jpg" width="260" alt="First-Timer Visual Boarding Guide" /> | <img src="docs/screenshots/menu_ocr_diet_warnings.jpg" width="260" alt="Camera Menu OCR with Dietary Safety Alerts" /> |
+| **Itinerary & Stay Search**<br/><sub>Day-by-day plans, etiquette tips, and dynamic AI hotel recommendations aligned with ground budget.</sub> | **Transit & Transfer Guide**<br/><sub>Nozomi Shinkansen routes, step-by-step navigation, platform info, and Suica/IC card directions.</sub> | **Visual Boarding Guide**<br/><sub>Sign-matching, floor navigation lines, stops countdown, and 1-tap <i>"I'm lost. Help me"</i> staff card.</sub> | **Live Menu OCR Scanner**<br/><sub>Camera translation flagging hidden non-veg ingredients (beef, meat, pork, mirin, fish dashi) in real-time.</sub> |
+
+---
+
 ## What It Does
 
 ### 1. Questionnaire & Taste Profiling
