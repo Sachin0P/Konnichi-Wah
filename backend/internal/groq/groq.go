@@ -76,11 +76,20 @@ type Tool struct {
 // Client is a minimal Groq client built on net/http, like our Gemini client.
 // It takes a list of models, best first, and moves on to the next when one
 // reports that its daily limit is used up.
+//
+// It works with any server that speaks the OpenAI chat completions API, so
+// it also talks to a local Ollama server (-llm=local), where the API key is
+// ignored.
 type Client struct {
 	baseURL string
 	apiKey  string
 	models  []string
 	http    *http.Client
+
+	// Reasoning, if set, is sent as reasoning_effort to every model ("none"
+	// turns a local model's thinking off, which makes it several times
+	// faster). If empty, only the gpt-oss models get "low".
+	Reasoning string
 
 	mu        sync.Mutex
 	exhausted map[string]time.Time
@@ -128,6 +137,56 @@ func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool, all
 		}
 	}
 
+	return c.send(ctx, reqBody)
+}
+
+// JSON asks for a reply that is a single JSON object (Groq's JSON mode) and
+// returns it as a string. JSON mode only promises that the reply parses, so
+// callers must still check it has the fields they expect. maxTokens caps the
+// reply, which also keeps us inside the free tier's tokens-per-minute limit.
+func (c *Client) JSON(ctx context.Context, messages []Message, maxTokens int) (string, error) {
+	reqBody := map[string]any{
+		"messages":              messages,
+		"max_completion_tokens": maxTokens,
+		"temperature":           0.2,
+		"response_format":       map[string]string{"type": "json_object"},
+	}
+
+	msg, err := c.send(ctx, reqBody)
+	if err != nil {
+		return "", err
+	}
+	return msg.Content, nil
+}
+
+// GenerateJSON asks for a reply that follows a JSON schema, for the trip
+// planner (it implements planner.Generator, like the Gemini client). The
+// planner validates the result itself, because not every server enforces
+// the schema fully.
+func (c *Client) GenerateJSON(ctx context.Context, instructions, input string, schema any) ([]byte, error) {
+	reqBody := map[string]any{
+		"messages": []Message{
+			{Role: "system", Content: instructions},
+			{Role: "user", Content: input},
+		},
+		// A plan of up to 25 suggestions, each with a sentence of reasons.
+		"max_completion_tokens": 6000,
+		"temperature":           0.4,
+		"response_format": map[string]any{
+			"type":        "json_schema",
+			"json_schema": map[string]any{"name": "plan", "schema": schema},
+		},
+	}
+
+	msg, err := c.send(ctx, reqBody)
+	if err != nil {
+		return nil, err
+	}
+	return []byte(msg.Content), nil
+}
+
+// send tries each model that still has quota, best first.
+func (c *Client) send(ctx context.Context, reqBody map[string]any) (*Message, error) {
 	models := c.available()
 	if len(models) == 0 {
 		return nil, ErrNoModels
@@ -158,7 +217,10 @@ func (c *Client) chatWith(ctx context.Context, model string, reqBody map[string]
 
 	// The gpt-oss models think before answering. "low" keeps replies fast,
 	// which matters more for a chat on a phone than deep reasoning.
-	if strings.HasPrefix(model, "openai/gpt-oss") {
+	switch {
+	case c.Reasoning != "":
+		body["reasoning_effort"] = c.Reasoning
+	case strings.HasPrefix(model, "openai/gpt-oss"):
 		body["reasoning_effort"] = "low"
 	}
 

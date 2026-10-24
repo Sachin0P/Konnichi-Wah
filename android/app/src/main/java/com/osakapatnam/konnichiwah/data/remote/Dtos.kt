@@ -298,3 +298,28 @@ data class FoodDto(
 
 @Serializable
 data class FoodEnvelope(val food: FoodDto)
+
+// Menu translation (POST /v1/menu/translate). Only the text the phone read is
+// sent, never the photo.
+
+@Serializable
+data class MenuTranslateRequestDto(
+    val lines: List<String>,
+    val language: String = "en",
+)
+
+// japanese is the AI's best reading of the line (it fixes recognition
+// mistakes), text the line in the traveller's language, and note what a dish
+// is, or "".
+@Serializable
+data class MenuLineDto(
+    val japanese: String,
+    val text: String,
+    val note: String = "",
+)
+
+@Serializable
+data class MenuDto(val lines: List<MenuLineDto>)
+
+@Serializable
+data class MenuEnvelope(val menu: MenuDto)

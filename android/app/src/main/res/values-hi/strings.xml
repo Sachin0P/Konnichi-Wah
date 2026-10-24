@@ -194,7 +194,7 @@
 
     <string name="menu_title">मेन्यू रीडर</string>
     <string name="menu_reading">मेन्यू पढ़ा जा रहा है…</string>
-    <string name="menu_model_missing">अंग्रेज़ी अनुवाद के लिए एक बार डाउनलोड चाहिए (लगभग 30 MB)। चेतावनियाँ इसके बिना भी काम करती हैं।</string>
+    <string name="menu_model_missing">इंटरनेट होने पर मेन्यू का अनुवाद AI करता है। बिना इंटरनेट के अनुवाद के लिए, एक बार ऑफ़लाइन अनुवादक डाउनलोड करें (लगभग 30 MB)। चेतावनियाँ हमेशा काम करती हैं।</string>
     <string name="menu_model_downloading">अनुवाद डाउनलोड हो रहा है…</string>
     <string name="menu_model_failed">डाउनलोड पूरा नहीं हुआ। कनेक्शन देखें और फिर कोशिश करें।</string>
     <string name="menu_retry">फिर से</string>
@@ -209,6 +209,7 @@
     <string name="menu_choose_photo">फ़ोटो चुनें</string>
     <string name="menu_scan_again">फिर स्कैन करें</string>
     <string name="menu_my_cards">मेरे डाइट कार्ड</string>
+    <string name="menu_ai_note">मेन्यू की लिखावट से AI ने अनुवाद किया है (फ़ोटो आपके फ़ोन पर ही रहती है)। ज़रूरी बातें स्टाफ़ से पक्की कर लें। चेतावनियाँ ख़ुद जापानी शब्दों से आती हैं।</string>
     <string name="menu_translation_note">अंग्रेज़ी अनुवाद मशीन से है, सिर्फ़ मोटा अंदाज़ा। चेतावनियाँ ख़ुद जापानी शब्दों से आती हैं।</string>
     <string name="menu_no_text">कोई लिखावट नहीं मिली</string>
     <string name="menu_no_text_hint">फ़ोन पास लाएँ, मेन्यू सीधा रखें, और ध्यान रखें कि रोशनी अच्छी हो।</string>

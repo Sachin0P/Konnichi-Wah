@@ -54,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -109,7 +110,8 @@ fun MenuScreen(
                     photo = state.photo,
                     lines = lines,
                     found = state.found,
-                    translating = state.model == TranslationModel.READY,
+                    translating = state.translating,
+                    translatedBy = state.translatedBy,
                     onScanAgain = viewModel::scanAgain,
                     onDietCards = onDietCards,
                 )
@@ -305,6 +307,7 @@ private fun Results(
     lines: List<MenuLine>,
     found: List<MenuConcern>,
     translating: Boolean,
+    translatedBy: TranslatedBy?,
     onScanAgain: () -> Unit,
     onDietCards: () -> Unit,
 ) {
@@ -331,7 +334,9 @@ private fun Results(
             }
 
             if (lines.isNotEmpty()) {
-                val note = stringResource(R.string.menu_translation_note)
+                // Say who translated it: the AI is much better, but the
+                // traveller should know it's still a machine.
+                val note = stringResource(if (translatedBy == TranslatedBy.AI) R.string.menu_ai_note else R.string.menu_translation_note)
                 Text(
                     if (onPhoto) stringResource(R.string.menu_zoom_hint) + " " + note else note,
                     style = MaterialTheme.typography.bodySmall,
@@ -407,6 +412,10 @@ private fun LineCard(line: MenuLine, translating: Boolean) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            // What the dish is, from the AI translator.
+            line.note?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, fontStyle = FontStyle.Italic, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             for (flag in line.flags) {
                 Text(

@@ -12,6 +12,7 @@ This is the contract between the Android app and the Go backend in `backend/`. I
 - [PATCH /v1/itineraries/:id](#patch-v1itinerariesid)
 - [POST /v1/companion/chat](#post-v1companionchat)
 - [GET /v1/food](#get-v1food)
+- [POST /v1/menu/translate](#post-v1menutranslate)
 - [Permitted values](#permitted-values)
 - [Running the backend for app development](#running-the-backend-for-app-development)
 - [Not built yet](#not-built-yet)
@@ -380,6 +381,45 @@ The brief has the profile coming from the auth token. There's no auth yet, so th
 - `opening_hours` comes from OpenStreetMap and may be out of date.
 - **You must show `attribution` wherever these results appear.** OpenStreetMap's licence requires it.
 - A 422 means a bad parameter, or that `near` couldn't be found. A 503 means place search is temporarily down.
+
+## POST /v1/menu/translate
+
+Translates the text the app read from a menu photo. The app reads the menu on the phone (ML Kit text recognition) and sends only the lines of text, never the photo. The backend asks the LLM (Groq) to translate the whole menu in one go, so it has context: 親子丼 becomes "Oyakodon" rather than "parent and child", and it can tell when text recognition misread a word (響油 for 醤油).
+
+The model only translates and explains. The app's diet warnings come from its own word list, matched against both the recognised Japanese and the model's corrected reading, so they can be added this way but never removed.
+
+### Request
+
+```json
+{
+  "lines": ["お品書き", "響油ラーメン ¥850", "親子井 ¥950"],
+  "language": "en"
+}
+```
+
+- `lines`: 1–60 lines, in reading order, each up to 200 bytes.
+- `language`: optional, `en` (the default) or `hi`. In Hindi, `text` and `note` are in Hindi, with dish names in English letters.
+
+### Response: 200 OK
+
+```json
+{
+  "menu": {
+    "lines": [
+      { "japanese": "お品書き", "text": "Menu", "note": "" },
+      { "japanese": "醤油ラーメン ¥850", "text": "Shoyu ramen ¥850", "note": "ramen in a soy sauce broth" },
+      { "japanese": "親子丼 ¥950", "text": "Oyakodon ¥950", "note": "chicken and egg simmered with onion, on rice" }
+    ]
+  }
+}
+```
+
+There is exactly one entry per line sent, in the same order. `japanese` is the model's best reading of the line, `text` the translation, and `note` what a dish is (empty for anything else).
+
+### Errors
+
+- `422` for invalid input.
+- `503` if no Groq key is configured, the model is busy, or its reply isn't a valid translation (wrong number of lines, for example). The app then translates on the phone with ML Kit instead.
 
 ## Permitted values
 

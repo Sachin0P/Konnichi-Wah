@@ -15,6 +15,7 @@ import (
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/gemini"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/groq"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/menu"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/planner"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
 	"github.com/Sachin0P/Konnichi-Wah/backend/rulebook"
@@ -65,6 +66,26 @@ type config struct {
 		models  []string
 		timeout time.Duration
 	}
+	// llm picks where the AI runs. "cloud" uses Gemini and Groq with the keys
+	// above. "local" uses an Ollama server on this machine for the planner,
+	// the companion and the menu translator: no keys or quotas, and nothing
+	// leaves the machine, but answers are slower.
+	llm struct {
+		provider string
+		url      string
+		model    string
+		timeout  time.Duration
+	}
+}
+
+// replyTimeout is how long a handler waits for an LLM's answer: a few seconds
+// from the cloud, but a laptop can take a minute or more to write a plan.
+// The server's WriteTimeout is set from it (see serve()).
+func (cfg config) replyTimeout() time.Duration {
+	if cfg.llm.provider == "local" {
+		return cfg.llm.timeout
+	}
+	return 25 * time.Second
 }
 
 // Define an application struct to hold the dependencies for our HTTP handlers,
@@ -72,8 +93,8 @@ type config struct {
 //
 // The planner field is an interface, so we can switch from the built-in
 // catalogue to a real LLM planner without touching the handlers. The
-// companion is nil when there's no LLM configured. The transit client also
-// geocodes place names for /v1/food.
+// companion and the menu translator are nil when there's no LLM configured.
+// The transit client also geocodes place names for /v1/food.
 type application struct {
 	config    config
 	logger    *slog.Logger
@@ -81,6 +102,7 @@ type application struct {
 	models    data.Models
 	planner   planner.Planner
 	companion *companion.Companion
+	menu      *menu.Translator
 }
 
 func main() {
@@ -128,6 +150,11 @@ func main() {
 	flag.DurationVar(&cfg.groq.timeout, "groq-timeout", 15*time.Second, "Groq request timeout")
 	flag.DurationVar(&cfg.gemini.timeout, "gemini-timeout", 20*time.Second, "Gemini request timeout")
 
+	flag.StringVar(&cfg.llm.provider, "llm", "cloud", "Where the AI runs (cloud|local)")
+	flag.StringVar(&cfg.llm.url, "local-llm-url", "http://localhost:11434/v1/chat/completions", "Local LLM chat completions URL (Ollama)")
+	flag.StringVar(&cfg.llm.model, "local-llm-model", "qwen3.5:9b", "Local LLM model")
+	flag.DurationVar(&cfg.llm.timeout, "local-llm-timeout", 2*time.Minute, "Local LLM request timeout")
+
 	displayVersion := flag.Bool("version", false, "Display version and exit")
 
 	flag.Parse()
@@ -135,6 +162,11 @@ func main() {
 	if *displayVersion {
 		fmt.Printf("Version:\t%s\n", version)
 		os.Exit(0)
+	}
+
+	if cfg.llm.provider != "cloud" && cfg.llm.provider != "local" {
+		fmt.Fprintf(os.Stderr, "-llm must be cloud or local, not %q\n", cfg.llm.provider)
+		os.Exit(2)
 	}
 
 	// Initialize a new structured logger which writes log entries to the
@@ -174,35 +206,50 @@ func main() {
 		os.Exit(1)
 	}
 
-	// The planner uses Gemini (for its JSON schema output) with the
-	// catalogue as fallback, or the catalogue alone without a key.
+	// Pick the LLMs. Whichever we use, the planner falls back to the
+	// catalogue, the companion is off without one (the chat endpoint returns
+	// 503), and without one the app translates menus on the phone.
 	var p planner.Planner = planner.Catalogue{}
-	var geminiClient *gemini.Client
-
-	if cfg.gemini.apiKey != "" {
-		geminiClient = gemini.New(gemini.DefaultBaseURL, cfg.gemini.apiKey, cfg.gemini.models, cfg.gemini.timeout)
-		p = planner.Fallback{
-			Primary: planner.Gemini{Client: geminiClient},
-			Backup:  planner.Catalogue{},
-			Logger:  logger,
-		}
-		logger.Info("using gemini planner", "models", strings.Join(cfg.gemini.models, ","))
-	} else {
-		logger.Warn("no gemini api key provided, using catalogue planner only")
-	}
-
-	// The companion prefers Groq, falls back to Gemini, and is off without
-	// either key (the chat endpoint then returns 503).
 	var chatLLM companion.LLM
-	switch {
-	case cfg.groq.apiKey != "":
-		chatLLM = companion.GroqLLM{Client: groq.New(groq.DefaultBaseURL, cfg.groq.apiKey, cfg.groq.models, cfg.groq.timeout)}
-		logger.Info("using groq companion", "models", strings.Join(cfg.groq.models, ","))
-	case geminiClient != nil:
-		chatLLM = companion.GeminiLLM{Client: geminiClient}
-		logger.Info("using gemini companion")
-	default:
-		logger.Warn("no groq or gemini api key provided, companion chat is off")
+	var menuTranslator *menu.Translator
+
+	if cfg.llm.provider == "local" {
+		// One local model does everything. Ollama speaks the same API as
+		// Groq, so the Groq client works unchanged. Thinking is turned off:
+		// it made answers several times slower without making them better
+		// at these tasks.
+		local := groq.New(cfg.llm.url, "", []string{cfg.llm.model}, cfg.llm.timeout)
+		local.Reasoning = "none"
+		p = planner.Fallback{Primary: planner.LLM{Client: local}, Backup: planner.Catalogue{}, Logger: logger}
+		chatLLM = companion.GroqLLM{Client: local}
+		menuTranslator = &menu.Translator{LLM: local}
+		logger.Info("using local llm", "url", cfg.llm.url, "model", cfg.llm.model)
+	} else {
+		// The planner uses Gemini (for its JSON schema output) with the
+		// catalogue as fallback, or the catalogue alone without a key.
+		var geminiClient *gemini.Client
+		if cfg.gemini.apiKey != "" {
+			geminiClient = gemini.New(gemini.DefaultBaseURL, cfg.gemini.apiKey, cfg.gemini.models, cfg.gemini.timeout)
+			p = planner.Fallback{Primary: planner.LLM{Client: geminiClient}, Backup: planner.Catalogue{}, Logger: logger}
+			logger.Info("using gemini planner", "models", strings.Join(cfg.gemini.models, ","))
+		} else {
+			logger.Warn("no gemini api key provided, using catalogue planner only")
+		}
+
+		// The companion prefers Groq and falls back to Gemini. The menu
+		// translator shares the Groq client, so the two share its quota too.
+		switch {
+		case cfg.groq.apiKey != "":
+			groqClient := groq.New(groq.DefaultBaseURL, cfg.groq.apiKey, cfg.groq.models, cfg.groq.timeout)
+			chatLLM = companion.GroqLLM{Client: groqClient}
+			menuTranslator = &menu.Translator{LLM: groqClient}
+			logger.Info("using groq companion and menu translator", "models", strings.Join(cfg.groq.models, ","))
+		case geminiClient != nil:
+			chatLLM = companion.GeminiLLM{Client: geminiClient}
+			logger.Info("using gemini companion")
+		default:
+			logger.Warn("no groq or gemini api key provided, companion chat is off")
+		}
 	}
 
 	// Transitous needs no key. Name the app in the User-Agent, as its usage
@@ -230,6 +277,7 @@ func main() {
 		models:    models,
 		planner:   p,
 		companion: c,
+		menu:      menuTranslator,
 	}
 
 	err = app.serve()

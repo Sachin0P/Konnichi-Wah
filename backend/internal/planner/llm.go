@@ -16,18 +16,19 @@ import (
 // ErrInvalidOutput is returned when the LLM's reply doesn't pass our checks.
 var ErrInvalidOutput = errors.New("planner: invalid output from llm")
 
-// Generator is the part of the Gemini client the planner needs. Depending on
-// this small interface (rather than *gemini.Client) lets the tests use a fake.
+// Generator is the part of an LLM client the planner needs: the Gemini client
+// and the OpenAI-compatible one (Groq, or a local Ollama server) both have
+// it. Depending on this small interface lets the tests use a fake.
 type Generator interface {
 	GenerateJSON(ctx context.Context, instructions, input string, schema any) ([]byte, error)
 }
 
-// Gemini is a Planner that asks an LLM for suggestions.
-type Gemini struct {
+// LLM is a Planner that asks an LLM for suggestions.
+type LLM struct {
 	Client Generator
 }
 
-func (g Gemini) Suggest(ctx context.Context, req data.TripRequest) (*data.Plan, error) {
+func (g LLM) Suggest(ctx context.Context, req data.TripRequest) (*data.Plan, error) {
 	profile, err := json.MarshalIndent(req.Profile, "", "  ")
 	if err != nil {
 		return nil, err

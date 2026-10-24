@@ -4,17 +4,11 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/companion"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/validator"
 )
-
-// chatTimeout caps one companion reply, including every tool round. It has to
-// stay under the server's 30-second WriteTimeout so we can still send an
-// error response.
-const chatTimeout = 25 * time.Second
 
 // The createChatReplyHandler answers one message in the companion chat. The
 // app sends the conversation so far plus today's context; we keep no state.
@@ -41,7 +35,9 @@ func (app *application) createChatReplyHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), chatTimeout)
+	// Cap one reply, including every tool round. replyTimeout stays under the
+	// server's WriteTimeout, so we can still send an error response.
+	ctx, cancel := context.WithTimeout(r.Context(), app.config.replyTimeout())
 	defer cancel()
 
 	reply, err := app.companion.Reply(ctx, input)
