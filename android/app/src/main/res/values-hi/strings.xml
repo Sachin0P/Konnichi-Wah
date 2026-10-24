@@ -227,6 +227,8 @@
     <string name="food_metres">%d मी</string>
     <string name="food_km">%.1f किमी</string>
     <string name="food_walk">%1$s · लगभग %2$d मिनट पैदल</string>
+    <string name="food_walk_directions">पैदल रास्ता</string>
+    <string name="food_open_maps_hint">गूगल मैप्स</string>
 
     <string name="menu_title">मेन्यू रीडर</string>
     <string name="menu_offline">बिना इंटरनेट चलता है</string>
@@ -308,6 +310,7 @@
         <item quantity="other">%1$d स्टॉप · %2$d मिनट</item>
     </plurals>
     <string name="dir_open_walk">मैप्स में पैदल रास्ता</string>
+    <string name="dir_walk_to_station">मैप्स में %s तक पैदल रास्ता</string>
     <string name="colour_red">लाल</string>
     <string name="colour_orange">नारंगी</string>
     <string name="colour_yellow">पीला</string>

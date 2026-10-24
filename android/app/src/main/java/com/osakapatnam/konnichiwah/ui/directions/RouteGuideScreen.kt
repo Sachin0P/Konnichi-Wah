@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -58,6 +59,7 @@ import androidx.core.graphics.toColorInt
 import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.remote.JourneyLegDto
 import com.osakapatnam.konnichiwah.ui.components.PrimaryButton
+import com.osakapatnam.konnichiwah.ui.openWalkingDirections
 import com.osakapatnam.konnichiwah.ui.theme.DisplayFont
 import com.osakapatnam.konnichiwah.ui.theme.Palette
 
@@ -180,9 +182,12 @@ fun RouteGuideDialog(
     steps: List<GuideStep>,
     destinationName: String = "",
     destinationNameJa: String = "",
+    destinationLat: Double? = null,
+    destinationLng: Double? = null,
     onDismiss: () -> Unit,
 ) {
     var showStaffCard by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -237,6 +242,36 @@ fun RouteGuideDialog(
                                     fontSize = 20.sp,
                                     color = Palette.Sun,
                                 )
+                            }
+                        }
+                        if (destinationLat != null && destinationLng != null && !destinationLat.isNaN() && !destinationLng.isNaN()) {
+                            OutlinedButton(
+                                onClick = {
+                                    openWalkingDirections(
+                                        context = context,
+                                        destLat = destinationLat,
+                                        destLng = destinationLng,
+                                        destName = destTitle,
+                                    )
+                                },
+                                shape = CircleShape,
+                                border = BorderStroke(1.5.dp, Palette.Green),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Palette.Green),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp),
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Text("🚶", fontSize = 16.sp)
+                                    Text(
+                                        stringResource(R.string.dir_open_walk),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                    )
+                                }
                             }
                         }
                         Text(

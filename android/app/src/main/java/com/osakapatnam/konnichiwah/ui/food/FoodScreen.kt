@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,6 +27,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.remote.FoodDto
+import com.osakapatnam.konnichiwah.data.remote.FoodNearDto
 import com.osakapatnam.konnichiwah.data.remote.FoodResultDto
 import com.osakapatnam.konnichiwah.ui.components.BackLink
 import com.osakapatnam.konnichiwah.ui.components.KCard
@@ -33,6 +36,7 @@ import com.osakapatnam.konnichiwah.ui.components.PillButton
 import com.osakapatnam.konnichiwah.ui.components.PrimaryButton
 import com.osakapatnam.konnichiwah.ui.components.ScreenHeader
 import com.osakapatnam.konnichiwah.ui.components.Tone
+import com.osakapatnam.konnichiwah.ui.openWalkingDirections
 import com.osakapatnam.konnichiwah.ui.theme.Palette
 import com.osakapatnam.konnichiwah.ui.userMessage
 
@@ -73,11 +77,26 @@ fun FoodScreen(
 
 @Composable
 private fun Results(food: FoodDto, onDietCards: () -> Unit) {
+    val context = LocalContext.current
     LazyColumn(
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(food.results, key = { it.id }) { RestaurantCard(it) }
+        items(food.results, key = { it.id }) { restaurant ->
+            RestaurantCard(
+                r = restaurant,
+                onClick = {
+                    openWalkingDirections(
+                        context = context,
+                        destLat = restaurant.lat,
+                        destLng = restaurant.lng,
+                        destName = restaurant.displayName,
+                        originLat = food.near.lat.takeUnless { it.isNaN() || it == 0.0 },
+                        originLng = food.near.lng.takeUnless { it.isNaN() || it == 0.0 },
+                    )
+                },
+            )
+        }
         item {
             PillButton("🥗  " + stringResource(R.string.show_my_diet_cards), onClick = onDietCards)
         }
@@ -89,11 +108,17 @@ private fun Results(food: FoodDto, onDietCards: () -> Unit) {
 }
 
 // A restaurant with its Desi Match score as stars and a tag: green for a
-// good match (4–5), orange for "check first" (1–3).
+// good match (4–5), orange for "check first" (1–3). Tapping opens walking directions in Google Maps.
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RestaurantCard(r: FoodResultDto) {
-    KCard(modifier = Modifier.fillMaxWidth()) {
+private fun RestaurantCard(
+    r: FoodResultDto,
+    onClick: () -> Unit,
+) {
+    KCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+    ) {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             val score = r.desiMatch.score.coerceIn(1, 5)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -122,6 +147,25 @@ private fun RestaurantCard(r: FoodResultDto) {
             }
             r.tags["opening_hours"]?.let {
                 Text(stringResource(R.string.food_hours, it), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PillButton(
+                    text = "🚶  " + stringResource(R.string.food_walk_directions),
+                    onClick = onClick,
+                    tone = Tone.GREEN,
+                )
+                Text(
+                    text = stringResource(R.string.food_open_maps_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

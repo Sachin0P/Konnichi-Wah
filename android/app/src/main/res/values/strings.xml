@@ -237,6 +237,8 @@
     <string name="food_metres">%d m</string>
     <string name="food_km">%.1f km</string>
     <string name="food_walk">%1$s · about %2$d min walk</string>
+    <string name="food_walk_directions">Walking directions</string>
+    <string name="food_open_maps_hint">Google Maps</string>
 
     <!-- Menu reader -->
     <string name="menu_title">Menu reader</string>
@@ -321,6 +323,7 @@
         <item quantity="other">%1$d stops · %2$d min</item>
     </plurals>
     <string name="dir_open_walk">Walking directions in Maps</string>
+    <string name="dir_walk_to_station">Walk to %s in Maps</string>
     <string name="colour_red">red</string>
     <string name="colour_orange">orange</string>
     <string name="colour_yellow">yellow</string>

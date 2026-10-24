@@ -67,6 +67,7 @@ import com.osakapatnam.konnichiwah.ui.components.RouteMap
 import com.osakapatnam.konnichiwah.ui.components.ScreenHeader
 import com.osakapatnam.konnichiwah.ui.components.TipQuote
 import com.osakapatnam.konnichiwah.ui.components.Tone
+import com.osakapatnam.konnichiwah.ui.openWalkingDirections
 import com.osakapatnam.konnichiwah.ui.theme.Palette
 import com.osakapatnam.konnichiwah.ui.userMessage
 
@@ -78,6 +79,7 @@ import com.osakapatnam.konnichiwah.ui.userMessage
 @Composable
 fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     // Ask for location the first time it's needed, then search.
     val askLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
@@ -98,6 +100,8 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
     var activeGuideSteps by remember { mutableStateOf<List<GuideStep>?>(null) }
     var guideDestName by remember { mutableStateOf("") }
     var guideDestNameJa by remember { mutableStateOf("") }
+    var guideDestLat by remember { mutableStateOf<Double?>(null) }
+    var guideDestLng by remember { mutableStateOf<Double?>(null) }
 
     val matchingGuides = remember(journey, state.stationGuides) {
         if (journey == null) emptyList() else {
@@ -202,6 +206,8 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
                                 activeGuideSteps = sampleGuide
                                 guideDestName = "Asakusa"
                                 guideDestNameJa = "浅草"
+                                guideDestLat = 35.7118
+                                guideDestLng = 139.7967
                             },
                             tone = Tone.ORANGE,
                         )
@@ -226,6 +232,8 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
                         activeGuideSteps = buildGuideFromLeg(leg)
                         guideDestName = leg.to.name
                         guideDestNameJa = leg.to.nameJa.orEmpty()
+                        guideDestLat = leg.to.lat
+                        guideDestLng = leg.to.lng
                     },
                 )
             }
@@ -289,9 +297,41 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
                     item {
                         OutlinedButton(
                             onClick = {
+                                openWalkingDirections(
+                                    context = context,
+                                    destLat = guide.lat,
+                                    destLng = guide.lng,
+                                    destName = guide.name,
+                                )
+                            },
+                            shape = CircleShape,
+                            border = BorderStroke(1.5.dp, Palette.Green),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Palette.Green),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text("🚶", fontSize = 16.sp)
+                                Text(
+                                    stringResource(R.string.dir_walk_to_station, guide.name),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                )
+                            }
+                        }
+                    }
+                    item {
+                        OutlinedButton(
+                            onClick = {
                                 activeGuideSteps = sampleGuide
                                 guideDestName = guide.name
                                 guideDestNameJa = guide.name_ja.orEmpty()
+                                guideDestLat = guide.lat
+                                guideDestLng = guide.lng
                                 viewModel.viewGuide(null)
                             },
                             shape = CircleShape,
@@ -325,6 +365,8 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
             steps = steps,
             destinationName = guideDestName,
             destinationNameJa = guideDestNameJa,
+            destinationLat = guideDestLat,
+            destinationLng = guideDestLng,
             onDismiss = { activeGuideSteps = null },
         )
     }
@@ -490,8 +532,23 @@ private fun LegCard(
     onOpenVisualGuide: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val walkAction: (() -> Unit)? = if (leg.mode == "walk") {
+        {
+            openWalkingDirections(
+                context = context,
+                destLat = leg.to.lat,
+                destLng = leg.to.lng,
+                destName = stopLabel(leg.to),
+                originLat = leg.from.lat.takeUnless { it.isNaN() || it == 0.0 },
+                originLng = leg.from.lng.takeUnless { it.isNaN() || it == 0.0 },
+            )
+        }
+    } else null
 
-    KCard(modifier = Modifier.fillMaxWidth()) {
+    KCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = walkAction,
+    ) {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             LineBadge(leg)
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -514,19 +571,20 @@ private fun LegCard(
                         Text(stringResource(R.string.dir_via, leg.via.joinToString(", ")), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
 
-                    // For the walks at either end, hand over to a maps app
-                    // for turn-by-turn directions.
-                    if (first || last) {
-                        TextButton(
-                            onClick = {
-                                val uri = (
-                                    "https://www.google.com/maps/dir/?api=1&origin=${leg.from.lat},${leg.from.lng}" +
-                                        "&destination=${leg.to.lat},${leg.to.lng}&travelmode=walking"
-                                    ).toUri()
-                                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+                    Row(
+                        modifier = Modifier.padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        PillButton(
+                            text = "🚶  " + if (first || !leg.to.code.isNullOrBlank() || leg.to.name.contains("Station", ignoreCase = true)) {
+                                stringResource(R.string.dir_walk_to_station, stopLabel(leg.to))
+                            } else {
+                                stringResource(R.string.dir_open_walk)
                             },
-                            contentPadding = PaddingValues(0.dp),
-                        ) { Text(stringResource(R.string.dir_open_walk)) }
+                            onClick = { walkAction?.invoke() },
+                            tone = Tone.GREEN,
+                        )
                     }
                 } else {
                     Text(leg.line ?: leg.operator.orEmpty(), style = MaterialTheme.typography.titleSmall)
