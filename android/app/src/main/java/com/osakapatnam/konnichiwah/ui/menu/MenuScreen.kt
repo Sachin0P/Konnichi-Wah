@@ -3,6 +3,7 @@ package com.osakapatnam.konnichiwah.ui.menu
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.util.Size
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -28,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -45,6 +47,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,10 +60,13 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.mlkit.vision.common.InputImage
 import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.MenuConcern
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,6 +106,7 @@ fun MenuScreen(
                     onError = viewModel::cameraError,
                 )
                 else -> Results(
+                    photo = state.photo,
                     lines = lines,
                     found = state.found,
                     translating = state.model == TranslationModel.READY,
@@ -141,7 +148,8 @@ private fun TranslationBanner(model: TranslationModel, onDownload: () -> Unit) {
 // The camera, plus a way to pick a photo instead (a menu photographed
 // earlier, or when there's no camera permission).
 @Composable
-private fun Scanner(@StringRes error: Int?, onImage: (InputImage) -> Unit, onError: (Int) -> Unit) {
+private fun Scanner(@StringRes error: Int?, onImage: (Bitmap) -> Unit, onError: (Int) -> Unit) {
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var hasCamera by remember { mutableStateOf(hasCameraPermission(context)) }
     var asked by rememberSaveable { mutableStateOf(false) }
@@ -151,11 +159,13 @@ private fun Scanner(@StringRes error: Int?, onImage: (InputImage) -> Unit, onErr
     }
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
-            // fromFilePath reads the photo's EXIF rotation, so it comes out
-            // upright.
-            runCatching { InputImage.fromFilePath(context, uri) }
-                .onSuccess(onImage)
-                .onFailure { onError(R.string.menu_open_failed) }
+            // Decoding a full-size photo takes a moment, so do it off the
+            // main thread.
+            scope.launch {
+                runCatching { withContext(Dispatchers.Default) { decodeUpright(context, uri) } }
+                    .onSuccess(onImage)
+                    .onFailure { onError(R.string.menu_open_failed) }
+            }
         }
     }
 
@@ -217,7 +227,7 @@ private fun Scanner(@StringRes error: Int?, onImage: (InputImage) -> Unit, onErr
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(
-                onClick = { capture(context, imageCapture, onImage, onError) },
+                onClick = { capture(context, scope, imageCapture, onImage, onError) },
                 enabled = hasCamera,
                 modifier = Modifier.weight(1f),
             ) { Text(stringResource(R.string.menu_read)) }
@@ -252,17 +262,29 @@ private fun CameraPreview(imageCapture: ImageCapture, modifier: Modifier) {
     AndroidView(factory = { previewView }, modifier = modifier)
 }
 
-private fun capture(context: Context, imageCapture: ImageCapture, onImage: (InputImage) -> Unit, onError: (Int) -> Unit) {
+private fun capture(
+    context: Context,
+    scope: CoroutineScope,
+    imageCapture: ImageCapture,
+    onImage: (Bitmap) -> Unit,
+    onError: (Int) -> Unit,
+) {
     imageCapture.takePicture(
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
-                // Copy the frame out so the camera's buffer can be released
-                // straight away; ML Kit rotates it upright.
-                val bitmap = image.toBitmap()
-                val rotation = image.imageInfo.rotationDegrees
-                image.close()
-                onImage(InputImage.fromBitmap(bitmap, rotation))
+                // Copy the frame out, upright, then release the camera's
+                // buffer. Rotating takes a moment, so it's off the main thread.
+                scope.launch {
+                    val photo = withContext(Dispatchers.Default) {
+                        try {
+                            image.toUprightBitmap()
+                        } finally {
+                            image.close()
+                        }
+                    }
+                    onImage(photo)
+                }
             }
 
             override fun onError(exception: ImageCaptureException) {
@@ -275,38 +297,78 @@ private fun capture(context: Context, imageCapture: ImageCapture, onImage: (Inpu
 private fun hasCameraPermission(context: Context) =
     ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 
+// The scan's results: the translations drawn over the photo, or the same
+// lines as a list (easier to read through, and what screen readers get).
 @Composable
 private fun Results(
+    photo: Bitmap?,
     lines: List<MenuLine>,
     found: List<MenuConcern>,
     translating: Boolean,
     onScanAgain: () -> Unit,
     onDietCards: () -> Unit,
 ) {
-    LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        item { Summary(lines.isEmpty(), found) }
+    val canShowPhoto = photo != null && lines.any { it.box != null }
+    var showList by rememberSaveable { mutableStateOf(false) }
+    var opened by remember { mutableStateOf<MenuLine?>(null) }
+    val onPhoto = canShowPhoto && !showList
 
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Summary(lines.isEmpty(), found)
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = onScanAgain, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.menu_scan_again)) }
+                if (canShowPhoto) {
+                    OutlinedButton(onClick = { showList = !showList }, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(if (showList) R.string.menu_view_photo else R.string.menu_view_list))
+                    }
+                }
                 Button(onClick = onDietCards, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.menu_my_cards)) }
             }
-        }
 
-        if (lines.isNotEmpty()) {
-            item {
+            if (lines.isNotEmpty()) {
+                val note = stringResource(R.string.menu_translation_note)
                 Text(
-                    stringResource(R.string.menu_translation_note),
+                    if (onPhoto) stringResource(R.string.menu_zoom_hint) + " " + note else note,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
-        items(lines) { line -> LineCard(line, translating) }
+        if (onPhoto) {
+            MenuPhotoView(
+                photo = photo!!,
+                lines = lines,
+                onTap = { opened = it },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(lines) { line -> LineCard(line, translating) }
+            }
+        }
+    }
+
+    opened?.let { line ->
+        // Look the line up again, so a translation that arrives while it's
+        // open shows up.
+        val current = lines.firstOrNull { it.box == line.box && it.japanese == line.japanese } ?: line
+        AlertDialog(
+            onDismissRequest = { opened = null },
+            confirmButton = { TextButton(onClick = { opened = null }) { Text(stringResource(R.string.card_close)) } },
+            text = { LineCard(current, translating) },
+        )
     }
 }
 

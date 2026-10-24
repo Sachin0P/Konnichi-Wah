@@ -29,7 +29,7 @@ Konnichi-Wah! removes that uncertainty, before the trip and during it.
    - A ramen shop is left out for someone avoiding pork, even if it's the closest place.
 6. **Day-before reminders.** Set the trip's dates and you get a notification at 7 pm Japan time the evening before each day, with tomorrow's stops and a culture tip ("Tomorrow: Day 2 in Kyoto · Morning · Fushimi Inari Taisha · Tip: …"). They're scheduled on the phone with WorkManager and need no network.
 7. **Menu reader.** Photograph a Japanese menu (or pick a photo) and the app reads it on the phone:
-   - Each line with its English translation (machine-translated, so only a rough guide).
+   - **The English is drawn over the photo,** on top of each Japanese line, like Google Lens. Pinch to zoom, tap a line to see it in full, or switch to a list. Vertical Japanese gets its translation running down the line. The translation is machine-made, so only a rough guide.
    - **Warnings for your diet**, found in the Japanese itself rather than the translation: "⚠ Pork (豚)", "⚠ Dashi (fish stock) (味噌汁)". It knows what dishes usually hide (ramen broth, miso soup) and that 牛乳 is milk, not beef.
    - Text recognition works offline from the start. Translation needs a one-time 30 MB download.
 8. **Diet cards, offline.** The "Cards" screen shows *your* hand-checked Japanese diet cards first (vegetarian, Jain, eggetarian, halal, no beef, no pork, "does this contain dashi?"). They're bundled in the app and work with no signal.

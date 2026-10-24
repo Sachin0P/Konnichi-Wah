@@ -1,5 +1,7 @@
 package com.osakapatnam.konnichiwah.data
 
+import android.graphics.Bitmap
+import android.graphics.Rect
 import com.google.android.gms.tasks.Task
 import com.google.mlkit.common.model.DownloadConditions
 import com.google.mlkit.common.model.RemoteModelManager
@@ -37,13 +39,14 @@ class MenuReader @Inject constructor() {
 
     private val translationModel = TranslateRemoteModel.Builder(TranslateLanguage.JAPANESE).build()
 
-    // The lines of text in the image, top to bottom within each block. Lines
-    // with no letters at all (prices like "¥800", dividers) are dropped.
-    suspend fun read(image: InputImage): List<String> {
-        val text = recognizer.process(image).await()
+    // The lines of text in an upright photo, top to bottom within each block,
+    // with where each one is in the photo (in its pixels). Lines with no
+    // letters at all (prices like "¥800", dividers) are dropped.
+    suspend fun read(photo: Bitmap): List<ReadLine> {
+        val text = recognizer.process(InputImage.fromBitmap(photo, 0)).await()
         return text.textBlocks
-            .flatMap { block -> block.lines.map { it.text.trim() } }
-            .filter { line -> line.any { it.isLetter() } }
+            .flatMap { block -> block.lines.map { ReadLine(it.text.trim(), it.boundingBox) } }
+            .filter { line -> line.text.any { it.isLetter() } }
     }
 
     suspend fun canTranslate(): Boolean =
@@ -55,6 +58,10 @@ class MenuReader @Inject constructor() {
 
     suspend fun translate(line: String): String = translator.translate(line).await()
 }
+
+// One line of text the camera read, and its box in the photo (null if ML Kit
+// couldn't place it, which is rare).
+data class ReadLine(val text: String, val box: Rect?)
 
 // ML Kit returns Play services Tasks. This turns one into a suspend call, so
 // we don't need the kotlinx-coroutines-play-services library for three calls.

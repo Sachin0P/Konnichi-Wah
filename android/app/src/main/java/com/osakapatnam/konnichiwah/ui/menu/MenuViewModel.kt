@@ -1,9 +1,10 @@
 package com.osakapatnam.konnichiwah.ui.menu
 
+import android.graphics.Bitmap
+import android.graphics.Rect
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.mlkit.vision.common.InputImage
 import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.MenuConcern
 import com.osakapatnam.konnichiwah.data.MenuFlag
@@ -21,9 +22,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 // One line of the menu: the Japanese, its translation (null until it's
-// translated, or if the model isn't downloaded), and the warning words in it
-// that matter to this traveller.
-data class MenuLine(val japanese: String, val english: String?, val flags: List<MenuFlag>)
+// translated, or if the model isn't downloaded), the warning words in it that
+// matter to this traveller, and where it is in the photo.
+data class MenuLine(val japanese: String, val english: String?, val flags: List<MenuFlag>, val box: Rect? = null)
 
 enum class TranslationModel { CHECKING, MISSING, DOWNLOADING, READY, FAILED }
 
@@ -32,6 +33,8 @@ data class MenuUiState(
     val reading: Boolean = false,
     // null until something has been scanned.
     val lines: List<MenuLine>? = null,
+    // The photo the lines were read from, upright, for drawing them over.
+    val photo: Bitmap? = null,
     // A string resource, so it follows the language on screen.
     @StringRes val error: Int? = null,
 ) {
@@ -59,12 +62,12 @@ class MenuViewModel @Inject constructor(
         }
     }
 
-    fun read(image: InputImage) {
+    fun read(photo: Bitmap) {
         val thisScan = ++scan
         viewModelScope.launch {
             _state.update { it.copy(reading = true, error = null) }
 
-            val text = runCatching { reader.read(image) }.getOrElse {
+            val text = runCatching { reader.read(photo) }.getOrElse {
                 _state.update { it.copy(reading = false, error = R.string.menu_read_failed) }
                 return@launch
             }
@@ -72,9 +75,9 @@ class MenuViewModel @Inject constructor(
             // Only flag what this traveller cares about: a non-vegetarian who
             // eats everything doesn't need dashi warnings.
             val concerns = menuConcernsFor(profileRepository.tripRequest.first()?.profile)
-            val lines = text.map { line -> MenuLine(line, null, menuFlags(line).filter { it.concern in concerns }) }
+            val lines = text.map { line -> MenuLine(line.text, null, menuFlags(line.text).filter { it.concern in concerns }, line.box) }
 
-            _state.update { it.copy(reading = false, lines = lines) }
+            _state.update { it.copy(reading = false, lines = lines, photo = photo) }
             translateLines(thisScan)
         }
     }
@@ -90,7 +93,7 @@ class MenuViewModel @Inject constructor(
 
     fun scanAgain() {
         scan++
-        _state.update { it.copy(lines = null, error = null) }
+        _state.update { it.copy(lines = null, photo = null, error = null) }
     }
 
     fun cameraError(@StringRes message: Int) = _state.update { it.copy(error = message) }

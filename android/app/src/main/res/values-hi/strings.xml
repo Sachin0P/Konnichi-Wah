@@ -216,6 +216,9 @@
     <string name="menu_marked">नीचे वे लाइनें चिह्नित हैं। स्टाफ़ से पूछें, और अपना डाइट कार्ड दिखाएँ।</string>
     <string name="menu_none_found">कोई चेतावनी वाला शब्द नहीं मिला</string>
     <string name="menu_none_found_hint">इसका मतलब यह नहीं कि डिश सुरक्षित है: dashi और मांस का स्टॉक अक्सर मेन्यू पर नहीं लिखा होता। पक्का करने के लिए अपना डाइट कार्ड दिखाएँ।</string>
+    <string name="menu_view_list">सूची</string>
+    <string name="menu_view_photo">फ़ोटो</string>
+    <string name="menu_zoom_hint">ज़ूम करने के लिए दो उँगलियों से फैलाएँ, और पूरी लाइन देखने के लिए उस पर टैप करें।</string>
     <string name="menu_translating">अनुवाद हो रहा है…</string>
     <string name="menu_flag">⚠ %1$s (%2$s)</string>
     <string name="concern_pork">पोर्क</string>

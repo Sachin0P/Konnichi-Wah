@@ -227,6 +227,9 @@
     <string name="menu_marked">The lines are marked below. Ask the staff, and show your diet card.</string>
     <string name="menu_none_found">No warning words found</string>
     <string name="menu_none_found_hint">That doesn\'t make a dish safe: dashi and meat stock often aren\'t written on the menu. Show your diet card to check.</string>
+    <string name="menu_view_list">List</string>
+    <string name="menu_view_photo">Photo</string>
+    <string name="menu_zoom_hint">Pinch to zoom, and tap a line to see it in full.</string>
     <string name="menu_translating">Translating…</string>
     <string name="menu_flag">⚠ %1$s (%2$s)</string>
     <string name="concern_pork">Pork</string>
