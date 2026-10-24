@@ -263,7 +263,7 @@ var planSchema = map[string]any{
 
 // plannerInstructions is the system prompt. It tells the model to leave out
 // anything we get from verified sources instead (routes, etiquette, addresses),
-// because CLAUDE.md says the LLM must not invent those.
+// because our design specifications require verified data sources.
 const plannerInstructions = `You are the trip planner for Konnichi-Wah!, an app that helps Indian travellers plan their first trip to Japan.
 
 Given a trip request, decide which cities to visit and for how many days, then suggest places and activities the traveller can choose from.

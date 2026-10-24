@@ -20,10 +20,15 @@ confirm:
 
 port ?= 4000
 
-## run/api port=$1: run the cmd/api application (port defaults to 4000)
+## run/api port=$1: run the cmd/api application with local Ollama LLM (port defaults to 4000)
 .PHONY: run/api
 run/api:
-	go run ./cmd/api -port=${port} -db-dsn=${KONNICHIWAH_DB_DSN} -gemini-api-key=${GEMINI_API_KEY} -groq-api-key=${GROQ_API_KEY}
+	go run ./cmd/api -port=${port} -db-dsn=${KONNICHIWAH_DB_DSN} -llm=local -local-llm-model=gemma4:12b
+
+## run/api/cloud port=$1: run the cmd/api application with cloud LLMs (Gemini + Groq)
+.PHONY: run/api/cloud
+run/api/cloud:
+	go run ./cmd/api -port=${port} -db-dsn=${KONNICHIWAH_DB_DSN} -llm=cloud -gemini-api-key=${GEMINI_API_KEY} -groq-api-key=${GROQ_API_KEY}
 
 ## db/psql: connect to the database using psql
 .PHONY: db/psql

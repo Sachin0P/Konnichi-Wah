@@ -27,13 +27,13 @@ Step-by-step instructions for every way of running the app: on the emulator, on 
 - **The backend** always runs on port **4001**. Port 4000 belongs to another project on this Mac; don't stop whatever is using it.
 - **The AI** runs in one of two modes, chosen when the backend starts:
 
-  | | Cloud mode (default) | Local mode (`-llm=local`) |
+  | | Local mode (Default, `-llm=local`) | Cloud mode (`-llm=cloud`) |
   |---|---|---|
-  | Planner | Gemini | Gemma 4 12B on the Mac |
-  | Chat, menu translation | Groq | Gemma 4 12B on the Mac |
-  | Needs | API keys in `backend/.envrc`, internet | Ollama running, about 10 GB of free memory |
-  | Speed | 1–3 s per answer | 5–10 s per answer, about 25 s for a plan |
-  | Limits | Free-tier quotas (Gemini: 20 plans a day per model; Groq says "busy" after many quick chats) | None |
+  | Planner | Gemma 4 12B on the Mac | Gemini |
+  | Chat, menu translation | Gemma 4 12B on the Mac | Groq |
+  | Needs | Ollama running (`ollama serve &`) | API keys in `backend/.envrc`, internet |
+  | Speed | 5–10 s per answer, about 25 s for a plan | 1–3 s per answer |
+  | Limits | None (100% private, free, unlimited) | Free-tier quotas (Gemini: 20 plans a day per model; Groq says "busy" after many quick chats) |
 
 - **How the phone reaches the Mac** depends on how you run it:
 
@@ -120,26 +120,28 @@ source .envrc
 go build -o bin/api ./cmd/api
 ```
 
-### 3.1 Cloud mode (Gemini and Groq)
+### 3.1 Local mode (Gemma on the Mac — Default)
+
+1. In a separate terminal or background, start Ollama and pull the model:
+   ```sh
+   ollama serve &
+   ollama pull gemma4:12b
+   ```
+2. Start the backend with local LLM (default):
+   ```sh
+   ./bin/api -port=4001 -db-dsn="$KONNICHIWAH_DB_DSN" -llm=local -local-llm-model=gemma4:12b
+   ```
+   *Or simply: `make run/api port=4001`*
+
+The first request loads Gemma into memory (takes 10–20 seconds); after that answers take 5–10 seconds.
+
+### 3.2 Cloud mode (Gemini and Groq — Optional)
 
 ```sh
-./bin/api -port=4001 -db-dsn="$KONNICHIWAH_DB_DSN" \
+./bin/api -port=4001 -db-dsn="$KONNICHIWAH_DB_DSN" -llm=cloud \
   -gemini-api-key="$GEMINI_API_KEY" -groq-api-key="$GROQ_API_KEY"
 ```
-
-### 3.2 Local mode (Gemma on the Mac)
-
-1. In a separate terminal, start Ollama and leave it running:
-   ```sh
-   ollama serve
-   ```
-2. Close Android Studio and other memory-heavy apps if you can. On a 16 GB Mac, Gemma and the emulator together are tight.
-3. Start the backend with `-llm=local` and no keys:
-   ```sh
-   ./bin/api -port=4001 -db-dsn="$KONNICHIWAH_DB_DSN" -llm=local
-   ```
-
-The first request after starting loads Gemma into memory, which takes 10–20 seconds; after that answers take 5–10 seconds. Other models: add `-local-llm-model=qwen3.5:9b` (faster at menus, but sometimes skips the tools).
+*Or simply: `make run/api/cloud port=4001`*
 
 ### 3.3 Check it's working
 

@@ -159,7 +159,7 @@ func main() {
 	flag.DurationVar(&cfg.groq.timeout, "groq-timeout", 15*time.Second, "Groq request timeout")
 	flag.DurationVar(&cfg.gemini.timeout, "gemini-timeout", 20*time.Second, "Gemini request timeout")
 
-	flag.StringVar(&cfg.llm.provider, "llm", "cloud", "Where the AI runs (cloud|local)")
+	flag.StringVar(&cfg.llm.provider, "llm", "local", "Where the AI runs (local|cloud)")
 	flag.StringVar(&cfg.llm.url, "local-llm-url", "http://localhost:11434/v1/chat/completions", "Local LLM chat completions URL (Ollama)")
 	// gemma4:12b beat qwen3.5:9b in our tests: Qwen sometimes said it was
 	// showing a diet card without calling the tool, and took twice as long

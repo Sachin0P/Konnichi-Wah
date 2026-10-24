@@ -21,8 +21,9 @@ Indian travellers don't skip Japan because of the price. They skip it because of
 - **Specific avoidances:** Beef, pork, seafood, egg, onion/garlic, alcohol/mirin, with spice level calibration (Mild, Medium, Indian Spicy).
 - Free-text custom notes support special requirements (e.g. "elderly parents, avoid stairs" or "die-hard One Piece & anime fan").
 
-### 2. AI Trip Suggestions with Live Web Grounding
+### 2. Local AI Trip Suggestions with Live Web Grounding
 - Proposes multi-city routes (e.g. Tokyo 4 days, Kyoto 2, Osaka 1) with matched suggestion cards for attractions, shopping, and scenic spots.
+- **Runs 100% Locally:** Powered by local Ollama (`gemma4:12b` / `qwen3.5:9b`) on your machine with zero external API dependencies or rate limits.
 - **Web Grounding:** Real-time search integration fetches opening hours, seasonal events, and current travel conditions.
 - **Zero Hallucination on Food:** Restaurants never come from generative AI guesses. They are served from a curated, hand-checked database filtered strictly by diet.
 
@@ -56,7 +57,7 @@ Indian travellers don't skip Japan because of the price. They skip it because of
 - Uses CameraX and Google ML Kit Japanese on-device OCR:
   - **Clean Overlay:** High-contrast, translucent overlays drawn neatly over each Japanese menu line.
   - **Diet Safety Alerts:** Flags hidden ingredients directly from kanji analysis: `⚠ Pork (豚)`, `⚠ Alcohol/Mirin (酒/みりん)`, `⚠ Dashi/Fish Stock (だし)`, `⚠ Beef (牛)`, `⚠ Seafood (魚介)`.
-  - **AI Translation:** Translates full menu context in one pass with dish explanations (e.g. 親子丼 → *"Oyakodon: chicken and egg simmered with onion over rice"*). Offline ML Kit translation model supported as fallback.
+  - **AI Translation:** Translates full menu context with dish explanations (e.g. 親子丼 → *"Oyakodon: chicken and egg simmered with onion over rice"*). Works locally on your server or via on-device ML Kit.
 
 ### 8. Interactive Multi-Floor Station Maps
 - Detailed floor layouts for Japan's busiest railway labyrinths: **Tokyo Station, Shinjuku, Shibuya, Kyoto, and Osaka**.
@@ -91,7 +92,7 @@ Indian travellers don't skip Japan because of the price. They skip it because of
 - Place and station names remain in English letters matching official physical signage across Japan.
 
 ### 13. Ask Konnichi: In-Trip Companion Chat
-- Sub-second responses powered by AI tool calling rather than ungrounded guesses:
+- Fast responses powered by local AI tool calling rather than ungrounded guesses:
   - Live train routes from Transitous timetables.
   - Etiquette tips queried from the verified rulebook.
   - Hand-checked Japanese phrase cards to show staff full-screen.
@@ -122,8 +123,8 @@ Indian travellers don't skip Japan because of the price. They skip it because of
 │  • Standard Library net/http with chi-compatible routing       │
 │  • PostgreSQL 15+ (Places, Itineraries, Etiquette Rulebook)    │
 │  • AI Planner & Companion Chat:                                │
-│      - Local LLM: Ollama (gemma4:12b / qwen3.5:9b)            │
-│      - Cloud LLM: Google Gemini & Groq APIs                    │
+│      - Primary: Local LLM via Ollama (gemma4:12b / qwen3.5:9b) │
+│      - Optional: Cloud LLM (Gemini & Groq APIs)                │
 │      - Fallback: Curated catalogue & deterministic arrange     │
 │  • Live Web Search Grounding: DuckDuckGo API                   │
 │  • Transit Engine: Transitous API (MOTIS OpenTripPlanner)      │
@@ -171,8 +172,8 @@ android/
 ### Prerequisites
 - **Go 1.23+**
 - **PostgreSQL 15+** & **golang-migrate** (`brew install golang-migrate`)
+- **Ollama** (`brew install ollama`) with `gemma4:12b` (main local model: 100% free, private, no API keys needed)
 - **Android Studio** with Android SDK 37 (Android 17) or physical Android device
-- **Ollama** (for local AI model) or Gemini/Groq API keys
 
 ---
 
@@ -188,9 +189,9 @@ SQL
 
 ---
 
-### Step 2: Backend Setup
+### Step 2: Backend Setup (Local Model - Main Way to Run)
 
-1. Configure environment:
+1. **Configure environment:**
    ```sh
    cd backend
    cp .envrc.example .envrc
@@ -199,32 +200,30 @@ SQL
    source .envrc
    ```
 
-2. Run database migrations and seed content:
+2. **Run database migrations and seed content:**
    ```sh
    make db/migrations/up
    make db/seed
    ```
 
-3. **Start the Backend:**
+3. **Start the Local AI Model (Ollama):**
+   ```sh
+   # Start Ollama service:
+   ollama serve &
 
-   - **Option A: With Local AI (Ollama - Recommended, 100% Free & Private)**
-     ```sh
-     # Ensure Ollama is running and model is downloaded:
-     ollama serve &
-     ollama pull gemma4:12b
+   # Pull the recommended model (about 7.7 GB, downloaded once):
+   ollama pull gemma4:12b
+   ```
 
-     # Build and start server:
-     go build -o bin/api ./cmd/api
-     ./bin/api -port=4001 -db-dsn="$KONNICHIWAH_DB_DSN" -llm=local -local-llm-model=gemma4:12b
-     ```
+4. **Start the API Server:**
+   ```sh
+   make run/api port=4001
+   ```
+   *The server runs with local model (`-llm=local -local-llm-model=gemma4:12b`) by default on port 4001. All trip planning, companion chat, and menu translation run 100% locally on your machine with zero API keys and no rate limits.*
 
-   - **Option B: With Cloud AI (Gemini / Groq)**
-     ```sh
-     # Add GEMINI_API_KEY and GROQ_API_KEY to .envrc, then:
-     ./bin/api -port=4001 -db-dsn="$KONNICHIWAH_DB_DSN" -llm=groq
-     ```
+   *(Optional: If you wish to test cloud models instead, set `GEMINI_API_KEY` and `GROQ_API_KEY` in `.envrc` and run `make run/api/cloud port=4001`).*
 
-4. Verify server health:
+5. **Verify server health:**
    ```sh
    curl http://localhost:4001/v1/healthcheck
    ```
@@ -235,12 +234,15 @@ SQL
 
 #### On a Physical Android Phone over USB
 1. Enable **Developer Options** and **USB Debugging** on your phone.
-2. Connect your phone to your Mac via USB and confirm `adb devices`.
-3. **Set up reverse port forwarding** (so the phone can reach your local Go server):
+2. Connect your phone to your Mac via USB and confirm:
+   ```sh
+   adb devices
+   ```
+3. **Set up reverse port forwarding** (so the phone reaches your local Go server):
    ```sh
    adb reverse tcp:4001 tcp:4001
    ```
-4. Build and install:
+4. Build, install, and launch the app:
    ```sh
    cd android
    ./gradlew assembleDebug
