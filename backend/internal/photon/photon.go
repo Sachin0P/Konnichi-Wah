@@ -90,13 +90,6 @@ const searchBox = 0.045
 func (c *Client) Search(ctx context.Context, query string, lat, lng float64, limit int) ([]Place, error) {
 	key := fmt.Sprintf("%s|%.3f,%.3f|%d", strings.ToLower(query), lat, lng, limit)
 
-	c.mu.Lock()
-	if e, ok := c.cache[key]; ok && time.Now().Before(e.expires) {
-		c.mu.Unlock()
-		return e.places, nil
-	}
-	c.mu.Unlock()
-
 	endpoint := c.baseURL
 	params := url.Values{
 		"lat":   {fmt.Sprintf("%.5f", lat)},
@@ -111,10 +104,74 @@ func (c *Client) Search(ctx context.Context, query string, lat, lng float64, lim
 		params.Set("radius", "3")
 	} else {
 		params.Set("q", query)
-		params.Set("bbox", fmt.Sprintf("%.5f,%.5f,%.5f,%.5f", lng-searchBox, lat-searchBox, lng+searchBox, lat+searchBox))
+		params.Set("bbox", bbox(lat, lng, searchBox))
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint+"?"+params.Encode(), nil)
+	return c.fetch(ctx, key, endpoint+"?"+params.Encode())
+}
+
+// suggestBox is how far around the city centre Suggest looks: about 35 km,
+// enough for a whole city and its day trips.
+const suggestBox = 0.3
+
+// notDestinations are kinds of place nobody types in as a destination, which
+// Photon still matches by name: a vending machine called "Meiji", or an
+// emergency assembly point named after the shrine next to it.
+// Areas are left out too: we're already searching one city, and "Dotonbori
+// 2-chome" crowds out Dotonbori itself.
+var notDestinations = map[string]bool{
+	"vending_machine": true, "assembly_point": true, "bench": true, "waste_basket": true,
+	"parking": true, "bicycle_parking": true, "parking_entrance": true, "yes": true,
+	"map": true, "board": true, "motorway_junction": true, "city": true, "neighbourhood": true,
+	"residential": true, "unclassified": true, "tertiary": true, "secondary": true, "primary": true,
+	"path": true, "footway": true, "bus_stop": true, "apartments": true,
+}
+
+// Suggest completes a half-typed place name ("sensoj" gives Sensō-ji) for
+// the search-as-you-type dropdown. Photon matches the start of words, so it
+// works on partial input; results are ranked by how well they match, with
+// places near the point first.
+func (c *Client) Suggest(ctx context.Context, query string, lat, lng float64, limit int) ([]Place, error) {
+	key := fmt.Sprintf("suggest|%s|%.2f,%.2f|%d", strings.ToLower(query), lat, lng, limit)
+
+	params := url.Values{
+		"q":     {query},
+		"lat":   {fmt.Sprintf("%.5f", lat)},
+		"lon":   {fmt.Sprintf("%.5f", lng)},
+		"bbox":  {bbox(lat, lng, suggestBox)},
+		"limit": {fmt.Sprint(limit + 4)}, // room for the ones we drop
+		"lang":  {"en"},
+	}
+
+	found, err := c.fetch(ctx, key, c.baseURL+"?"+params.Encode())
+	if err != nil {
+		return nil, err
+	}
+
+	places := []Place{}
+	for _, p := range found {
+		if !notDestinations[p.Kind] && len(places) < limit {
+			places = append(places, p)
+		}
+	}
+	return places, nil
+}
+
+func bbox(lat, lng, size float64) string {
+	return fmt.Sprintf("%.5f,%.5f,%.5f,%.5f", lng-size, lat-size, lng+size, lat+size)
+}
+
+// fetch runs one Photon request, or returns the cached result of the same
+// request from the last hour.
+func (c *Client) fetch(ctx context.Context, key, u string) ([]Place, error) {
+	c.mu.Lock()
+	if e, ok := c.cache[key]; ok && time.Now().Before(e.expires) {
+		c.mu.Unlock()
+		return e.places, nil
+	}
+	c.mu.Unlock()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
 	}

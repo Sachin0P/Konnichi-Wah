@@ -135,9 +135,12 @@ class ChatViewModel @Inject constructor(
                 ChatStopDto(placeName = it.placeName.take(100), placeType = it.placeType, timeSlot = it.timeSlot)
             },
             profile = profile,
-            // Only if they've already allowed location (for directions or
-            // help nearby): the chat doesn't ask for it itself.
-            location = location.recent()?.let { GeoPointDto(it.latitude, it.longitude) },
+            // Only if they've already allowed location and are in Japan:
+            // the chat doesn't ask for it itself, and locations outside Japan
+            // are ignored.
+            location = location.recent()
+                ?.takeIf { it.latitude in 24.0..46.0 && it.longitude in 122.0..146.0 }
+                ?.let { GeoPointDto(it.latitude, it.longitude) },
         )
     }
 }

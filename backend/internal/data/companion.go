@@ -102,6 +102,8 @@ func ValidateChatRequest(v *validator.Validator, req *ChatRequest) {
 	}
 
 	if l := c.Location; l != nil {
-		v.Check(l.Lat >= 24 && l.Lat <= 46 && l.Lng >= 122 && l.Lng <= 146, "context.location", "must be a point in Japan")
+		if l.Lat < 24 || l.Lat > 46 || l.Lng < 122 || l.Lng > 146 {
+			req.Context.Location = nil
+		}
 	}
 }

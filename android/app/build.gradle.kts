@@ -94,6 +94,8 @@ val copyRulebook = tasks.register<CopyRulebookTask>("copyRulebook") {
         layout.projectDirectory.file("../../backend/rulebook/phrases.json"),
         layout.projectDirectory.file("../../backend/rulebook/etiquette.hi.json"),
         layout.projectDirectory.file("../../backend/rulebook/phrases.hi.json"),
+        layout.projectDirectory.file("../../backend/rulebook/stations.json"),
+        layout.projectDirectory.file("../../backend/rulebook/stations.hi.json"),
     )
 }
 

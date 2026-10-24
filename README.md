@@ -43,6 +43,8 @@ Konnichi-Wah! removes that uncertainty, before the trip and during it.
    - **Diet cards:** hand-checked Japanese cards to show restaurant staff, e.g. 「私はジャイナ教徒です。肉、魚、魚介類、卵、だしは食べられません。…」 They're never machine-translated on the fly.
    - **Phrase cards** for anything else ("Where is the toilet?"), shown full screen to hold up to staff.
    - **Food and shops nearby:** "Where can we eat near Senso-ji?" uses the same Desi Match ranking. "Figure shops near Akihabara?" lists real anime, collector, toy, hobby and 100-yen shops.
+11. **Get there: Live transit directions and maps.** Point-to-point transit directions with walk-to-station legs, which exit to use (e.g. "Exit A1"), platform numbers, line codes, and step-by-step transfer instructions. An interactive vector map (MapLibre with free OpenFreeMap tiles) shows the path of each leg, with search-as-you-type station suggestions.
+12. **Help nearby.** Quick emergency numbers (110 police, 119 ambulance), plus one-tap access to nearby hospitals, clinics, pharmacies, ATMs, police boxes, convenience stores, and toilets from a snapshot of 30,436 places, with directions and click-to-call.
 
 ## How it fits together
 

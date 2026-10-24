@@ -36,7 +36,7 @@ func TestGeminiSuggest(t *testing.T) {
 	}{
 		{name: "Valid", output: validLLMOutput},
 		{name: "Days don't add up", output: `{"cities": [{"name": "Tokyo", "days": 3, "reason": "r"}], "suggestions": [{"kind": "place", "name": "a", "city": "Tokyo", "place_type": "temple", "reason": "r"}]}`, wantErr: true},
-		{name: "Invented place type", output: `{"cities": [{"name": "Tokyo", "days": 7, "reason": "r"}], "suggestions": [{"kind": "place", "name": "a", "city": "Tokyo", "place_type": "castle", "reason": "r"}]}`, wantErr: true},
+		{name: "Invented place type", output: `{"cities": [{"name": "Tokyo", "days": 7, "reason": "r"}], "suggestions": [{"kind": "place", "name": "a", "city": "Tokyo", "place_type": "spaceship", "reason": "r"}]}`, wantErr: true},
 		{name: "Unknown key", output: `{"cities": [], "suggestions": [], "note": "x"}`, wantErr: true},
 		{name: "Not JSON", output: `Sure! Here is your plan...`, wantErr: true},
 		{name: "API error", err: errors.New("status 503"), wantErr: true},

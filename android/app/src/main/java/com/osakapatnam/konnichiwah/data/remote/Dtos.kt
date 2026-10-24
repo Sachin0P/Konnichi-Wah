@@ -422,3 +422,19 @@ data class PlacesDto(
 
 @Serializable
 data class PlacesEnvelope(val places: PlacesDto)
+
+// Search-as-you-type (GET /v1/places/suggest): stations from our snapshot,
+// then landmarks. kind is "station", or the OpenStreetMap kind of place
+// ("place_of_worship", "hotel"); detail is the city or address.
+@Serializable
+data class PlaceSuggestionDto(
+    val name: String,
+    @SerialName("name_ja") val nameJa: String? = null,
+    val kind: String,
+    val detail: String? = null,
+    val lat: Double,
+    val lng: Double,
+)
+
+@Serializable
+data class PlaceSuggestionsEnvelope(val suggestions: List<PlaceSuggestionDto>)

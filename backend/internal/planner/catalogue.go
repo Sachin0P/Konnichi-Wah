@@ -131,6 +131,7 @@ func allocateCities(req data.TripRequest) []data.CityPlan {
 // which can't be trusted to know whether a dish contains dashi or pork.
 func foodFor(cities []data.CityPlan, profile data.UserProfile) []data.Suggestion {
 	food := []data.Suggestion{}
+	cityCounts := make(map[string]int)
 
 	for _, it := range catalogue {
 		if it.Kind != "food" || !canEat(profile, it) {
@@ -138,8 +139,15 @@ func foodFor(cities []data.CityPlan, profile data.UserProfile) []data.Suggestion
 		}
 
 		// LLM city names may differ in case from ours ("tokyo" vs "Tokyo").
-		if slices.ContainsFunc(cities, func(c data.CityPlan) bool { return strings.EqualFold(c.Name, it.base) }) {
-			food = append(food, it.Suggestion)
+		// Cap at 2 food suggestions per city to avoid overcrowding the itinerary.
+		for _, c := range cities {
+			if strings.EqualFold(c.Name, it.base) {
+				if cityCounts[it.base] < 2 {
+					food = append(food, it.Suggestion)
+					cityCounts[it.base]++
+				}
+				break
+			}
 		}
 	}
 

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
@@ -117,4 +119,90 @@ func (app *application) listPlacesHandler(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+}
+
+// The listPlaceSuggestionsHandler completes a half-typed place name for the
+// search-as-you-type dropdown on the directions screen. Stations come from
+// our snapshot (instant, and they're what most people type); landmarks and
+// everything else come from Photon. It's called on every pause in typing, so
+// it never fails because of Photon: without it, the stations still come back.
+//
+//	GET /v1/places/suggest?q=sensoj&city=Tokyo
+func (app *application) listPlaceSuggestionsHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Query, City string
+		Lat, Lng    float64
+	}
+
+	v := validator.New()
+	qs := r.URL.Query()
+
+	input.Query = strings.TrimSpace(app.readString(qs, "q", ""))
+	input.City = strings.TrimSpace(app.readString(qs, "city", ""))
+	input.Lat = app.readFloat(qs, "lat", 0, v)
+	input.Lng = app.readFloat(qs, "lng", 0, v)
+
+	v.Check(utf8.RuneCountInString(input.Query) >= 2, "q", "must be at least 2 characters long")
+	v.Check(len(input.Query) <= 100, "q", "must not be more than 100 bytes long")
+
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	// Rank places near the traveller first, else near the city, else near
+	// central Tokyo.
+	centre := transit.LatLng{Lat: input.Lat, Lng: input.Lng}
+	if !qs.Has("lat") || !inJapan(input.Lat, input.Lng) {
+		centre = transit.LatLng{Lat: 35.681, Lng: 139.767}
+		if c := transit.CityCentre(input.City); c != nil {
+			centre = *c
+		}
+	}
+
+	const limit = 8
+	suggestions := data.SuggestStations(app.stations, input.Query, centre.Lat, centre.Lng, 4)
+
+	// Photon matches the start of words, so it's only worth asking once
+	// there's a little more to go on.
+	if utf8.RuneCountInString(input.Query) >= 3 {
+		ctx, cancel := context.WithTimeout(r.Context(), 4*time.Second)
+		defer cancel()
+
+		found, err := app.photon.Suggest(ctx, input.Query, centre.Lat, centre.Lng, limit)
+		if err != nil {
+			app.logger.Warn("place suggestions without photon", "error", err.Error())
+		}
+		for _, p := range found {
+			if len(suggestions) == limit {
+				break
+			}
+			// Photon knows the stations too; we've listed those already.
+			if p.Kind == "station" || p.Kind == "halt" || p.Kind == "stop" {
+				continue
+			}
+			// Photon's matching is fuzzy. For input in Latin letters, keep
+			// only names that really start the way the traveller is typing.
+			if isASCII(input.Query) && !data.NameMatches(p.Name, input.Query) {
+				continue
+			}
+			suggestions = append(suggestions, data.PlaceSuggestion{
+				Name: p.Name, Kind: p.Kind, Detail: p.Address, Lat: p.Lat, Lng: p.Lng,
+			})
+		}
+	}
+
+	err := app.writeJSON(w, http.StatusOK, envelope{"suggestions": suggestions}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func isASCII(s string) bool {
+	for _, r := range s {
+		if r > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
 }

@@ -67,7 +67,18 @@ class NearbyViewModel @Inject constructor(
             }
 
             val city = itineraries.latest.first()?.days?.firstOrNull()?.city.orEmpty().ifBlank { "Tokyo" }
-            val result = backend.places(kind, if (kind == null) query else null, RouteEnd.Point(here.latitude, here.longitude), city)
+            val point = if (here.latitude in 24.0..46.0 && here.longitude in 122.0..146.0) {
+                RouteEnd.Point(here.latitude, here.longitude)
+            } else {
+                // If the phone is outside Japan (e.g. testing in India), search near the city centre
+                when (city.lowercase()) {
+                    "kyoto" -> RouteEnd.Point(34.985, 135.758)
+                    "osaka" -> RouteEnd.Point(34.702, 135.496)
+                    "nara" -> RouteEnd.Point(34.681, 135.819)
+                    else -> RouteEnd.Point(35.6895, 139.6917)
+                }
+            }
+            val result = backend.places(kind, if (kind == null) query else null, point, city)
             _state.update {
                 when (result) {
                     is ApiResult.Success -> it.copy(

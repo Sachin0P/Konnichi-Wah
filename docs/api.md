@@ -13,6 +13,9 @@ This is the contract between the Android app and the Go backend in `backend/`. I
 - [POST /v1/companion/chat](#post-v1companionchat)
 - [GET /v1/food](#get-v1food)
 - [POST /v1/menu/translate](#post-v1menutranslate)
+- [GET /v1/directions](#get-v1directions)
+- [GET /v1/places](#get-v1places)
+- [GET /v1/places/suggest](#get-v1placessuggest)
 - [Permitted values](#permitted-values)
 - [Running the backend for app development](#running-the-backend-for-app-development)
 - [Not built yet](#not-built-yet)
@@ -274,6 +277,7 @@ Answers usually take 1–6 seconds. The backend calls the LLM (Groq, or Gemini a
 - `get_etiquette`: our rulebook.
 - `find_food`: Desi Match restaurant search (the same ranking as `GET /v1/food`).
 - `find_places`: anime and figure, toy and game, hobby and model, and 100-yen shops near a place.
+- `find_nearby`: hospitals, clinics, pharmacies, police boxes, ATMs, toilets and convenience stores from our snapshot, or live Photon search for anything else.
 - `show_diet_card`: the hand-checked cards from `backend/rulebook/phrases.json`, picked from the traveller's saved diet.
 - `show_phrase_card`: other phrases ("Where is the toilet?"), translated by the model and checked to be in Japanese script. A phrase that states a diet ("I am Jain…", "no onion, please") is refused, and the model is told to use `show_diet_card` instead.
 
@@ -290,14 +294,15 @@ With `"language": "hi"` the companion answers in Hindi, and the tools hand it ou
     "city": "Kyoto",
     "day_index": 5,
     "stops": [ { "place_name": "Fushimi Inari Taisha", "place_type": "shrine", "time_slot": "morning" } ],
-    "profile": { "...": "the same object as in /v1/plan/suggestions" }
+    "profile": { "...": "the same object as in /v1/plan/suggestions" },
+    "location": { "lat": 34.985, "lng": 135.758 }
   },
   "language": "en"
 }
 ```
 
 - `messages`: 1–20 messages, each with `role` set to `user` or `assistant` and `text` up to 2000 bytes. The last message must be from the user. Send the reply texts back as `assistant` messages; phrase cards aren't part of the history.
-- `context` and all its fields are optional, but the answers are much better with them. `profile` is what makes `show_diet_card` work.
+- `context` and all its fields are optional, but the answers are much better with them. `profile` is what makes `show_diet_card` work. `location` is the traveller's current GPS fix (if granted); points outside Japan are ignored.
 - `language`: optional, `en` (the default) or `hi`.
 
 ### Response: 200 OK
@@ -421,6 +426,134 @@ There is exactly one entry per line sent, in the same order. `japanese` is the m
 - `422` for invalid input.
 - `503` if no Groq key is configured, the model is busy, or its reply isn't a valid translation (wrong number of lines, for example). The app then translates on the phone with ML Kit instead.
 
+## GET /v1/directions
+
+Finds up to three ways to get from one place to another by train, subway, bus and on foot, with walking directions to the station, exit numbers, line colours, and coordinates of each leg for the map.
+
+```
+GET /v1/directions?from=Shinjuku&to=Senso-ji&city=Tokyo&depart=09:00
+GET /v1/directions?from_lat=35.68&from_lng=139.71&to=Senso-ji&city=Tokyo
+```
+
+| Query parameter | Required | Notes |
+|---|---|---|
+| `from`, `to` | `from` or `from_lat`+`from_lng`, and `to` or `to_lat`+`to_lng` | Station, sight or landmark name |
+| `from_lat`, `from_lng` | see `from` | Starting point coordinates (must be in Japan) |
+| `to_lat`, `to_lng` | see `to` | Destination coordinates (must be in Japan) |
+| `city` | no | City context for geocoding (e.g. `Tokyo`) |
+| `depart` | no | Departure time in 24h format (`HH:MM`, Japan time) |
+
+### Response: 200 OK
+
+```json
+{
+  "directions": {
+    "from": { "name": "Shinjuku", "lat": 35.6899, "lng": 139.6997 },
+    "journeys": [
+      {
+        "minutes": 32,
+        "transfers": 1,
+        "walk_minutes": 8,
+        "departs": "09:04",
+        "arrives": "09:36",
+        "legs": [
+          {
+            "mode": "transit",
+            "line": "Marunouchi Line",
+            "operator": "Tokyo Metro",
+            "color": "#F62E36",
+            "line_code": "M",
+            "towards": "Ikebukuro",
+            "from": { "name": "Shinjuku", "name_ja": "新宿", "code": "M08", "lat": 35.69, "lng": 139.70 },
+            "to": { "name": "Ginza", "name_ja": "銀座", "code": "M16", "lat": 35.67, "lng": 139.76 },
+            "distance_m": 6200,
+            "minutes": 16,
+            "exit": "A1",
+            "platform": "2",
+            "via": [],
+            "path": [[35.69, 139.70], [35.67, 139.76]]
+          }
+        ]
+      }
+    ],
+    "attribution": "Routes: Transitous and the transit operators. Map data © OpenStreetMap contributors"
+  }
+}
+```
+
+## GET /v1/places
+
+Finds essential places nearby (hospitals, clinics, pharmacies, police boxes, ATMs, toilets, convenience stores) from our curated snapshot, or searches for other venues via Photon.
+
+```
+GET /v1/places?kind=hospital&near=Shinjuku&city=Tokyo
+GET /v1/places?kind=pharmacy&lat=35.6895&lng=139.6917
+GET /v1/places?q=supermarket&near=Kyoto+Station&city=Kyoto
+```
+
+| Query parameter | Required | Notes |
+|---|---|---|
+| `kind` | `kind` or `q` | One of: `hospital`, `clinic`, `pharmacy`, `police`, `atm`, `toilet`, `convenience_store` |
+| `q` | `kind` or `q` | Free-text search term for anything else (via Photon) |
+| `near` | `near`, or `lat`+`lng` | Landmark or station name |
+| `lat`, `lng` | `near`, or `lat`+`lng` | Point in Japan |
+| `city` | no | City context for geocoding |
+| `radius` | no (default 1000) | Metres, 100–3000 |
+
+### Response: 200 OK
+
+```json
+{
+  "places": {
+    "near": { "name": "Shinjuku", "lat": 35.6895, "lng": 139.6917 },
+    "results": [
+      {
+        "name": "Keio University Hospital",
+        "name_ja": "慶應義塾大学病院",
+        "kind": "hospital",
+        "detail": "Emergency services available",
+        "lat": 35.6835,
+        "lng": 139.7171,
+        "distance_m": 850,
+        "phone": "+81-3-3353-1211"
+      }
+    ],
+    "attribution": "Map data © OpenStreetMap contributors"
+  }
+}
+```
+
+## GET /v1/places/suggest
+
+Provides search-as-you-type completions for place and station names on the directions and map screens. Returns stations instantly from our snapshot, followed by Photon matching landmarks.
+
+```
+GET /v1/places/suggest?q=shinj&city=Tokyo
+```
+
+| Query parameter | Required | Notes |
+|---|---|---|
+| `q` | yes | Partial place name (at least 2 characters) |
+| `city` | no | City context |
+| `lat`, `lng` | no | Optional user coordinates to prioritize closest matches |
+
+### Response: 200 OK
+
+```json
+{
+  "suggestions": [
+    {
+      "name": "Shinjuku",
+      "name_ja": "新宿",
+      "kind": "station",
+      "detail": "Tokyo",
+      "lat": 35.69026,
+      "lng": 139.70051
+    }
+  ]
+}
+```
+
 ## Permitted values
 
 These exact strings are the contract. They are defined in `backend/internal/data/profiles.go`, `etiquette.go` and `plans.go`.
@@ -440,6 +573,7 @@ These exact strings are the contract. They are defined in `backend/internal/data
 | `severity` | `important`, `helpful` |
 | `time_slot` | `morning`, `lunch`, `afternoon`, `evening`, `dinner` |
 | `language` | `en`, `hi` |
+| `help_kind` | `hospital`, `clinic`, `pharmacy`, `police`, `atm`, `toilet`, `convenience_store` |
 
 The app should send these as enums. When **reading** `place_type`, treat it as a plain string, so that a new place type added on the backend doesn't crash older app builds.
 

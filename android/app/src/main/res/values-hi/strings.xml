@@ -14,7 +14,7 @@
     <string name="home_open_trip">मेरी यात्रा खोलें</string>
     <string name="home_right_now">अभी</string>
     <string name="home_train">मेरी ट्रेन खोजें</string>
-    <string name="home_train_sub">लाइव रूट, बस पूछें</string>
+    <string name="home_train_sub">रास्ते, निकास और प्लेटफ़ॉर्म</string>
     <string name="home_cards_sub">स्टाफ़ को बताएँ आप क्या खाते हैं</string>
     <string name="home_menu">मेन्यू पढ़ें</string>
     <string name="home_menu_sub">कैमरा</string>
@@ -135,6 +135,9 @@
     <string name="sug_route">आपका %d दिन का रूट</string>
     <string name="sug_catalogue">हमारा AI प्लानर व्यस्त था, इसलिए ये हमारे चुने हुए सुझाव हैं।</string>
     <string name="sug_answer_first">कृपया पहले सवालों के जवाब दें।</string>
+    <string name="sug_selected_count">%2$d में से %1$d चुने गए</string>
+    <string name="sug_select_all">सभी चुनें (%d)</string>
+    <string name="sug_reset_curated">गति अनुसार चुनिंदा</string>
     <string name="trip_title">जापान यात्रा, %1$d दिन · %2$s</string>
     <string name="trip_title_default">मेरी जापान यात्रा</string>
 
@@ -273,6 +276,7 @@
     <string name="dir_find">रास्ते ढूँढ़ें</string>
     <string name="dir_finding">रास्ते ढूँढ़े जा रहे हैं…</string>
     <string name="dir_need_location">जहाँ आप हैं वहाँ से शुरू करने के लिए लोकेशन की अनुमति दें, या शुरुआती जगह लिखें।</string>
+    <string name="dir_outside_japan">आपका वर्तमान स्थान जापान से बाहर है। कृपया जापान का कोई स्टेशन लिखें (जैसे Shinjuku या Tokyo Station)।</string>
     <string name="dir_no_fix">आपकी लोकेशन नहीं मिल पाई। बाहर या खिड़की के पास जाएँ, या शुरुआती जगह लिखें।</string>
     <string name="dir_no_routes">कोई सार्वजनिक परिवहन रास्ता नहीं मिला। मंज़िल के पास का कोई स्टेशन आज़माएँ, या स्टेशन स्टाफ़ से पूछें या टैक्सी लें।</string>
     <plurals name="dir_changes">
@@ -293,7 +297,40 @@
         <item quantity="other">%1$d स्टॉप · %2$d मिनट</item>
     </plurals>
     <string name="dir_open_walk">मैप्स में पैदल रास्ता</string>
+    <string name="colour_red">लाल</string>
+    <string name="colour_orange">नारंगी</string>
+    <string name="colour_yellow">पीला</string>
+    <string name="colour_light_green">हल्का हरा</string>
+    <string name="colour_green">हरा</string>
+    <string name="colour_teal">फ़िरोज़ी</string>
+    <string name="colour_sky_blue">आसमानी</string>
+    <string name="colour_blue">नीला</string>
+    <string name="colour_navy">गहरा नीला</string>
+    <string name="colour_purple">बैंगनी</string>
+    <string name="colour_pink">गुलाबी</string>
+    <string name="colour_magenta">मैजेंटा</string>
+    <string name="colour_brown">भूरा</string>
+    <string name="colour_gold">सुनहरा</string>
+    <string name="colour_silver">सिल्वर</string>
+    <string name="dir_steps">क़दम-ब-क़दम</string>
+    <string name="dir_step_signs">%3$s के लिए %2$s लिखे साइन देखें (रंग: %1$s)।</string>
+    <string name="dir_step_signs_no_code">%2$s के साइन देखें (रंग: %1$s)।</string>
+    <string name="dir_step_signs_plain">%s के साइन देखें।</string>
+    <string name="dir_step_gate">अंदर जाते समय टिकट गेट पर अपना IC कार्ड (Suica, PASMO या ICOCA) छुआएँ।</string>
+    <string name="dir_step_new_company">यह लाइन दूसरी कंपनी की है, इसलिए हो सकता है कि आपको एक टिकट गेट से बाहर निकलकर दूसरे से अंदर जाना पड़े। आपका IC कार्ड दोनों का किराया चुका देगा।</string>
+    <string name="dir_step_platform_towards">प्लेटफ़ॉर्म %1$s पर जाएँ, %2$s की ओर जाने वाली ट्रेन के लिए।</string>
+    <string name="dir_step_platform">प्लेटफ़ॉर्म %s पर जाएँ।</string>
+    <string name="dir_step_towards">%s की ओर जाने वाली ट्रेन लें। प्लेटफ़ॉर्म के साइन बताते हैं कि किस तरफ़ की ट्रेन कहाँ जाती है।</string>
+    <string name="dir_step_get_off">%s पर उतरें।</string>
+    <string name="dir_station_numbers">हर स्टेशन के साइन पर एक नंबर होता है, जैसे %s: अक्षर लाइन बताते हैं और नंबर लाइन पर गिनती। नंबर देखकर पता चलता है कि कितने स्टॉप बाकी हैं।</string>
+    <string name="dir_station">%s स्टेशन</string>
+    <string name="dir_on_your_trip">आपकी यात्रा में</string>
     <string name="dir_from_stop">रास्ता</string>
+    <string name="dir_station_guide">स्टेशन गाइड: %s</string>
+    <string name="dir_station_guide_btn">%s गाइड देखें</string>
+    <string name="dir_station_guide_lines">लाइनें</string>
+    <string name="dir_station_guide_exits">प्रमुख निकास और गंतव्य</string>
+    <string name="dir_station_guide_tips">सलाह और ट्रांसफर</string>
 
     <string name="near_title">आसपास मदद</string>
     <string name="near_subtitle">अस्पताल, पुलिस बूथ, ATM और भी बहुत कुछ, OpenStreetMap से।</string>

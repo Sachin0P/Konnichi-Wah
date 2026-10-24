@@ -60,6 +60,17 @@ interface KonnichiApi {
         @Query("city") city: String,
     ): PlacesEnvelope
 
+    // Places whose name starts with what's been typed so far. lat and lng
+    // (the traveller's location) rank nearby places first; without them,
+    // places near the city do.
+    @GET("v1/places/suggest")
+    suspend fun suggestPlaces(
+        @Query("q") query: String,
+        @Query("city") city: String,
+        @Query("lat") lat: Double?,
+        @Query("lng") lng: Double?,
+    ): PlaceSuggestionsEnvelope
+
     // A few seconds for a whole menu from the cloud, longer with a local model.
     @POST("v1/menu/translate")
     suspend fun translateMenu(@Body request: MenuTranslateRequestDto): MenuEnvelope

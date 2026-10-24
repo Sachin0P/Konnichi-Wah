@@ -98,6 +98,8 @@ func (cfg config) replyTimeout() time.Duration {
 // companion and the menu translator are nil when there's no LLM configured.
 // The transit client also geocodes place names for /v1/food and /v1/places,
 // and photon searches OpenStreetMap for places the snapshot doesn't have.
+// The stations, from the OpenStreetMap snapshot, complete station names as
+// the traveller types.
 type application struct {
 	config    config
 	logger    *slog.Logger
@@ -107,6 +109,7 @@ type application struct {
 	planner   planner.Planner
 	companion *companion.Companion
 	menu      *menu.Translator
+	stations  []*data.Place
 }
 
 func main() {
@@ -301,6 +304,7 @@ func main() {
 		logger:    logger,
 		transit:   transitClient,
 		photon:    photonClient,
+		stations:  stations,
 		models:    models,
 		planner:   p,
 		companion: c,

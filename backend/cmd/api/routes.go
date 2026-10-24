@@ -31,6 +31,7 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/directions", app.listDirectionsHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/places", app.listPlacesHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/places/suggest", app.listPlaceSuggestionsHandler)
 
 	router.HandlerFunc(http.MethodPost, "/v1/menu/translate", app.translateMenuHandler)
 

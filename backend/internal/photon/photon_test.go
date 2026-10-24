@@ -59,3 +59,29 @@ func TestSearchUsesReverseSearchForCategories(t *testing.T) {
 		t.Errorf("searched %s with osm_tag %q for a name; want /api/ with none", path, tag)
 	}
 }
+
+func TestSuggest(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if q.Get("q") != "meiji" || q.Get("bbox") == "" || q.Get("osm_tag") != "" {
+			t.Errorf("request %s", r.URL.RawQuery)
+		}
+		w.Write([]byte(`{"features": [
+			{"geometry": {"coordinates": [139.69, 35.67]}, "properties": {"name": "Meiji Jingu", "osm_value": "shrine"}},
+			{"geometry": {"coordinates": [139.76, 35.69]}, "properties": {"name": "Meiji", "osm_value": "vending_machine"}},
+			{"geometry": {"coordinates": [139.76, 35.69]}, "properties": {"name": "Meiji University", "osm_value": "university"}}
+		]}`))
+	}))
+	defer ts.Close()
+
+	c := New(ts.URL+"/api/", "KonnichiWah/test", 5*time.Second)
+	places, err := c.Suggest(context.Background(), "meiji", 35.68, 139.76, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The vending machine called "Meiji" isn't somewhere anyone is going.
+	if len(places) != 2 || places[0].Name != "Meiji Jingu" || places[1].Name != "Meiji University" {
+		t.Errorf("got %+v", places)
+	}
+}

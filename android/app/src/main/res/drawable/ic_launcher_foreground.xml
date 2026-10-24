@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Rising Sun circle (diameter ~36dp centered at (54, 46)) -->
+    <path
+        android:fillColor="#C8323A"
+        android:pathData="M54,28 A18,18 0 1,0 54,64 A18,18 0 1,0 54,28 Z" />
+
+    <!-- Torii Gate Silhouette in Maroon (#6B1E26) -->
+    <!-- Top curved lintel (Kasagi & Shimaki) -->
+    <path
+        android:fillColor="#6B1E26"
+        android:pathData="M26,45 C35,43 73,43 82,45 L82,49 C74,47.5 34,47.5 26,49 Z" />
+
+    <!-- Secondary crossbeam (Nuki) -->
+    <path
+        android:fillColor="#6B1E26"
+        android:pathData="M29,54 L79,54 L79,57 L29,57 Z" />
+
+    <!-- Left pillar (Hashira) -->
+    <path
+        android:fillColor="#6B1E26"
+        android:pathData="M38,47 L43,47 L41.5,80 L36.5,80 Z" />
+
+    <!-- Right pillar (Hashira) -->
+    <path
+        android:fillColor="#6B1E26"
+        android:pathData="M65,47 L70,47 L71.5,80 L66.5,80 Z" />
+
+    <!-- Central strut (Gakuzuka) -->
+    <path
+        android:fillColor="#6B1E26"
+        android:pathData="M52.5,47 L55.5,47 L55.5,54 L52.5,54 Z" />
+
+    <!-- Small decorative Sakura petals -->
+    <path
+        android:fillColor="#F2CDD1"
+        android:pathData="M31,34 C33,31 37,33 36,36 C33,37 30,36 31,34 Z" />
+    <path
+        android:fillColor="#F2CDD1"
+        android:pathData="M76,37 C78,35 81,37 80,40 C78,41 75,39 76,37 Z" />
+</vector>

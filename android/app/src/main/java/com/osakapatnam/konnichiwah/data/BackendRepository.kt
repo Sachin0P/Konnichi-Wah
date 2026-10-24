@@ -13,6 +13,7 @@ import com.osakapatnam.konnichiwah.data.remote.HealthcheckDto
 import com.osakapatnam.konnichiwah.data.remote.KonnichiApi
 import com.osakapatnam.konnichiwah.data.remote.MenuLineDto
 import com.osakapatnam.konnichiwah.data.remote.MenuTranslateRequestDto
+import com.osakapatnam.konnichiwah.data.remote.PlaceSuggestionDto
 import com.osakapatnam.konnichiwah.data.remote.PlacesDto
 import com.osakapatnam.konnichiwah.data.remote.PlanDto
 import com.osakapatnam.konnichiwah.data.remote.SpiceLevel
@@ -61,6 +62,9 @@ class BackendRepository @Inject constructor(
         apiCall(json) {
             api.places(kind = kind, query = query, lat = near.lat, lng = near.lng, near = near.name.takeIf { near is RouteEnd.Named }, city = city).places
         }
+
+    suspend fun suggestPlaces(query: String, city: String, lat: Double?, lng: Double?): ApiResult<List<PlaceSuggestionDto>> =
+        apiCall(json) { api.suggestPlaces(query, city, lat, lng).suggestions }
 
     // The AI translation of a menu's lines, one for each line sent, in order.
     // Any failure (no internet, the AI busy) is the caller's cue to translate

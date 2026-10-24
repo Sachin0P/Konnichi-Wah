@@ -17,6 +17,26 @@ import javax.inject.Singleton
 @Serializable
 data class HindiRuleDto(val title: String, val tip: String)
 
+@Serializable
+data class StationExitDto(
+    val name: String,
+    val name_ja: String? = null,
+    val leads_to: String,
+)
+
+@Serializable
+data class StationGuideDto(
+    val id: String,
+    val name: String,
+    val name_ja: String? = null,
+    val city: String,
+    val lat: Double,
+    val lng: Double,
+    val lines: List<String> = emptyList(),
+    val exits: List<StationExitDto> = emptyList(),
+    val tips: List<String> = emptyList(),
+)
+
 // Reads the etiquette rulebook bundled in the APK. The build copies it from
 // backend/rulebook/etiquette.json (see copyRulebook in app/build.gradle.kts),
 // so tips are available with no network at all. The Hindi files sit beside
@@ -52,6 +72,11 @@ class RulebookAssets @Inject constructor(
 
         val hindi = read<Map<String, String>>("phrases.hi.json")
         return cards.map { card -> hindi[card.id]?.let { card.copy(english = it) } ?: card }
+    }
+
+    suspend fun stationGuides(language: AppLanguage = AppLanguage.ENGLISH): List<StationGuideDto> {
+        val file = if (language == AppLanguage.HINDI) "stations.hi.json" else "stations.json"
+        return runCatching { read<List<StationGuideDto>>(file) }.getOrElse { read<List<StationGuideDto>>("stations.json") }
     }
 
     private suspend inline fun <reified T> read(name: String): T = withContext(Dispatchers.IO) {

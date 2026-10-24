@@ -1,0 +1,174 @@
+[
+  {
+    "id": "tokyo-station",
+    "name": "Tokyo Station",
+    "name_ja": "東京駅",
+    "city": "Tokyo",
+    "lat": 35.6812,
+    "lng": 139.7671,
+    "lines": ["Yamanote", "Chuo", "Keihin-Tohoku", "Marunouchi", "Tokaido Shinkansen", "Tohoku Shinkansen"],
+    "exits": [
+      {
+        "name": "Marunouchi Central Exit",
+        "name_ja": "丸の内中央口",
+        "leads_to": "Imperial Palace, Marunouchi red brick facade, business district"
+      },
+      {
+        "name": "Yaesu Central Exit",
+        "name_ja": "八重洲中央口",
+        "leads_to": "Tokaido Shinkansen ticket gates, Highway bus terminal, Tokyo Character Street"
+      },
+      {
+        "name": "Nihombashi Exit",
+        "name_ja": "日本橋口",
+        "leads_to": "Express buses and Nihombashi financial district"
+      }
+    ],
+    "tips": [
+      "The Shinkansen platforms (Tokaido / Sanyo towards Kyoto/Osaka) are located on the Yaesu (East) side.",
+      "Changing from local JR platforms to the Keiyo Line (for Tokyo Disneyland) takes 10–15 minutes walking through long underground passageways.",
+      "Tokyo Character Street (Pokemon, Ghibli, Sanrio) is located on the B1 level of First Avenue Tokyo Station on the Yaesu side."
+    ]
+  },
+  {
+    "id": "shinjuku-station",
+    "name": "Shinjuku Station",
+    "name_ja": "新宿駅",
+    "city": "Tokyo",
+    "lat": 35.6902,
+    "lng": 139.7005,
+    "lines": ["Yamanote", "Chuo", "Saikyo", "Shonan-Shinjuku", "Marunouchi", "Toei Shinjuku", "Toei Oedo", "Odakyu", "Keio"],
+    "exits": [
+      {
+        "name": "East Exit",
+        "name_ja": "東口",
+        "leads_to": "Kabukicho, Shinjuku 3-Chome, Omoide Yokocho (Memory Lane), Golden Gai"
+      },
+      {
+        "name": "West Exit",
+        "name_ja": "西口",
+        "leads_to": "Tokyo Metropolitan Government Building (free observation deck), skyscraper district, Yodobashi Camera"
+      },
+      {
+        "name": "South Exit / New South Exit",
+        "name_ja": "南口 / 新南改札",
+        "leads_to": "Busta Shinjuku highway bus terminal, Takashimaya Times Square, Shinjuku Gyoen"
+      }
+    ],
+    "tips": [
+      "The world's busiest station with over 200 exits! Pay close attention to yellow overhead exit signs before tapping out.",
+      "Changing between JR platforms and the Toei Oedo Line takes about 10–12 minutes down multiple escalators deep underground.",
+      "If you need to cross between the East and West sides without entering ticket gates, use the free East-West Underpass (opened 2020)."
+    ]
+  },
+  {
+    "id": "shibuya-station",
+    "name": "Shibuya Station",
+    "name_ja": "渋谷駅",
+    "city": "Tokyo",
+    "lat": 35.6580,
+    "lng": 139.7016,
+    "lines": ["Yamanote", "Saikyo", "Ginza", "Hanzomon", "Fukutoshin", "Tokyu Toyoko", "Keio Inokashira"],
+    "exits": [
+      {
+        "name": "Hachiko Exit",
+        "name_ja": "ハチ公口",
+        "leads_to": "Hachiko bronze statue, Shibuya Scramble Crossing, Shibuya 109, Center-Gai"
+      },
+      {
+        "name": "Miyamasuzaka Exit",
+        "name_ja": "宮益坂口",
+        "leads_to": "Miyashita Park (rooftop park & shopping), Shibuya Hikarie"
+      },
+      {
+        "name": "Scramble Square Sky Exit",
+        "name_ja": "スクランブルスクエア口",
+        "leads_to": "Shibuya Scramble Square & SHIBUYA SKY observation deck"
+      }
+    ],
+    "tips": [
+      "The Ginza Line platform is elevated on the 3rd floor, whereas the Fukutoshin and Tokyu Toyoko lines are located on basement level B5.",
+      "Ongoing station redevelopment means walkways change frequently. Follow the color-coded line signs overhead."
+    ]
+  },
+  {
+    "id": "kyoto-station",
+    "name": "Kyoto Station",
+    "name_ja": "京都駅",
+    "city": "Kyoto",
+    "lat": 34.9858,
+    "lng": 135.7587,
+    "lines": ["Tokaido Shinkansen", "JR Kyoto", "JR Nara", "JR Sagano (San-in)", "Kintetsu Kyoto", "Karasuma Subway"],
+    "exits": [
+      {
+        "name": "Karasuma (North) Central Exit",
+        "name_ja": "烏丸中央口",
+        "leads_to": "Kyoto Tower, City Bus Terminal, Grand Central Concourse, Porta underground mall"
+      },
+      {
+        "name": "Hachijo (South) Exit",
+        "name_ja": "八条口",
+        "leads_to": "Tokaido Shinkansen gates, Kintetsu line (to Nara), Airport Limousine buses"
+      }
+    ],
+    "tips": [
+      "The main city bus terminal for tourist sights (Kinkaku-ji, Kiyomizu-dera, Gion) is located immediately outside the Karasuma (North) Exit.",
+      "The JR Sagano Line for Arashiyama departs from platforms 31–33 at the far western end of the main concourse."
+    ]
+  },
+  {
+    "id": "osaka-station",
+    "name": "Osaka / Umeda Station",
+    "name_ja": "大阪駅 / 梅田駅",
+    "city": "Osaka",
+    "lat": 34.7024,
+    "lng": 135.4959,
+    "lines": ["JR Osaka Loop", "JR Kyoto/Kobe", "Midosuji Subway", "Hankyu", "Hanshin"],
+    "exits": [
+      {
+        "name": "Midosuji (North) Exit",
+        "name_ja": "御堂筋北口",
+        "leads_to": "Grand Front Osaka, Yodobashi Camera Umeda, Lucua shopping mall"
+      },
+      {
+        "name": "Central Exit",
+        "name_ja": "中央口",
+        "leads_to": "Direct connection between JR platforms, taxi ranks, and underground walkways"
+      },
+      {
+        "name": "South Exit",
+        "name_ja": "南口",
+        "leads_to": "Hanshin Department Store, Whity Umeda underground shopping city"
+      }
+    ],
+    "tips": [
+      "The interconnected underground complex is nicknamed the 'Umeda Dungeon'. If disoriented, head to street level to re-orient using Grand Front or Hanshin towers.",
+      "The Osaka Loop Line (platform 1 & 2) circles the city and connects directly to Osaka Castle and Universal Studios transfer points."
+    ]
+  },
+  {
+    "id": "nara-station",
+    "name": "Nara Station",
+    "name_ja": "奈良駅",
+    "city": "Nara",
+    "lat": 34.6811,
+    "lng": 135.8193,
+    "lines": ["JR Yamatoji", "JR Nara", "JR Sakurai"],
+    "exits": [
+      {
+        "name": "East Exit",
+        "name_ja": "東口",
+        "leads_to": "Buses to Nara Park, Todai-ji & Kasuga Taisha; Sanjo-dori shopping street; Tourist Info in historical station building"
+      },
+      {
+        "name": "West Exit",
+        "name_ja": "西口",
+        "leads_to": "Hotel Nikko Nara and regional airport buses"
+      }
+    ],
+    "tips": [
+      "Kintetsu-Nara Station is 15 minutes closer on foot to the deer at Nara Park than JR Nara Station. If arriving at JR Nara, take bus #2 from East Exit bus stop #1.",
+      "The old Western-style JR station building outside the East Exit houses an excellent multi-lingual Tourist Information Office."
+    ]
+  }
+]

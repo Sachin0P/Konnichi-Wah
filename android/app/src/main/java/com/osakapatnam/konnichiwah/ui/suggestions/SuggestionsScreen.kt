@@ -23,6 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -99,7 +100,13 @@ fun SuggestionsScreen(
             when (val s = state) {
                 SuggestionsUiState.Loading -> LoadingContent()
                 is SuggestionsUiState.Error -> ErrorContent(s.error?.userMessage() ?: stringResource(R.string.sug_answer_first), onRetry = viewModel::load)
-                is SuggestionsUiState.Loaded -> PlanContent(s.plan, s.selectedIds, onToggle = viewModel::toggle)
+                is SuggestionsUiState.Loaded -> PlanContent(
+                    plan = s.plan,
+                    selectedIds = s.selectedIds,
+                    onToggle = viewModel::toggle,
+                    onSelectAll = viewModel::selectAll,
+                    onResetCurated = viewModel::resetCurated,
+                )
             }
         }
     }
@@ -140,7 +147,13 @@ private fun ErrorContent(message: String, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun PlanContent(plan: PlanDto, selectedIds: Set<String>, onToggle: (String) -> Unit) {
+private fun PlanContent(
+    plan: PlanDto,
+    selectedIds: Set<String>,
+    onToggle: (String) -> Unit,
+    onSelectAll: () -> Unit,
+    onResetCurated: () -> Unit,
+) {
     // Group the cards by city, keeping the order the planner gave them in.
     val byCity = plan.suggestions.groupBy { it.city }
 
@@ -150,6 +163,31 @@ private fun PlanContent(plan: PlanDto, selectedIds: Set<String>, onToggle: (Stri
     ) {
         item { ScreenHeader(stringResource(R.string.sug_title), subtitle = stringResource(R.string.sug_subtitle)) }
         item { RouteCard(plan) }
+
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.sug_selected_count, selectedIds.size, plan.suggestions.size),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                val allSelected = selectedIds.size == plan.suggestions.size
+                TextButton(onClick = if (allSelected) onResetCurated else onSelectAll) {
+                    Text(
+                        if (allSelected) stringResource(R.string.sug_reset_curated)
+                        else stringResource(R.string.sug_select_all, plan.suggestions.size),
+                        color = Palette.Maroon,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+        }
 
         byCity.forEach { (city, suggestions) ->
             item(key = "header-$city") {

@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,16 +18,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,6 +51,7 @@ import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.remote.JourneyDto
 import com.osakapatnam.konnichiwah.data.remote.JourneyLegDto
 import com.osakapatnam.konnichiwah.data.remote.JourneyStopDto
+import com.osakapatnam.konnichiwah.data.remote.PlaceSuggestionDto
 import com.osakapatnam.konnichiwah.ui.components.BackLink
 import com.osakapatnam.konnichiwah.ui.components.KCard
 import com.osakapatnam.konnichiwah.ui.components.MapLine
@@ -53,6 +60,7 @@ import com.osakapatnam.konnichiwah.ui.components.PillButton
 import com.osakapatnam.konnichiwah.ui.components.PrimaryButton
 import com.osakapatnam.konnichiwah.ui.components.RouteMap
 import com.osakapatnam.konnichiwah.ui.components.ScreenHeader
+import com.osakapatnam.konnichiwah.ui.components.TipQuote
 import com.osakapatnam.konnichiwah.ui.components.Tone
 import com.osakapatnam.konnichiwah.ui.theme.Palette
 import com.osakapatnam.konnichiwah.ui.userMessage
@@ -82,6 +90,16 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
     val journey = journeys.getOrNull(state.selected)
     val problem = state.apiError?.userMessage() ?: state.message?.let { stringResource(it) }
 
+    val matchingGuides = remember(journey, state.stationGuides) {
+        if (journey == null) emptyList() else {
+            val names = journey.legs.flatMap { listOf(it.from.name, it.to.name) }.map { it.lowercase() }
+            state.stationGuides.filter { guide ->
+                val base = guide.name.lowercase().replace("station", "").trim()
+                names.any { n -> n.contains(base) }
+            }
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
@@ -99,23 +117,23 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
                         TextButton(onClick = { viewModel.setFromHere(false) }) { Text(stringResource(R.string.dir_type_place)) }
                     }
                 } else {
-                    OutlinedTextField(
+                    PlaceBox(
                         value = state.fromText,
                         onValueChange = viewModel::setFrom,
-                        placeholder = { Text(stringResource(R.string.dir_from_hint)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        hint = stringResource(R.string.dir_from_hint),
+                        suggestions = state.fromSuggestions,
+                        onPick = { suggestion, label -> viewModel.pick(suggestion, label, from = true) },
                     )
                     TextButton(onClick = { viewModel.setFromHere(true) }) { Text(stringResource(R.string.dir_use_location)) }
                 }
 
                 Text(stringResource(R.string.dir_to), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
-                OutlinedTextField(
+                PlaceBox(
                     value = state.toText,
                     onValueChange = viewModel::setTo,
-                    placeholder = { Text(stringResource(R.string.dir_to_hint)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    hint = stringResource(R.string.dir_to_hint),
+                    suggestions = state.toSuggestions,
+                    onPick = { suggestion, label -> viewModel.pick(suggestion, label, from = false) },
                 )
 
                 PrimaryButton(
@@ -166,8 +184,30 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
                 )
             }
 
+            if (matchingGuides.isNotEmpty()) {
+                item {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(matchingGuides) { guide ->
+                            PillButton(
+                                stringResource(R.string.dir_station_guide_btn, guide.name),
+                                onClick = { viewModel.viewGuide(guide) },
+                                tone = Tone.MAROON,
+                            )
+                        }
+                    }
+                }
+            }
+
             itemsIndexed(journey.legs) { i, leg ->
-                LegCard(leg, first = i == 0, last = i == journey.legs.lastIndex)
+                LegCard(leg, first = i == 0, last = i == journey.legs.lastIndex, steps = rideSteps(journey.legs, i))
+            }
+
+            // Station numbers are the easiest way to follow a line, once
+            // someone has explained them.
+            journey.legs.firstNotNullOfOrNull { leg -> leg.from.code?.takeIf { leg.mode != "walk" && it.isNotBlank() } }?.let { code ->
+                item {
+                    TipQuote { Text(stringResource(R.string.dir_station_numbers, code), style = MaterialTheme.typography.bodyMedium) }
+                }
             }
 
             item {
@@ -179,6 +219,130 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
             }
         }
     }
+
+    state.viewingGuide?.let { guide ->
+        AlertDialog(
+            onDismissRequest = { viewModel.viewGuide(null) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.viewGuide(null) }) {
+                    Text(stringResource(R.string.card_close), color = Palette.Sun)
+                }
+            },
+            title = {
+                Text(
+                    guide.name + if (guide.name_ja != null) " (${guide.name_ja})" else "",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Palette.Maroon,
+                )
+            },
+            text = {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (guide.lines.isNotEmpty()) {
+                        item {
+                            Text(stringResource(R.string.dir_station_guide_lines) + ": " + guide.lines.joinToString(", "), style = MaterialTheme.typography.labelMedium, color = Palette.Mute)
+                        }
+                    }
+                    if (guide.exits.isNotEmpty()) {
+                        item {
+                            Text(stringResource(R.string.dir_station_guide_exits), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Palette.Ink)
+                        }
+                        items(guide.exits) { exit ->
+                            Text("• ${exit.name}: ${exit.leads_to}", style = MaterialTheme.typography.bodySmall, color = Palette.Ink)
+                        }
+                    }
+                    if (guide.tips.isNotEmpty()) {
+                        item {
+                            Text(stringResource(R.string.dir_station_guide_tips), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Palette.Ink)
+                        }
+                        items(guide.tips) { tip ->
+                            Text("• $tip", style = MaterialTheme.typography.bodySmall, color = Palette.Ink)
+                        }
+                    }
+                }
+            },
+            containerColor = Palette.Card,
+        )
+    }
+}
+
+// A place box with a dropdown of matching places under it, updated as the
+// traveller types. The list is drawn in the page rather than as a popup, so
+// it never covers the keyboard or fights the text box for focus.
+@Composable
+private fun PlaceBox(
+    value: String,
+    onValueChange: (String) -> Unit,
+    hint: String,
+    suggestions: List<PlaceSuggestionDto>,
+    onPick: (PlaceSuggestionDto, String) -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = { Text(hint) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (suggestions.isNotEmpty()) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                shadowElevation = 4.dp,
+                color = MaterialTheme.colorScheme.surface,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+            ) {
+                Column {
+                    suggestions.forEachIndexed { i, suggestion ->
+                        val label = suggestionLabel(suggestion)
+                        if (i > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onPick(suggestion, label) }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                        ) {
+                            Text(kindEmoji(suggestion.kind), fontSize = 18.sp)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(label, style = MaterialTheme.typography.bodyLarge)
+                                val detail = listOfNotNull(
+                                    suggestion.nameJa?.takeIf { it.isNotBlank() && it != suggestion.name },
+                                    if (suggestion.kind == TRIP_STOP) stringResource(R.string.dir_on_your_trip) else null,
+                                    suggestion.detail?.takeIf { it.isNotBlank() },
+                                ).joinToString(" · ")
+                                if (detail.isNotEmpty()) {
+                                    Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// "Shinjuku Station" for stations, so they read like the signs; other places
+// by their own name.
+@Composable
+private fun suggestionLabel(s: PlaceSuggestionDto): String =
+    if (s.kind == "station") stringResource(R.string.dir_station, s.name) else s.name
+
+private fun kindEmoji(kind: String): String = when (kind) {
+    "station" -> "🚉"
+    TRIP_STOP -> "⭐"
+    "place_of_worship", "shrine", "temple", "religious" -> "⛩️"
+    "hotel", "hostel", "guest_house" -> "🏨"
+    "hospital", "clinic" -> "🏥"
+    "restaurant", "fast_food", "cafe", "pub", "bar" -> "🍽️"
+    "park", "garden" -> "🌳"
+    "museum", "gallery" -> "🏛️"
+    "tower", "attraction", "viewpoint", "castle" -> "🗼"
+    "mall", "department_store", "supermarket" -> "🛍️"
+    else -> "📍"
 }
 
 // "09:04–09:46 · 42 min · 1 change".
@@ -211,8 +375,49 @@ private fun stopLabel(s: JourneyStopDto): String = buildString {
     if (!s.code.isNullOrBlank()) append(" (").append(s.code).append(")")
 }
 
+// What to do at the station for the ride at legs[i], in order: which signs
+// to follow (by colour and letter), the ticket gate, which platform and
+// direction, and where to get off. Built from the timetable data only, so
+// nothing is guessed. Empty for walks.
 @Composable
-private fun LegCard(leg: JourneyLegDto, first: Boolean, last: Boolean) {
+private fun rideSteps(legs: List<JourneyLegDto>, i: Int): List<String> {
+    val leg = legs[i]
+    if (leg.mode == "walk") return emptyList()
+
+    val steps = mutableListOf<String>()
+    val line = leg.line ?: leg.operator.orEmpty()
+    val colour = LineColour.nearest(leg.color)?.let { stringResource(it.label) }
+    val code = leg.lineCode?.takeIf { it.isNotBlank() }
+    steps += when {
+        colour != null && code != null -> stringResource(R.string.dir_step_signs, colour, code, line)
+        colour != null -> stringResource(R.string.dir_step_signs_no_code, colour, line)
+        else -> stringResource(R.string.dir_step_signs_plain, line)
+    }
+
+    // The ticket gate on the way in to the first train; on a change, only
+    // when the next line belongs to another company (JR to Tokyo Metro).
+    val previousRide = legs.subList(0, i).lastOrNull { it.mode != "walk" }
+    when {
+        previousRide == null -> steps += stringResource(R.string.dir_step_gate)
+        previousRide.operator != null && leg.operator != null && previousRide.operator != leg.operator ->
+            steps += stringResource(R.string.dir_step_new_company)
+    }
+
+    // The platform comes from the walk to the train, when there is one.
+    val platform = legs.getOrNull(i - 1)?.takeIf { it.mode == "walk" }?.platform
+    val towards = leg.towards?.takeIf { it.isNotBlank() }
+    when {
+        platform != null && towards != null -> steps += stringResource(R.string.dir_step_platform_towards, platform, towards)
+        platform != null -> steps += stringResource(R.string.dir_step_platform, platform)
+        towards != null -> steps += stringResource(R.string.dir_step_towards, towards)
+    }
+
+    steps += stringResource(R.string.dir_step_get_off, stopLabel(leg.to))
+    return steps
+}
+
+@Composable
+private fun LegCard(leg: JourneyLegDto, first: Boolean, last: Boolean, steps: List<String>) {
     val context = LocalContext.current
 
     KCard(modifier = Modifier.fillMaxWidth()) {
@@ -267,6 +472,23 @@ private fun LegCard(leg: JourneyLegDto, first: Boolean, last: Boolean) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+
+                    if (steps.isNotEmpty()) {
+                        Text(stringResource(R.string.dir_steps), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+                        steps.forEachIndexed { n, step ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .background(legColor(leg), CircleShape),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text("${n + 1}", color = textOn(legColor(leg)), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Text(step, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
                 }
             }
         }

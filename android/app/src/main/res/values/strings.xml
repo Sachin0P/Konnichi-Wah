@@ -13,7 +13,7 @@
     <string name="home_open_trip">Open my trip</string>
     <string name="home_right_now">Right now</string>
     <string name="home_train">Find my train</string>
-    <string name="home_train_sub">Live routes, just ask</string>
+    <string name="home_train_sub">Routes, exits and platforms</string>
     <string name="home_cards_sub">Show staff what you eat</string>
     <string name="home_menu">Read a menu</string>
     <string name="home_menu_sub">Camera</string>
@@ -141,6 +141,9 @@
     <string name="sug_route">Your %d-day route</string>
     <string name="sug_catalogue">Our AI planner was busy, so these are our hand-picked suggestions.</string>
     <string name="sug_answer_first">Please answer the questions first.</string>
+    <string name="sug_selected_count">%1$d of %2$d selected</string>
+    <string name="sug_select_all" tools:ignore="PluralsCandidate">Select all (%d)</string>
+    <string name="sug_reset_curated">Curated for pace</string>
     <string name="trip_title">%1$d-day Japan trip · %2$s</string>
     <string name="trip_title_default">My Japan trip</string>
 
@@ -286,6 +289,7 @@
     <string name="dir_find">Find routes</string>
     <string name="dir_finding">Finding routes…</string>
     <string name="dir_need_location">Allow location to start from where you are, or type a starting point.</string>
+    <string name="dir_outside_japan">Your current location is outside Japan. Please type a starting station in Japan (e.g. Shinjuku or Tokyo Station).</string>
     <string name="dir_no_fix">Couldn\'t get your location. Go outside or near a window, or type a starting point.</string>
     <string name="dir_no_routes">No public transport route found. Try a nearby station as the destination, or ask station staff or take a taxi.</string>
     <plurals name="dir_changes">
@@ -306,7 +310,40 @@
         <item quantity="other">%1$d stops · %2$d min</item>
     </plurals>
     <string name="dir_open_walk">Walking directions in Maps</string>
+    <string name="colour_red">red</string>
+    <string name="colour_orange">orange</string>
+    <string name="colour_yellow">yellow</string>
+    <string name="colour_light_green">light green</string>
+    <string name="colour_green">green</string>
+    <string name="colour_teal">teal</string>
+    <string name="colour_sky_blue">sky blue</string>
+    <string name="colour_blue">blue</string>
+    <string name="colour_navy">navy blue</string>
+    <string name="colour_purple">purple</string>
+    <string name="colour_pink">pink</string>
+    <string name="colour_magenta">magenta</string>
+    <string name="colour_brown">brown</string>
+    <string name="colour_gold">gold</string>
+    <string name="colour_silver">silver</string>
+    <string name="dir_steps">Step by step</string>
+    <string name="dir_step_signs">Follow the %1$s signs marked %2$s for the %3$s.</string>
+    <string name="dir_step_signs_no_code">Follow the %1$s signs for the %2$s.</string>
+    <string name="dir_step_signs_plain">Follow the signs for the %s.</string>
+    <string name="dir_step_gate">Touch your IC card (Suica, PASMO or ICOCA) on the ticket gate as you go in.</string>
+    <string name="dir_step_new_company">This line belongs to a different company, so you may go out through one ticket gate and in through another. Your IC card pays for both.</string>
+    <string name="dir_step_platform_towards">Go to platform %1$s, for trains towards %2$s.</string>
+    <string name="dir_step_platform">Go to platform %s.</string>
+    <string name="dir_step_towards">Take a train towards %s. The platform signs show which direction each side goes.</string>
+    <string name="dir_step_get_off">Get off at %s.</string>
+    <string name="dir_station_numbers">Every station has a number on its signs, like %s: the letters are the line and the number counts along it. Watch the numbers to know how many stops are left.</string>
+    <string name="dir_station">%s Station</string>
+    <string name="dir_on_your_trip">On your trip</string>
     <string name="dir_from_stop">Directions</string>
+    <string name="dir_station_guide">Station guide: %s</string>
+    <string name="dir_station_guide_btn">View %s guide</string>
+    <string name="dir_station_guide_lines">Lines</string>
+    <string name="dir_station_guide_exits">Main exits &amp; destinations</string>
+    <string name="dir_station_guide_tips">Tips &amp; transfers</string>
 
     <!-- Help nearby -->
     <string name="near_title">Help nearby</string>
