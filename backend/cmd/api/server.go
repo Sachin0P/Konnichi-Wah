@@ -17,16 +17,17 @@ func (app *application) serve() error {
 	// The ErrorLog field routes any errors from Go's http.Server through our
 	// structured logger at the Error level.
 	//
-	// The WriteTimeout is longer than the book's 10 seconds, because the
-	// planner can wait up to -gemini-timeout (20s by default) for the LLM and
-	// then still needs time to fall back and write the response. Keep it
-	// comfortably above that flag's value.
+	// The WriteTimeout is longer than the book's 10 seconds, because LLM
+	// answers can take a while: up to -gemini-timeout (20s by default) for
+	// the planner in the cloud, or -local-llm-timeout on a laptop. It stays
+	// 5 seconds above how long handlers wait, so they can still fall back
+	// or write an error.
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", app.config.port),
 		Handler:      app.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		WriteTimeout: max(30*time.Second, app.config.replyTimeout()+5*time.Second),
 		ErrorLog:     slog.NewLogLogger(app.logger.Handler(), slog.LevelError),
 	}
 

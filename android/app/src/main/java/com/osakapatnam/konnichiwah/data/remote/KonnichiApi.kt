@@ -31,9 +31,13 @@ interface KonnichiApi {
     @PATCH("v1/itineraries/{id}")
     suspend fun updateItinerary(@Path("id") id: Long, @Body request: UpdateItineraryRequestDto): ItineraryEnvelope
 
-    // Usually 1-6 seconds; the backend caps it at 25.
+    // Usually 1-6 seconds from the cloud, longer with a local model.
     @POST("v1/companion/chat")
     suspend fun chat(@Body request: ChatRequestDto): ChatReplyEnvelope
+
+    // A few seconds for a whole menu from the cloud, longer with a local model.
+    @POST("v1/menu/translate")
+    suspend fun translateMenu(@Body request: MenuTranslateRequestDto): MenuEnvelope
 
     // Search either near a point (lat and lng) or a place name (near and
     // city); Retrofit leaves out null parameters. avoid is comma separated,

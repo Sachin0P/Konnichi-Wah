@@ -133,3 +133,13 @@ fun menuConcernsFor(profile: UserProfileDto?): Set<MenuConcern> {
     }
     return concerns
 }
+
+// Text recognition puts spaces between the characters of vertical Japanese
+// ("枝 豆", "野 菜 カレー"). Japanese doesn't use spaces between words, so
+// they only get in the way: the translation reads 枝 豆 as "branch beans"
+// rather than edamame, and "海 老" doesn't match the warning word 海老. Spaces
+// next to English letters or numbers ("Pork cutlet", "¥ 850") are kept.
+private val japaneseChar = """[\p{IsHan}\p{IsHiragana}\p{IsKatakana}ー々]"""
+private val spaceInJapanese = Regex("(?<=$japaneseChar)\\s+(?=$japaneseChar)")
+
+fun joinJapanese(text: String): String = text.replace(spaceInJapanese, "")

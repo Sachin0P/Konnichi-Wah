@@ -29,9 +29,9 @@ Konnichi-Wah! removes that uncertainty, before the trip and during it.
    - A ramen shop is left out for someone avoiding pork, even if it's the closest place.
 6. **Day-before reminders.** Set the trip's dates and you get a notification at 7 pm Japan time the evening before each day, with tomorrow's stops and a culture tip ("Tomorrow: Day 2 in Kyoto · Morning · Fushimi Inari Taisha · Tip: …"). They're scheduled on the phone with WorkManager and need no network.
 7. **Menu reader.** Photograph a Japanese menu (or pick a photo) and the app reads it on the phone:
-   - Each line with its English translation (machine-translated, so only a rough guide).
+   - **The English is drawn over the photo,** on top of each Japanese line, like Google Lens. Pinch to zoom, tap a line to see it in full, or switch to a list. Vertical Japanese gets its translation running down the line. Translations are still machine-made, so check anything important with staff.
    - **Warnings for your diet**, found in the Japanese itself rather than the translation: "⚠ Pork (豚)", "⚠ Dashi (fish stock) (味噌汁)". It knows what dishes usually hide (ramen broth, miso soup) and that 牛乳 is milk, not beef.
-   - Text recognition works offline from the start. Translation needs a one-time 30 MB download.
+   - **AI translation:** with internet, the menu's text (never the photo) is translated by AI in one go, so dishes get their real names and a note on what they are (親子丼 → "Oyakodon: chicken and egg simmered with onion, on rice"), and misread words are corrected. Without internet, it translates on the phone instead (a one-time 30 MB download). Text recognition always works offline.
 8. **Diet cards, offline.** The "Cards" screen shows *your* hand-checked Japanese diet cards first (vegetarian, Jain, eggetarian, halal, no beef, no pork, "does this contain dashi?"). They're bundled in the app and work with no signal.
 9. **In Hindi or English.** One tap (हिन्दी / English) switches the whole app, instantly:
    - Every screen, the 78 culture tips, each diet card's meaning, the reminders, the menu warnings and the Desi Match reasons have hand-written Hindi versions. The Japanese on the cards stays exactly the same.
@@ -127,6 +127,17 @@ make run/api port=4001         # start the API (default port is 4000)
 ```
 
 `.envrc` is gitignored. Never commit keys. Check it's up with `curl localhost:4001/v1/healthcheck`.
+
+**AI on your own machine instead (no keys, no quotas).** The planner, chat and menu translation can all run on a local model with [Ollama](https://ollama.com) instead of Gemini and Groq. Nothing leaves the machine, but answers are slower (a plan can take a minute or more on a laptop):
+
+```sh
+brew install ollama
+ollama serve &                 # leave it running
+ollama pull qwen3.5:9b         # about 7.6 GB; fits a 16 GB Mac
+go run ./cmd/api -port=4001 -db-dsn="$KONNICHIWAH_DB_DSN" -llm=local -local-llm-model=qwen3.5:9b
+```
+
+`-llm=cloud` (the default) uses Gemini and Groq as before.
 
 Other useful targets: `make audit` (vet and tests), `make db/psql`, and `make help` for the full list. The live Transitous test is skipped by default; run it with `TRANSIT_LIVE=1 go test ./internal/transit -run Live -v`.
 

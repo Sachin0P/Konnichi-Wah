@@ -1,5 +1,6 @@
 package com.osakapatnam.konnichiwah.data
 
+import com.osakapatnam.konnichiwah.data.remote.ApiError
 import com.osakapatnam.konnichiwah.data.remote.ApiResult
 import com.osakapatnam.konnichiwah.data.remote.AvoidItem
 import com.osakapatnam.konnichiwah.data.remote.ChatReplyDto
@@ -9,11 +10,14 @@ import com.osakapatnam.konnichiwah.data.remote.EtiquetteRuleDto
 import com.osakapatnam.konnichiwah.data.remote.FoodDto
 import com.osakapatnam.konnichiwah.data.remote.HealthcheckDto
 import com.osakapatnam.konnichiwah.data.remote.KonnichiApi
+import com.osakapatnam.konnichiwah.data.remote.MenuLineDto
+import com.osakapatnam.konnichiwah.data.remote.MenuTranslateRequestDto
 import com.osakapatnam.konnichiwah.data.remote.PlanDto
 import com.osakapatnam.konnichiwah.data.remote.SpiceLevel
 import com.osakapatnam.konnichiwah.data.remote.TripRequestDto
 import com.osakapatnam.konnichiwah.data.remote.UserProfileDto
 import com.osakapatnam.konnichiwah.data.remote.apiCall
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
@@ -38,6 +42,20 @@ class BackendRepository @Inject constructor(
 
     suspend fun chat(request: ChatRequestDto): ApiResult<ChatReplyDto> =
         apiCall(json) { api.chat(request).reply }
+
+    // The AI translation of a menu's lines, one for each line sent, in order.
+    // Any failure (no internet, the AI busy) is the caller's cue to translate
+    // on the phone instead.
+    suspend fun translateMenu(lines: List<String>, language: AppLanguage): ApiResult<List<MenuLineDto>> {
+        val result = apiCall(json) { api.translateMenu(MenuTranslateRequestDto(lines, language.tag)).menu.lines }
+
+        // The backend checks this too, but a mismatch would put translations
+        // on the wrong lines of the photo, so we never use one.
+        if (result is ApiResult.Success && result.value.size != lines.size) {
+            return ApiResult.Failure(ApiError.BadResponse(SerializationException("expected ${lines.size} lines, got ${result.value.size}")))
+        }
+        return result
+    }
 
     // Searches by the stop's stored coordinates when it has them (set by the
     // backend when the trip was built), otherwise by its name. The query

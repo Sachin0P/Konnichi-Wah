@@ -3,6 +3,7 @@ package com.osakapatnam.konnichiwah.ui.menu
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.util.Size
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -35,6 +36,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,6 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -52,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -59,7 +63,6 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.mlkit.vision.common.InputImage
 import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.MenuConcern
 import com.osakapatnam.konnichiwah.ui.components.KCard
@@ -71,7 +74,11 @@ import com.osakapatnam.konnichiwah.ui.components.StatusDot
 import com.osakapatnam.konnichiwah.ui.components.Tone
 import com.osakapatnam.konnichiwah.ui.theme.DisplayFont
 import com.osakapatnam.konnichiwah.ui.theme.Palette
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 // The menu reader. It's a bottom tab, so it has no Back button; "Scan
 // again" returns from the results to the camera.
@@ -104,9 +111,11 @@ fun MenuScreen(
                 onError = viewModel::cameraError,
             )
             else -> Results(
+                photo = state.photo,
                 lines = lines,
                 found = state.found,
-                translating = state.model == TranslationModel.READY,
+                translating = state.translating,
+                translatedBy = state.translatedBy,
                 onScanAgain = viewModel::scanAgain,
                 onDietCards = onDietCards,
             )
@@ -148,7 +157,8 @@ private fun TranslationBanner(model: TranslationModel, onDownload: () -> Unit) {
 // The camera in a dark rounded viewfinder, plus a way to pick a photo
 // instead (a menu photographed earlier, or when there's no camera permission).
 @Composable
-private fun Scanner(@StringRes error: Int?, onImage: (InputImage) -> Unit, onError: (Int) -> Unit) {
+private fun Scanner(@StringRes error: Int?, onImage: (Bitmap) -> Unit, onError: (Int) -> Unit) {
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var hasCamera by remember { mutableStateOf(hasCameraPermission(context)) }
     var asked by rememberSaveable { mutableStateOf(false) }
@@ -158,11 +168,13 @@ private fun Scanner(@StringRes error: Int?, onImage: (InputImage) -> Unit, onErr
     }
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
-            // fromFilePath reads the photo's EXIF rotation, so it comes out
-            // upright.
-            runCatching { InputImage.fromFilePath(context, uri) }
-                .onSuccess(onImage)
-                .onFailure { onError(R.string.menu_open_failed) }
+            // Decoding a full-size photo takes a moment, so do it off the
+            // main thread.
+            scope.launch {
+                runCatching { withContext(Dispatchers.Default) { decodeUpright(context, uri) } }
+                    .onSuccess(onImage)
+                    .onFailure { onError(R.string.menu_open_failed) }
+            }
         }
     }
 
@@ -228,7 +240,7 @@ private fun Scanner(@StringRes error: Int?, onImage: (InputImage) -> Unit, onErr
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             PrimaryButton(
                 stringResource(R.string.menu_read),
-                onClick = { capture(context, imageCapture, onImage, onError) },
+                onClick = { capture(context, scope, imageCapture, onImage, onError) },
                 enabled = hasCamera,
                 modifier = Modifier.weight(1f),
             )
@@ -264,17 +276,29 @@ private fun CameraPreview(imageCapture: ImageCapture, modifier: Modifier) {
     AndroidView(factory = { previewView }, modifier = modifier)
 }
 
-private fun capture(context: Context, imageCapture: ImageCapture, onImage: (InputImage) -> Unit, onError: (Int) -> Unit) {
+private fun capture(
+    context: Context,
+    scope: CoroutineScope,
+    imageCapture: ImageCapture,
+    onImage: (Bitmap) -> Unit,
+    onError: (Int) -> Unit,
+) {
     imageCapture.takePicture(
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
-                // Copy the frame out so the camera's buffer can be released
-                // straight away; ML Kit rotates it upright.
-                val bitmap = image.toBitmap()
-                val rotation = image.imageInfo.rotationDegrees
-                image.close()
-                onImage(InputImage.fromBitmap(bitmap, rotation))
+                // Copy the frame out, upright, then release the camera's
+                // buffer. Rotating takes a moment, so it's off the main thread.
+                scope.launch {
+                    val photo = withContext(Dispatchers.Default) {
+                        try {
+                            image.toUprightBitmap()
+                        } finally {
+                            image.close()
+                        }
+                    }
+                    onImage(photo)
+                }
             }
 
             override fun onError(exception: ImageCaptureException) {
@@ -287,38 +311,79 @@ private fun capture(context: Context, imageCapture: ImageCapture, onImage: (Inpu
 private fun hasCameraPermission(context: Context) =
     ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 
+// The scan's results: the translations drawn over the photo, or the same
+// lines as a list (easier to read through, and what screen readers get).
 @Composable
 private fun Results(
+    photo: Bitmap?,
     lines: List<MenuLine>,
     found: List<MenuConcern>,
     translating: Boolean,
+    translatedBy: TranslatedBy?,
     onScanAgain: () -> Unit,
     onDietCards: () -> Unit,
 ) {
-    LazyColumn(
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        item { Summary(lines.isEmpty(), found) }
+    val canShowPhoto = photo != null && lines.any { it.box != null }
+    var showList by rememberSaveable { mutableStateOf(false) }
+    var opened by remember { mutableStateOf<MenuLine?>(null) }
+    val onPhoto = canShowPhoto && !showList
 
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Summary(lines.isEmpty(), found)
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 PrimaryButton(stringResource(R.string.menu_my_cards), onClick = onDietCards, modifier = Modifier.weight(1f))
+                if (canShowPhoto) {
+                    PillButton(stringResource(if (showList) R.string.menu_view_photo else R.string.menu_view_list), onClick = { showList = !showList })
+                }
                 PillButton(stringResource(R.string.menu_scan_again), onClick = onScanAgain)
             }
-        }
 
-        if (lines.isNotEmpty()) {
-            item {
+            if (lines.isNotEmpty()) {
+                // Say who translated it: the AI is much better, but the
+                // traveller should know it's still a machine.
+                val note = stringResource(if (translatedBy == TranslatedBy.AI) R.string.menu_ai_note else R.string.menu_translation_note)
                 Text(
-                    stringResource(R.string.menu_translation_note),
+                    if (onPhoto) stringResource(R.string.menu_zoom_hint) + " " + note else note,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
-        items(lines) { line -> LineCard(line, translating) }
+        if (onPhoto) {
+            MenuPhotoView(
+                photo = photo!!,
+                lines = lines,
+                onTap = { opened = it },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(lines) { line -> LineCard(line, translating) }
+            }
+        }
+    }
+
+    opened?.let { line ->
+        // Look the line up again, so a translation that arrives while it's
+        // open shows up.
+        val current = lines.firstOrNull { it.box == line.box && it.japanese == line.japanese } ?: line
+        AlertDialog(
+            onDismissRequest = { opened = null },
+            confirmButton = { TextButton(onClick = { opened = null }) { Text(stringResource(R.string.card_close), color = Palette.Sun) } },
+            text = { LineCard(current, translating) },
+        )
     }
 }
 
@@ -359,6 +424,10 @@ private fun LineCard(line: MenuLine, translating: Boolean) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            // What the dish is, from the AI translator.
+            line.note?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, fontStyle = FontStyle.Italic, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (line.flags.isNotEmpty()) {
                 FlowRow(

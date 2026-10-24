@@ -228,7 +228,7 @@
     <string name="menu_title">Menu reader</string>
     <string name="menu_offline">Works offline</string>
     <string name="menu_reading">Reading the menu…</string>
-    <string name="menu_model_missing">English translation needs a one-time download (about 30 MB). Warnings work without it.</string>
+    <string name="menu_model_missing">With internet, menus are translated by AI. To translate without internet too, download the offline translator once (about 30 MB). Warnings always work.</string>
     <string name="menu_model_downloading">Downloading the translation…</string>
     <string name="menu_model_failed">The download didn\'t finish. Check your connection and try again.</string>
     <string name="menu_retry">Retry</string>
@@ -243,6 +243,7 @@
     <string name="menu_choose_photo">Choose photo</string>
     <string name="menu_scan_again">Scan again</string>
     <string name="menu_my_cards">My diet cards</string>
+    <string name="menu_ai_note">Translated by AI from the menu\'s text (the photo stays on your phone). Check anything important with the staff. Warnings come from the Japanese words themselves.</string>
     <string name="menu_translation_note">English is a machine translation, only a rough guide. Warnings come from the Japanese words themselves.</string>
     <string name="menu_no_text">No text found</string>
     <string name="menu_no_text_hint">Hold the phone closer, keep the menu flat, and make sure it\'s well lit.</string>
@@ -250,6 +251,9 @@
     <string name="menu_marked">The lines are marked below. Ask the staff, and show your diet card.</string>
     <string name="menu_none_found">No warning words found</string>
     <string name="menu_none_found_hint">That doesn\'t make a dish safe: dashi and meat stock often aren\'t written on the menu. Show your diet card to check.</string>
+    <string name="menu_view_list">List</string>
+    <string name="menu_view_photo">Photo</string>
+    <string name="menu_zoom_hint">Pinch to zoom, and tap a line to see it in full.</string>
     <string name="menu_translating">Translating…</string>
     <string name="menu_flag">⚠ %1$s (%2$s)</string>
     <string name="concern_pork">Pork</string>

@@ -94,3 +94,60 @@ func TestPerMinuteLimitIsReturnedWithRetryAfter(t *testing.T) {
 		t.Errorf("got %v", err)
 	}
 }
+
+func TestJSONAsksForJSONMode(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+
+		if rf, _ := body["response_format"].(map[string]any); rf["type"] != "json_object" {
+			t.Errorf("response_format = %v; want json_object", body["response_format"])
+		}
+		if body["max_completion_tokens"] != float64(500) {
+			t.Errorf("max_completion_tokens = %v", body["max_completion_tokens"])
+		}
+
+		w.Write([]byte(`{"choices": [{"message": {"role": "assistant", "content": "{\"ok\": true}"}}]}`))
+	}))
+	defer ts.Close()
+
+	got, err := New(ts.URL, "k", []string{"openai/gpt-oss-120b"}, 5*time.Second).JSON(context.Background(), []Message{{Role: "user", Content: "hi"}}, 500)
+	if err != nil || got != `{"ok": true}` {
+		t.Errorf("got %q, %v", got, err)
+	}
+}
+
+func TestReasoningOverride(t *testing.T) {
+	var got any
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		got = body["reasoning_effort"]
+		w.Write([]byte(`{"choices": [{"message": {"role": "assistant", "content": "{}"}}]}`))
+	}))
+	defer ts.Close()
+
+	c := New(ts.URL, "", []string{"qwen3.5:9b"}, 5*time.Second)
+	c.Reasoning = "none"
+	if _, err := c.JSON(context.Background(), []Message{{Role: "user", Content: "hi"}}, 100); err != nil || got != "none" {
+		t.Errorf("reasoning_effort = %v, err %v; want none", got, err)
+	}
+}
+
+func TestGenerateJSONSendsTheSchema(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		rf := body["response_format"].(map[string]any)
+		if rf["type"] != "json_schema" || rf["json_schema"].(map[string]any)["schema"] == nil {
+			t.Errorf("response_format = %v", rf)
+		}
+		w.Write([]byte(`{"choices": [{"message": {"role": "assistant", "content": "{\"cities\": []}"}}]}`))
+	}))
+	defer ts.Close()
+
+	out, err := New(ts.URL, "", []string{"m"}, 5*time.Second).GenerateJSON(context.Background(), "plan", "a trip", map[string]any{"type": "object"})
+	if err != nil || string(out) != `{"cities": []}` {
+		t.Errorf("got %s, %v", out, err)
+	}
+}

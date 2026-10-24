@@ -44,7 +44,7 @@ func TestGeminiSuggest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := Gemini{Client: fakeGenerator{output: tt.output, err: tt.err}}
+			g := LLM{Client: fakeGenerator{output: tt.output, err: tt.err}}
 
 			plan, err := g.Suggest(context.Background(), newRequest("veg", nil, []string{"food"}, 7, 4))
 
@@ -97,9 +97,9 @@ func TestFallback(t *testing.T) {
 		primary    Planner
 		wantSource string
 	}{
-		{name: "Primary works", primary: Gemini{Client: fakeGenerator{output: validLLMOutput}}, wantSource: "llm"},
-		{name: "Primary bad output", primary: Gemini{Client: fakeGenerator{output: `{}`}}, wantSource: "catalogue"},
-		{name: "Primary API error", primary: Gemini{Client: fakeGenerator{err: errors.New("status 429")}}, wantSource: "catalogue"},
+		{name: "Primary works", primary: LLM{Client: fakeGenerator{output: validLLMOutput}}, wantSource: "llm"},
+		{name: "Primary bad output", primary: LLM{Client: fakeGenerator{output: `{}`}}, wantSource: "catalogue"},
+		{name: "Primary API error", primary: LLM{Client: fakeGenerator{err: errors.New("status 429")}}, wantSource: "catalogue"},
 	}
 
 	for _, tt := range tests {

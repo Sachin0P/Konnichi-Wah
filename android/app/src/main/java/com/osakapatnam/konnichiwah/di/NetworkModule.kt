@@ -35,10 +35,11 @@ object NetworkModule {
     fun provideOkHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
-            // The planner endpoint can wait up to 20s for the LLM before the
-            // backend falls back to its catalogue. OkHttp's default 10s read
-            // timeout would give up before then.
-            .readTimeout(35, TimeUnit.SECONDS)
+            // AI answers can be slow: the planner waits up to 20s for Gemini,
+            // and with the backend's local model (-llm=local) a plan can take
+            // up to 2 minutes on a laptop. OkHttp's default 10s read timeout
+            // would give up long before then.
+            .readTimeout(130, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)
             .apply {
                 if (BuildConfig.DEBUG) {

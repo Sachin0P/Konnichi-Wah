@@ -29,6 +29,8 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/food", app.listFoodHandler)
 
+	router.HandlerFunc(http.MethodPost, "/v1/menu/translate", app.translateMenuHandler)
+
 	// recoverPanic must be the outermost middleware, so that it catches panics
 	// in all the middleware and handlers below it.
 	return app.recoverPanic(app.enableCORS(app.rateLimit(router)))
