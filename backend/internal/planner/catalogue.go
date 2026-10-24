@@ -144,10 +144,11 @@ func foodFor(cities []data.CityPlan, profile data.UserProfile) []data.Suggestion
 		}
 
 		// LLM city names may differ in case from ours ("tokyo" vs "Tokyo").
-		// Cap at 3 food suggestions per city to cover breakfast, lunch and dinner.
+		// Cap food suggestions per city to cover breakfast, lunch and dinner.
 		for _, c := range cities {
 			if strings.EqualFold(c.Name, it.base) {
-				if cityCounts[it.base] < 3 {
+				maxFood := min(max(3, c.Days*2), 6)
+				if cityCounts[it.base] < maxFood {
 					food = append(food, it.Suggestion)
 					cityCounts[it.base]++
 				}
@@ -361,6 +362,21 @@ var catalogue = []item{
 			Reason: "Atmospheric lantern-lit alley of tiny bars and izakayas right by Shibuya Station; quintessential Tokyo nightlife."},
 		base: "Tokyo", interests: []string{"nightlife"}, keywords: []string{"bar", "pub", "alley", "drinks", "nightlife"}, contains: []string{"alcohol"},
 	},
+	{
+		Suggestion: data.Suggestion{ID: "tokyo-harajuku-takeshita", Kind: "activity", Name: "Takeshita Street & Harajuku Vintage", City: "Tokyo", PlaceType: "street",
+			Reason: "Epicentre of youth fashion, sneaker shops, vintage clothing, and crazy crepe stands."},
+		base: "Tokyo", interests: []string{"shopping", "nightlife"}, keywords: []string{"vintage", "thrift", "fashion", "youth", "crepe"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "tokyo-shimokitazawa", Kind: "activity", Name: "Shimokitazawa Thrift & Indie Scene", City: "Tokyo", PlaceType: "street",
+			Reason: "Bohemian neighbourhood beloved by Tokyo youth for vintage thrift shops, indie cafes, and craft beer bars."},
+		base: "Tokyo", interests: []string{"shopping", "nightlife"}, keywords: []string{"thrift", "vintage", "craft beer", "pub", "indie", "bar"}, contains: []string{"alcohol"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "tokyo-tsukiji-breakfast", Kind: "food", Name: "Tsukiji Morning Market Food Stalls", City: "Tokyo", PlaceType: "restaurant",
+			Reason: "Lively morning food walk with fresh matcha lattes, tamagoyaki skewers, and sweet strawberry daifuku."},
+		base: "Tokyo", contains: []string{"seafood", "egg"},
+	},
 
 	// Kyoto.
 	{
@@ -438,6 +454,16 @@ var catalogue = []item{
 			Reason: "Canal-side street filled with lively student bars, casual pubs, tachinomi standing bars, and late-night food."},
 		base: "Kyoto", interests: []string{"nightlife"}, keywords: []string{"nightlife", "bar", "pub", "standing bar", "club"}, contains: []string{"alcohol"},
 	},
+	{
+		Suggestion: data.Suggestion{ID: "kyoto-kamogawa-evening", Kind: "activity", Name: "Kamogawa River Evening Riverside Stroll", City: "Kyoto", PlaceType: "street",
+			Reason: "Lively riverbanks where young locals and students gather at sunset with drinks, buskers, and street snacks."},
+		base: "Kyoto", interests: []string{"nightlife", "nature"}, keywords: []string{"river", "hangout", "sunset", "drinks", "nightlife"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "kyoto-nishiki-warai", Kind: "food", Name: "Nishiki Warai Okonomiyaki & Yakisoba", City: "Kyoto", PlaceType: "restaurant",
+			Reason: "Casual Kyoto-style okonomiyaki and sizzling yakisoba noodles near Nishiki Market, perfect for lunch."},
+		base: "Kyoto", contains: []string{"egg", "seafood", "pork"},
+	},
 
 	// Osaka.
 	{
@@ -494,6 +520,16 @@ var catalogue = []item{
 		Suggestion: data.Suggestion{ID: "osaka-kushikatsu-daruma", Kind: "food", Name: "Kushikatsu Daruma, Shinsekai", City: "Osaka", PlaceType: "restaurant",
 			Reason: "Iconic retro Osaka skewer joint in neon Shinsekai; great for young crowds enjoying hot skewers with cold highballs or draft beer."},
 		base: "Osaka", interests: []string{"food", "nightlife"}, keywords: []string{"kushikatsu", "izakaya", "shinsekai", "beer"}, contains: []string{"beef", "pork", "seafood", "egg", "alcohol"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "osaka-amerikamura", Kind: "activity", Name: "Amerikamura Youth & Street Culture", City: "Osaka", PlaceType: "street",
+			Reason: "Osaka's youth street culture hub with vintage streetwear, retro arcade bars, and hip-hop apparel."},
+		base: "Osaka", interests: []string{"shopping", "nightlife"}, keywords: []string{"vintage", "streetwear", "arcade", "youth", "nightlife"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "osaka-shama", Kind: "food", Name: "Shama Vegetarian Indian Dining", City: "Osaka", PlaceType: "restaurant",
+			Reason: "Warm, authentic Indian curries and naan near Shinsaibashi with extensive vegetarian and Jain choices."},
+		base: "Osaka",
 	},
 
 	// Sapporo (only chosen for snow lovers travelling in winter).

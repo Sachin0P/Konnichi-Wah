@@ -188,6 +188,7 @@
     <string name="it_add">जोड़ें</string>
     <string name="it_add_stop_recommendations">%1$s में सुझाए गए स्थल</string>
     <string name="it_add_stop_rec_hint">जानकारी अपने आप भरने के लिए किसी भी जगह पर टैप करें</string>
+    <string name="it_rec_category_all">सभी</string>
     <string name="it_rec_category_sights">दर्शनीय स्थल</string>
     <string name="it_rec_category_food">नाश्ता और खाना</string>
     <string name="it_rec_category_nightlife">पब और नाइटलाइफ़</string>

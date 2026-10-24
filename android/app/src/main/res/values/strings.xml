@@ -195,6 +195,7 @@
     <string name="it_add">Add</string>
     <string name="it_add_stop_recommendations">Recommended in %1$s</string>
     <string name="it_add_stop_rec_hint">Tap any place to auto-fill</string>
+    <string name="it_rec_category_all">All</string>
     <string name="it_rec_category_sights">Sights</string>
     <string name="it_rec_category_food">Food &amp; Cafes</string>
     <string name="it_rec_category_nightlife">Pubs &amp; Nightlife</string>

@@ -567,11 +567,13 @@ private fun recommendationsForCity(city: String): List<CuratedStopRec> = when (c
         CuratedStopRec("Nishiki Market Street Food", "shop", "lunch", "food"),
         CuratedStopRec("Shigetsu Shojin Ryori", "restaurant", "lunch", "food"),
         CuratedStopRec("Gion Tsujiri Matcha", "restaurant", "afternoon", "food"),
+        CuratedStopRec("Nishiki Warai Okonomiyaki", "restaurant", "dinner", "food"),
         // Nightlife & Pubs
         CuratedStopRec("Pontocho Alley Izakayas", "street", "evening", "nightlife"),
         CuratedStopRec("Before9 Craft Beer & Sake", "restaurant", "dinner", "nightlife"),
         CuratedStopRec("Kiyamachi-dori Canal Bars", "street", "evening", "nightlife"),
         CuratedStopRec("Gion Evening Lantern Walk", "street", "evening", "nightlife"),
+        CuratedStopRec("Kamogawa Riverfront Hangout", "street", "evening", "nightlife"),
     )
     "osaka" -> listOf(
         // Sights
@@ -579,16 +581,19 @@ private fun recommendationsForCity(city: String): List<CuratedStopRec> = when (c
         CuratedStopRec("Universal Studios Japan", "attraction", "morning", "sights"),
         CuratedStopRec("Den Den Town Nipponbashi", "shop", "afternoon", "sights"),
         CuratedStopRec("Shinsekai Retro Quarter", "attraction", "afternoon", "sights"),
+        CuratedStopRec("Umeda Sky Floating Garden", "attraction", "evening", "sights"),
         // Food (Breakfast, Lunch, Dinner)
         CuratedStopRec("Kuromon Morning Market", "restaurant", "breakfast", "food"),
         CuratedStopRec("Dotonbori Okonomiyaki", "restaurant", "lunch", "food"),
         CuratedStopRec("Takoyaki Wanaka Dotonbori", "restaurant", "afternoon", "food"),
+        CuratedStopRec("Shama Vegetarian Indian", "restaurant", "lunch", "food"),
         CuratedStopRec("Kushikatsu Daruma Skewers", "restaurant", "dinner", "food"),
         // Nightlife & Pubs
         CuratedStopRec("Ura-Namba Tachinomi Alleys", "street", "evening", "nightlife"),
         CuratedStopRec("Bar Nayuta Speakeasy", "restaurant", "dinner", "nightlife"),
         CuratedStopRec("Dotonbori Canal Neon Walk", "street", "evening", "nightlife"),
         CuratedStopRec("Amerikamura Youth Street", "street", "afternoon", "nightlife"),
+        CuratedStopRec("Misono Building Underground Bars", "street", "evening", "nightlife"),
     )
     "sapporo" -> listOf(
         CuratedStopRec("Odori Park & TV Tower", "park", "morning", "sights"),
@@ -598,6 +603,7 @@ private fun recommendationsForCity(city: String): List<CuratedStopRec> = when (c
         CuratedStopRec("Nijo Morning Fish Market", "restaurant", "breakfast", "food"),
         CuratedStopRec("Sapporo Ramen Alley", "restaurant", "lunch", "food"),
         CuratedStopRec("Susukino Nightlife District", "street", "evening", "nightlife"),
+        CuratedStopRec("Sapporo Beer Museum & Hall", "restaurant", "dinner", "nightlife"),
     )
     else -> listOf(
         // Tokyo default
@@ -608,12 +614,15 @@ private fun recommendationsForCity(city: String): List<CuratedStopRec> = when (c
         CuratedStopRec("Akihabara Electric Town", "shop", "afternoon", "sights"),
         CuratedStopRec("teamLab Planets Toyosu", "attraction", "afternoon", "sights"),
         CuratedStopRec("Shinjuku Gyoen Garden", "park", "morning", "sights"),
+        CuratedStopRec("Harajuku Takeshita Street", "street", "afternoon", "sights"),
+        CuratedStopRec("Shimokitazawa Vintage Scene", "street", "afternoon", "sights"),
         // Food (Breakfast, Lunch, Dinner)
         CuratedStopRec("Komeda's Coffee Morning Set", "restaurant", "breakfast", "food"),
         CuratedStopRec("Chatei Hatou Kissaten", "restaurant", "breakfast", "food"),
-        CuratedStopRec("Tsukiji Morning Food Stalls", "shop", "breakfast", "food"),
+        CuratedStopRec("Tsukiji Morning Food Stalls", "restaurant", "breakfast", "food"),
         CuratedStopRec("T's Tantan Vegan Ramen", "restaurant", "lunch", "food"),
         CuratedStopRec("Ichiran Tonkotsu Ramen", "restaurant", "lunch", "food"),
+        CuratedStopRec("Nirvanam South Indian Thali", "restaurant", "dinner", "food"),
         CuratedStopRec("Kura Sushi Conveyor Belt", "restaurant", "dinner", "food"),
         // Nightlife & Pubs
         CuratedStopRec("Shibuya Yokocho Alleys", "restaurant", "dinner", "nightlife"),
@@ -621,6 +630,7 @@ private fun recommendationsForCity(city: String): List<CuratedStopRec> = when (c
         CuratedStopRec("Golden Gai & Omoide Yokocho", "street", "evening", "nightlife"),
         CuratedStopRec("Spring Valley Craft Brewery", "restaurant", "dinner", "nightlife"),
         CuratedStopRec("Torikizoku Budget Izakaya", "restaurant", "dinner", "nightlife"),
+        CuratedStopRec("Roppongi Hills Sky Deck Bars", "attraction", "evening", "nightlife"),
     )
 }
 
@@ -694,7 +704,7 @@ private fun AddStopDialog(
                         modifier = Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        CategoryChip("All", selectedCategory == "all") { selectedCategory = "all" }
+                        CategoryChip(stringResource(R.string.it_rec_category_all), selectedCategory == "all") { selectedCategory = "all" }
                         CategoryChip(stringResource(R.string.it_rec_category_sights), selectedCategory == "sights") { selectedCategory = "sights" }
                         CategoryChip(stringResource(R.string.it_rec_category_food), selectedCategory == "food") { selectedCategory = "food" }
                         CategoryChip(stringResource(R.string.it_rec_category_nightlife), selectedCategory == "nightlife") { selectedCategory = "nightlife" }

@@ -287,6 +287,13 @@
     "severity": "helpful"
   },
   {
+    "id": "restaurant-otoshi",
+    "place_types": ["restaurant"],
+    "title": "Otoshi (table charge appetizer)",
+    "tip": "At izakayas and casual drinking spots, staff serve a small starter dish called 'otoshi' with your first drink. This is the traditional seating charge (typically ¥300–¥500 per person), not a billing error.",
+    "severity": "helpful"
+  },
+  {
     "id": "restaurant-reservations",
     "place_types": ["restaurant"],
     "title": "Cancel bookings you can't keep",

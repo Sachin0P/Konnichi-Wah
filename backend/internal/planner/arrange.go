@@ -116,6 +116,22 @@ func Arrange(cities []data.CityPlan, suggestions []data.Suggestion, newID func()
 // a ryokan. Temples, shrines, gardens and most attractions close around dusk.
 var eveningPlaceTypes = []string{"street", "onsen", "ryokan"}
 
+// mealTimingRank estimates the best time slot for a food recommendation:
+// 1 = breakfast (kissaten, morning coffee sets, breakfast market stalls)
+// 2 = lunch (ramen, curry, lunch set, food markets)
+// 3 = dinner (izakayas, craft beer pubs, yakitori, skewers, bars, sushi)
+func mealTimingRank(name string) int {
+	lower := strings.ToLower(name)
+	switch {
+	case strings.Contains(lower, "morning") || strings.Contains(lower, "coffee") || strings.Contains(lower, "kissaten") || strings.Contains(lower, "breakfast") || strings.Contains(lower, "toast"):
+		return 1
+	case strings.Contains(lower, "izakaya") || strings.Contains(lower, "bar") || strings.Contains(lower, "pub") || strings.Contains(lower, "brewery") || strings.Contains(lower, "dinner") || strings.Contains(lower, "sushi") || strings.Contains(lower, "kushikatsu") || strings.Contains(lower, "yokocho"):
+		return 3
+	default:
+		return 2
+	}
+}
+
 // dayStops orders one day's stops: a morning sight, lunch, afternoon sights,
 // evening sights, then dinner. Sights that suit the evening go there; the
 // rest fill the day.
@@ -134,6 +150,12 @@ func dayStops(sights, food []data.Suggestion, newID func() string) []data.Stop {
 		daytime, evening = evening[:1], evening[1:]
 	}
 
+	// Order food by meal timing: breakfast first, lunch midday, dinner in evening.
+	foodCloned := slices.Clone(food)
+	slices.SortStableFunc(foodCloned, func(a, b data.Suggestion) int {
+		return mealTimingRank(a.Name) - mealTimingRank(b.Name)
+	})
+
 	stops := []data.Stop{}
 
 	add := func(s data.Suggestion, slot string) {
@@ -148,36 +170,102 @@ func dayStops(sights, food []data.Suggestion, newID func() string) []data.Stop {
 		})
 	}
 
-	if len(food) >= 3 {
-		add(food[0], "breakfast")
+	if len(foodCloned) >= 3 {
+		add(foodCloned[0], "breakfast")
 		if len(daytime) > 0 {
 			add(daytime[0], "morning")
 		}
-		add(food[1], "lunch")
+		add(foodCloned[1], "lunch")
 		for _, s := range daytime[min(1, len(daytime)):] {
 			add(s, "afternoon")
 		}
 		for _, s := range evening {
 			add(s, "evening")
 		}
-		for _, f := range food[2:] {
+		for _, f := range foodCloned[2:] {
 			add(f, "dinner")
+		}
+	} else if len(foodCloned) == 2 {
+		if mealTimingRank(foodCloned[0].Name) == 1 {
+			add(foodCloned[0], "breakfast")
+			if len(daytime) > 0 {
+				add(daytime[0], "morning")
+			}
+			if mealTimingRank(foodCloned[1].Name) == 3 {
+				for _, s := range daytime[min(1, len(daytime)):] {
+					add(s, "afternoon")
+				}
+				for _, s := range evening {
+					add(s, "evening")
+				}
+				add(foodCloned[1], "dinner")
+			} else {
+				add(foodCloned[1], "lunch")
+				for _, s := range daytime[min(1, len(daytime)):] {
+					add(s, "afternoon")
+				}
+				for _, s := range evening {
+					add(s, "evening")
+				}
+			}
+		} else {
+			if len(daytime) > 0 {
+				add(daytime[0], "morning")
+			}
+			add(foodCloned[0], "lunch")
+			for _, s := range daytime[min(1, len(daytime)):] {
+				add(s, "afternoon")
+			}
+			for _, s := range evening {
+				add(s, "evening")
+			}
+			add(foodCloned[1], "dinner")
+		}
+	} else if len(foodCloned) == 1 {
+		switch mealTimingRank(foodCloned[0].Name) {
+		case 1:
+			add(foodCloned[0], "breakfast")
+			if len(daytime) > 0 {
+				add(daytime[0], "morning")
+			}
+			for _, s := range daytime[min(1, len(daytime)):] {
+				add(s, "afternoon")
+			}
+			for _, s := range evening {
+				add(s, "evening")
+			}
+		case 3:
+			if len(daytime) > 0 {
+				add(daytime[0], "morning")
+			}
+			for _, s := range daytime[min(1, len(daytime)):] {
+				add(s, "afternoon")
+			}
+			for _, s := range evening {
+				add(s, "evening")
+			}
+			add(foodCloned[0], "dinner")
+		default:
+			if len(daytime) > 0 {
+				add(daytime[0], "morning")
+			}
+			add(foodCloned[0], "lunch")
+			for _, s := range daytime[min(1, len(daytime)):] {
+				add(s, "afternoon")
+			}
+			for _, s := range evening {
+				add(s, "evening")
+			}
 		}
 	} else {
 		if len(daytime) > 0 {
 			add(daytime[0], "morning")
 		}
-		if len(food) > 0 {
-			add(food[0], "lunch")
-		}
 		for _, s := range daytime[min(1, len(daytime)):] {
 			add(s, "afternoon")
 		}
 		for _, s := range evening {
 			add(s, "evening")
-		}
-		for _, f := range food[min(1, len(food)):] {
-			add(f, "dinner")
 		}
 	}
 

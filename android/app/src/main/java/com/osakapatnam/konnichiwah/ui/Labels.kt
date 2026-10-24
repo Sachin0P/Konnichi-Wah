@@ -41,6 +41,7 @@ val BudgetBand.labelRes: Int
         BudgetBand.LAKH_3_PLUS -> R.string.budget_3_plus
     }
 
+@Composable
 fun budgetBandDynamicLabel(band: BudgetBand, tripDays: Int): String {
     val d = tripDays.coerceIn(1, 30)
     return when (band) {
@@ -61,14 +62,19 @@ fun budgetBandDynamicLabel(band: BudgetBand, tripDays: Int): String {
     }
 }
 
+@Composable
 private fun formatLakh(amount: Double): String {
     val rounded = Math.round(amount * 10.0) / 10.0
+    val isHindi = currentLocale().language == "hi"
+    val lakhWord = if (isHindi) "लाख" else "lakh"
+    val kWord = if (isHindi) "हज़ार" else "k"
+
     return if (rounded < 1.0) {
-        "₹${Math.round(rounded * 100)}k"
+        if (isHindi) "₹${Math.round(rounded * 100)} $kWord" else "₹${Math.round(rounded * 100)}k"
     } else if (rounded == rounded.toLong().toDouble()) {
-        "₹${rounded.toLong()} lakh"
+        "₹${rounded.toLong()} $lakhWord"
     } else {
-        "₹${String.format(java.util.Locale.US, "%.1f", rounded)} lakh"
+        "₹${String.format(java.util.Locale.US, "%.1f", rounded)} $lakhWord"
     }
 }
 
