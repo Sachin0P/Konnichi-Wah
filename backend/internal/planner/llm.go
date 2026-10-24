@@ -54,7 +54,21 @@ func (g LLM) Suggest(ctx context.Context, req data.TripRequest) (*data.Plan, err
 
 	var webFindings strings.Builder
 	if g.Searcher != nil {
-		queries := make([]string, 0, 2)
+		queries := make([]string, 0, 3)
+
+		// Search for real hotels fitting the budget band and traveling party
+		hotelType := "budget hotel near station Tokyo Kyoto under 8000 yen"
+		switch req.Profile.BudgetBand {
+		case "2-3L":
+			hotelType = "4 star hotel onsen Tokyo Kyoto Osaka near station 15000 yen"
+		case "3L+":
+			hotelType = "luxury hotel onsen ryokan Tokyo Kyoto"
+		}
+		if req.Profile.GroupType == "family_kids" || req.Profile.GroupType == "family_elders" {
+			hotelType += " family elevator"
+		}
+		queries = append(queries, "best "+hotelType)
+
 		if notes != "" {
 			queries = append(queries, fmt.Sprintf("%s Japan travel best locations", notes))
 		}
@@ -76,11 +90,11 @@ func (g LLM) Suggest(ctx context.Context, req data.TripRequest) (*data.Plan, err
 		}
 
 		if len(allResults) > 0 {
-			webFindings.WriteString("LIVE WEB SEARCH FINDINGS (REAL-TIME TRAVEL GROUNDING):\n")
+			webFindings.WriteString("LIVE WEB SEARCH FINDINGS (REAL-TIME HOTEL & TRAVEL GROUNDING):\n")
 			for _, r := range allResults {
 				webFindings.WriteString(fmt.Sprintf("- %s: %s (Source: %s)\n", r.Title, r.Snippet, r.URL))
 			}
-			webFindings.WriteString("INSTRUCTION: Use these fresh web search findings to inspire your recommendations and personalize the locations according to the user's preferences!\n\n")
+			webFindings.WriteString("INSTRUCTION: Use these fresh web search findings to search, pick and recommend real hotels within the traveller's budget and personalize locations according to user preferences!\n\n")
 		}
 	}
 
@@ -124,6 +138,21 @@ func (g LLM) Suggest(ctx context.Context, req data.TripRequest) (*data.Plan, err
 			if output.Cities[maxIdx].Days < 1 {
 				output.Cities[maxIdx].Days = 1
 			}
+		}
+	}
+
+	for i := range output.Cities {
+		if len(output.Cities[i].HotelName) > 100 {
+			output.Cities[i].HotelName = output.Cities[i].HotelName[:100]
+		}
+		if len(output.Cities[i].HotelArea) > 100 {
+			output.Cities[i].HotelArea = output.Cities[i].HotelArea[:100]
+		}
+		if len(output.Cities[i].HotelPrice) > 100 {
+			output.Cities[i].HotelPrice = output.Cities[i].HotelPrice[:100]
+		}
+		if len(output.Cities[i].HotelReason) > 300 {
+			output.Cities[i].HotelReason = output.Cities[i].HotelReason[:300]
 		}
 	}
 
@@ -231,9 +260,12 @@ var planSchema = map[string]any{
 			"items": map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"name":   map[string]any{"type": "string"},
-					"days":   map[string]any{"type": "integer", "minimum": 1},
-					"reason": map[string]any{"type": "string"},
+					"name":         map[string]any{"type": "string"},
+					"days":         map[string]any{"type": "integer", "minimum": 1},
+					"reason":       map[string]any{"type": "string"},
+					"hotel_name":   map[string]any{"type": "string", "description": "Real hotel or ryokan name in this city fitting the traveller's budget"},
+					"hotel_price":  map[string]any{"type": "string", "description": "Estimated nightly rate in Yen and INR, e.g. ~¥8,000/night (~₹4,500)"},
+					"hotel_reason": map[string]any{"type": "string", "description": "Why this hotel suits their budget, location, and group"},
 				},
 				"required":             []string{"name", "days", "reason"},
 				"additionalProperties": false,
@@ -295,10 +327,19 @@ CRITICAL RULES:
      * "attraction" (castles, museums, observation decks, towers, theme parks, viewpoints)
      (Use "attraction" for castles, museums, viewpoints; use "park" for gardens; use "shop" for markets).
    - Do not suggest restaurants or specific places to eat. The app adds food options it has checked against the traveller's diet. Food markets are fine as a shop if the traveller likes food.
-   - Match the interests, budget band, pace, and travelling group (family_kids: child-friendly; family_elders: little walking, few stairs, frequent rest).
+   - Match the interests, budget band, pace, and travelling group (family_kids: child-friendly; family_elders: little walking, few stairs, frequent rest). Note: The budget band represents in-Japan ground spend per person (excluding international flights), covering hotel stay, food, transport, and experiences.
    - Each reason is one short sentence, under 200 characters, explaining why it suits this specific traveller.
    - Do not include train routes, travel times, prices, opening hours, addresses or etiquette tips. The app adds those from verified sources.
 
 4. NIGHTLIFE, PUBS & YOUNGER TRAVELERS:
    - For young travellers (solo, couples, friends) or those who drink alcohol / enjoy nightlife, suggest lively izakaya streets, craft beer hubs, retro arcades, and famous bar alleys (e.g. Shinjuku Golden Gai, Shibuya Nonbei Yokocho, Omoide Yokocho, Pontocho, Ura-Namba). Use "street" for nightlife alleys/areas or "shop" for markets/arcades.
-   - If the profile says no alcohol, avoid bar alleys and suggest night viewpoints (Shibuya Sky, Tokyo Skytree, Roppongi Hills), evening tea/dessert spots, and illuminated temples.`
+   - If the profile says no alcohol, avoid bar alleys and suggest night viewpoints (Shibuya Sky, Tokyo Skytree, Roppongi Hills), evening tea/dessert spots, and illuminated temples.
+
+5. HOTEL STAY RECOMMENDATIONS (PER CITY):
+   - For every city in cities, recommend a real hotel or ryokan fitting the traveller's budget band (in-Japan ground spend per person, excluding international flights):
+     * "1-2L" budget: clean, convenient business hotel or modern capsule near the main railway station (e.g. ~¥6,000–¥8,500/night per person).
+     * "2-3L" comfort: comfortable 3–4 star city hotel, onsen hotel, or boutique stay (e.g. ~¥13,000–¥19,000/night).
+     * "3L+" luxury: 5-star luxury hotel or authentic onsen ryokan with Kaiseki (e.g. ~¥35,000–¥60,000/night).
+   - In hotel_name: Provide the real hotel or ryokan name from live search findings.
+   - In hotel_price: Provide estimated nightly rate in Yen and INR (e.g. "~¥7,500/night (~₹4,200)").
+   - In hotel_reason: Briefly explain why this hotel fits their budget, station proximity, and party (under 200 chars).`

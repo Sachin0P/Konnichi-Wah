@@ -35,6 +35,15 @@ func TestGeminiSuggest(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "Valid", output: validLLMOutput},
+		{name: "Valid With Hotels", output: `{
+			"cities": [
+				{"name": "Tokyo", "days": 4, "reason": "r", "hotel_name": "APA Hotel Shinjuku", "hotel_price": "~¥7,500/night", "hotel_reason": "Central station access"},
+				{"name": "Kyoto", "days": 3, "reason": "r", "hotel_name": "Sotetsu Fresa Inn", "hotel_price": "~¥6,800/night", "hotel_reason": "Near subway"}
+			],
+			"suggestions": [
+				{"kind": "place", "name": "Senso-ji", "city": "Tokyo", "place_type": "temple", "reason": "r"}
+			]
+		}`},
 		{name: "Days don't add up", output: `{"cities": [{"name": "Tokyo", "days": 3, "reason": "r"}], "suggestions": [{"kind": "place", "name": "a", "city": "Tokyo", "place_type": "temple", "reason": "r"}]}`, wantErr: true},
 		{name: "Invented place type", output: `{"cities": [{"name": "Tokyo", "days": 7, "reason": "r"}], "suggestions": [{"kind": "place", "name": "a", "city": "Tokyo", "place_type": "spaceship", "reason": "r"}]}`, wantErr: true},
 		{name: "Unknown key", output: `{"cities": [], "suggestions": [], "note": "x"}`, wantErr: true},

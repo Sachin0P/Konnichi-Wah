@@ -27,11 +27,15 @@ func ValidateTripRequest(v *validator.Validator, req *TripRequest) {
 }
 
 // CityPlan is one city in the suggested route, with how many days to spend
-// there.
+// there and a verified hotel stay recommendation tailored to the traveller's budget.
 type CityPlan struct {
-	Name   string `json:"name"`
-	Days   int    `json:"days"`
-	Reason string `json:"reason"`
+	Name        string `json:"name"`
+	Days        int    `json:"days"`
+	Reason      string `json:"reason"`
+	HotelName   string `json:"hotel_name,omitempty"`
+	HotelArea   string `json:"hotel_area,omitempty"`
+	HotelPrice  string `json:"hotel_price,omitempty"`
+	HotelReason string `json:"hotel_reason,omitempty"`
 }
 
 // Suggestion is one selectable card: a place to visit, an activity or
@@ -71,6 +75,12 @@ func ValidatePlan(v *validator.Validator, plan *Plan, tripDays int) {
 		v.Check(len(city.Name) <= 50, key+".name", "must not be more than 50 bytes long")
 		v.Check(city.Days >= 1, key+".days", "must be at least 1")
 		v.Check(len(city.Reason) <= 300, key+".reason", "must not be more than 300 bytes long")
+		if city.HotelName != "" {
+			v.Check(len(city.HotelName) <= 100, key+".hotel_name", "must not be more than 100 bytes long")
+			v.Check(len(city.HotelArea) <= 100, key+".hotel_area", "must not be more than 100 bytes long")
+			v.Check(len(city.HotelPrice) <= 100, key+".hotel_price", "must not be more than 100 bytes long")
+			v.Check(len(city.HotelReason) <= 300, key+".hotel_reason", "must not be more than 300 bytes long")
+		}
 
 		totalDays += city.Days
 	}

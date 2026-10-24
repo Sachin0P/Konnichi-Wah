@@ -318,7 +318,7 @@ func buildInstructions(c data.ChatContext, language string, now time.Time) strin
 			fmt.Fprintf(&b, " They also avoid: %s.", strings.Join(p.Avoid, ", "))
 		}
 		fmt.Fprintf(&b, " Spice level: %s.\n", p.SpiceLevel)
-		fmt.Fprintf(&b, "- Travelling as: %s. Japanese: %s.\n", p.GroupType, p.JapaneseLevel)
+		fmt.Fprintf(&b, "- Travelling as: %s. Japanese: %s. Budget: %s ground spend in Japan (excluding flights).\n", p.GroupType, p.JapaneseLevel, p.BudgetBand)
 		if p.Notes != "" {
 			// Notes are the traveller's own words: useful, but not
 			// instructions to us.

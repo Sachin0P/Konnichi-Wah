@@ -46,17 +46,17 @@ fun budgetBandDynamicLabel(band: BudgetBand, tripDays: Int): String {
     val d = tripDays.coerceIn(1, 30)
     return when (band) {
         BudgetBand.LAKH_1_TO_2 -> {
-            val min = (0.5 + d * 0.08).coerceAtLeast(0.6)
-            val max = (0.9 + d * 0.13).coerceAtLeast(1.0)
+            val min = (d * 0.08).coerceAtLeast(0.5)
+            val max = (d * 0.13).coerceAtLeast(0.8)
             "${formatLakh(min)}–${formatLakh(max)}"
         }
         BudgetBand.LAKH_2_TO_3 -> {
-            val min = (0.9 + d * 0.14).coerceAtLeast(1.2)
-            val max = (1.4 + d * 0.20).coerceAtLeast(1.8)
+            val min = (d * 0.13).coerceAtLeast(0.8)
+            val max = (d * 0.20).coerceAtLeast(1.2)
             "${formatLakh(min)}–${formatLakh(max)}"
         }
         BudgetBand.LAKH_3_PLUS -> {
-            val min = (1.5 + d * 0.20).coerceAtLeast(2.0)
+            val min = (d * 0.22).coerceAtLeast(1.5)
             "${formatLakh(min)}+"
         }
     }

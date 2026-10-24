@@ -208,13 +208,38 @@ private fun RouteCard(plan: PlanDto) {
             val totalDays = plan.cities.sumOf { it.days }
             Text(stringResource(R.string.sug_route, totalDays), style = MaterialTheme.typography.titleLarge)
             plan.cities.forEach { city ->
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         "${city.name} · ${pluralStringResource(R.plurals.days, city.days, city.days)}",
                         style = MaterialTheme.typography.titleSmall,
                         color = Palette.Maroon,
                     )
                     Text(city.reason, style = MaterialTheme.typography.bodyMedium, color = Palette.Ink)
+                    if (!city.hotelName.isNullOrBlank()) {
+                        KCard(
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Palette.Petal),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 2.dp, bottom = 4.dp),
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text("🏨  ${city.hotelName}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                    if (!city.hotelPrice.isNullOrBlank()) {
+                                        Text(city.hotelPrice, style = MaterialTheme.typography.labelMedium, color = Palette.Green, fontWeight = FontWeight.Medium)
+                                    }
+                                }
+                                if (!city.hotelReason.isNullOrBlank()) {
+                                    Text(city.hotelReason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
                 }
             }
             // Be honest when the AI planner wasn't used, without alarming anyone.

@@ -56,8 +56,8 @@
     </plurals>
     <string name="q_month">आप किस महीने जा रहे हैं?</string>
     <string name="q_month_hint">इसी से तय होगा कि चेरी ब्लॉसम, बर्फ़ और त्योहार मिलेंगे या नहीं।</string>
-    <string name="q_budget">प्रति व्यक्ति बजट</string>
-    <string name="q_budget_hint">फ़्लाइट और ठहरने समेत।</string>
+    <string name="q_budget">प्रति व्यक्ति बजट (फ़्लाइट के बिना)</string>
+    <string name="q_budget_hint">जापान में खर्च: होटल में ठहरना, खाना, लोकल ट्रेन और गतिविधियाँ (फ़्लाइट अलग)।</string>
     <string name="q_group">कौन-कौन जा रहा है?</string>
     <string name="q_pace">रफ़्तार</string>
     <string name="q_diet">आपका खान-पान</string>
@@ -82,9 +82,11 @@
     <string name="interest_snow">बर्फ़ और सर्दी</string>
     <string name="interest_nightlife">नाइटलाइफ़</string>
     <string name="interest_history">इतिहास</string>
-    <string name="budget_1_2">₹1–2 लाख</string>
-    <string name="budget_2_3">₹2–3 लाख</string>
-    <string name="budget_3_plus">₹3 लाख+</string>
+    <string name="budget_1_2">बजट (₹50ह–1लाख)</string>
+    <string name="budget_2_3">कम्फर्ट (₹1–2लाख)</string>
+    <string name="budget_3_plus">लक्ज़री (₹2लाख+)</string>
+    <string name="hotel_stay_label">सुझाया गया होटल</string>
+    <string name="hotel_stay_within_budget">बजट के अनुसार</string>
     <string name="pace_relaxed">आराम से</string>
     <string name="pace_balanced">संतुलित</string>
     <string name="pace_packed">भरपूर</string>

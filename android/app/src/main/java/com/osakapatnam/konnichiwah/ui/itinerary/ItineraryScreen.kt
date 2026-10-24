@@ -224,6 +224,13 @@ private fun TripContent(
         itinerary.days.forEachIndexed { dayIndex, day ->
             item(key = "day-${day.index}") { DayHeader(day, date = startDate?.plusDays(dayIndex.toLong()), onAdd = { onAddStop(dayIndex) }) }
 
+            val isNewCity = dayIndex == 0 || !day.city.equals(itinerary.days[dayIndex - 1].city, ignoreCase = true)
+            if (isNewCity && !day.hotelName.isNullOrBlank()) {
+                item(key = "hotel-${day.index}") {
+                    HotelStayCard(day.city, day.hotelName, day.hotelPrice, day.hotelReason)
+                }
+            }
+
             if (day.stops.isEmpty()) {
                 item(key = "free-${day.index}") {
                     Text(
@@ -387,6 +394,33 @@ private fun DayHeader(day: DayDto, date: LocalDate?, onAdd: () -> Unit) {
             }
         }
         PillButton("+ " + stringResource(R.string.it_add_stop), onClick = onAdd)
+    }
+}
+
+@Composable
+private fun HotelStayCard(city: String, hotelName: String, hotelPrice: String?, hotelReason: String?) {
+    KCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp, end = 8.dp),
+        color = Palette.HeroPink,
+        border = BorderStroke(1.dp, Palette.Petal),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("🏨  $hotelName", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = Palette.Maroon)
+                if (!hotelPrice.isNullOrBlank()) {
+                    Text(hotelPrice, style = MaterialTheme.typography.labelMedium, color = Palette.Green, fontWeight = FontWeight.SemiBold)
+                }
+            }
+            if (!hotelReason.isNullOrBlank()) {
+                Text(hotelReason, style = MaterialTheme.typography.bodySmall, color = Palette.Ink)
+            }
+        }
     }
 }
 

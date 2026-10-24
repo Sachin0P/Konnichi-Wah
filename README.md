@@ -16,14 +16,15 @@ Indian travellers don't skip Japan because of the price. They skip it because of
 ## What It Does
 
 ### 1. Questionnaire & Taste Profiling
-- Tailored for Indian travellers: budget in Lakhs (₹1.1L–1.8L, ₹1.9L–2.8L, ₹2.9L+), trip duration, travel month, pacing, and group dynamics (solo, couple, friends, family with kids/elders).
+- Tailored for Indian travellers: ground budget in Lakhs excluding flights (Budget ₹50k–1L, Comfort ₹1–2L, Luxury ₹2L+), trip duration, travel month, pacing, and group dynamics (solo, couple, friends, family with kids/elders).
 - **Comprehensive dietary profiles:** Vegetarian, Jain (no root vegetables, onion, garlic), Eggetarian, Halal, or Non-Vegetarian.
 - **Specific avoidances:** Beef, pork, seafood, egg, onion/garlic, alcohol/mirin, with spice level calibration (Mild, Medium, Indian Spicy).
 - Free-text custom notes support special requirements (e.g. "elderly parents, avoid stairs" or "die-hard One Piece & anime fan").
 
-### 2. Local AI Trip Suggestions with Live Web Grounding
+### 2. Local AI Trip Suggestions with Live Web Grounding & Stay Recommendations
 - Proposes multi-city routes (e.g. Tokyo 4 days, Kyoto 2, Osaka 1) with matched suggestion cards for attractions, shopping, and scenic spots.
 - **Runs 100% Locally:** Powered by local Ollama (`gemma4:12b` / `qwen3.5:9b`) on your machine with zero external API dependencies or rate limits.
+- **AI Hotel Stay Search:** Live web search dynamically queries real hotels and authentic ryokans fitting the traveller's exact ground budget and party, presenting verified stay recommendations and nightly rates for every city.
 - **Web Grounding:** Real-time search integration fetches opening hours, seasonal events, and current travel conditions.
 - **Zero Hallucination on Food:** Restaurants never come from generative AI guesses. They are served from a curated, hand-checked database filtered strictly by diet.
 

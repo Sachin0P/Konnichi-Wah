@@ -59,8 +59,8 @@
     </plurals>
     <string name="q_month">Which month are you travelling?</string>
     <string name="q_month_hint">This decides cherry blossoms, snow and festivals.</string>
-    <string name="q_budget">Budget per person</string>
-    <string name="q_budget_hint">Including flights and stay.</string>
+    <string name="q_budget">Budget per person (excl. flights)</string>
+    <string name="q_budget_hint">In-Japan spend: hotel stay, food, transport &amp; activities (flights not included).</string>
     <string name="q_group">Who\'s travelling?</string>
     <string name="q_pace">Pace</string>
     <string name="q_diet">Your diet</string>
@@ -86,9 +86,11 @@
     <string name="interest_snow">Snow &amp; winter</string>
     <string name="interest_nightlife">Nightlife</string>
     <string name="interest_history">History</string>
-    <string name="budget_1_2">₹1–2 lakh</string>
-    <string name="budget_2_3">₹2–3 lakh</string>
-    <string name="budget_3_plus">₹3 lakh+</string>
+    <string name="budget_1_2">Budget (₹50k–1L)</string>
+    <string name="budget_2_3">Comfort (₹1–2L)</string>
+    <string name="budget_3_plus">Luxury (₹2L+)</string>
+    <string name="hotel_stay_label">Recommended Stay</string>
+    <string name="hotel_stay_within_budget">Within budget</string>
     <string name="pace_relaxed">Relaxed</string>
     <string name="pace_balanced">Balanced</string>
     <string name="pace_packed">Packed</string>

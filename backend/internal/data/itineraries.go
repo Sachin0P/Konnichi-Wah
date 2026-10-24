@@ -29,9 +29,12 @@ type Itinerary struct {
 // position in the list; the handlers renumber it rather than trusting the
 // client.
 type Day struct {
-	Index int    `json:"index"`
-	City  string `json:"city"`
-	Stops []Stop `json:"stops"`
+	Index       int    `json:"index"`
+	City        string `json:"city"`
+	Stops       []Stop `json:"stops"`
+	HotelName   string `json:"hotel_name,omitempty"`
+	HotelPrice  string `json:"hotel_price,omitempty"`
+	HotelReason string `json:"hotel_reason,omitempty"`
 }
 
 // Stop is one place on a day, in visiting order. City is the stop's own city,
@@ -72,6 +75,11 @@ func ValidateItinerary(v *validator.Validator, itinerary *Itinerary) {
 		v.Check(day.City != "", key+".city", "must be provided")
 		v.Check(len(day.City) <= 50, key+".city", "must not be more than 50 bytes long")
 		v.Check(len(day.Stops) <= 20, key+".stops", "must not contain more than 20 stops")
+		if day.HotelName != "" {
+			v.Check(len(day.HotelName) <= 100, key+".hotel_name", "must not be more than 100 bytes long")
+			v.Check(len(day.HotelPrice) <= 100, key+".hotel_price", "must not be more than 100 bytes long")
+			v.Check(len(day.HotelReason) <= 300, key+".hotel_reason", "must not be more than 300 bytes long")
+		}
 
 		for j, stop := range day.Stops {
 			key := fmt.Sprintf("days[%d].stops[%d]", i, j)

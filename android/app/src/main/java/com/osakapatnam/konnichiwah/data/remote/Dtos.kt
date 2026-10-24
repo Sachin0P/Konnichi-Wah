@@ -129,6 +129,10 @@ data class CityPlanDto(
     val name: String,
     val days: Int,
     val reason: String,
+    @SerialName("hotel_name") val hotelName: String? = null,
+    @SerialName("hotel_area") val hotelArea: String? = null,
+    @SerialName("hotel_price") val hotelPrice: String? = null,
+    @SerialName("hotel_reason") val hotelReason: String? = null,
 )
 
 @Serializable
@@ -175,6 +179,9 @@ data class DayDto(
     val index: Int,
     val city: String,
     val stops: List<StopDto>,
+    @SerialName("hotel_name") val hotelName: String? = null,
+    @SerialName("hotel_price") val hotelPrice: String? = null,
+    @SerialName("hotel_reason") val hotelReason: String? = null,
 )
 
 @Serializable

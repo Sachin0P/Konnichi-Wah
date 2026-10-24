@@ -101,9 +101,12 @@ func Arrange(cities []data.CityPlan, suggestions []data.Suggestion, newID func()
 
 		for i := range city.Days {
 			days = append(days, data.Day{
-				Index: len(days) + 1,
-				City:  city.Name,
-				Stops: dayStops(sightBins[i], foodBins[i], newID),
+				Index:       len(days) + 1,
+				City:        city.Name,
+				Stops:       dayStops(sightBins[i], foodBins[i], newID),
+				HotelName:   city.HotelName,
+				HotelPrice:  city.HotelPrice,
+				HotelReason: city.HotelReason,
 			})
 		}
 	}

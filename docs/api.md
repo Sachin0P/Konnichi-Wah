@@ -144,8 +144,22 @@ Takes the questionnaire answers and returns suggested cities, plus suggestion ca
 {
   "plan": {
     "cities": [
-      { "name": "Tokyo", "days": 4, "reason": "..." },
-      { "name": "Kyoto", "days": 3, "reason": "..." }
+      {
+        "name": "Tokyo",
+        "days": 4,
+        "reason": "...",
+        "hotel_name": "APA Hotel Shinjuku Kabukicho",
+        "hotel_price": "~¥7,500/night (~₹4,200)",
+        "hotel_reason": "Central station access within budget"
+      },
+      {
+        "name": "Kyoto",
+        "days": 3,
+        "reason": "...",
+        "hotel_name": "Sotetsu Fresa Inn Kyoto-Shijo",
+        "hotel_price": "~¥6,800/night (~₹3,800)",
+        "hotel_reason": "Near subway station within budget"
+      }
     ],
     "suggestions": [
       {
@@ -561,7 +575,7 @@ These exact strings are the contract. They are defined in `backend/internal/data
 | Field | Values |
 |---|---|
 | `interests` | `temples_shrines`, `anime`, `food`, `nature`, `shopping`, `snow`, `nightlife`, `history` |
-| `budget_band` | `1-2L`, `2-3L`, `3L+` (₹ per person) |
+| `budget_band` | `1-2L`, `2-3L`, `3L+` (₹ per person in-Japan ground spend, excluding international flights) |
 | `pace` | `relaxed`, `balanced`, `packed` |
 | `group_type` | `solo`, `couple`, `friends`, `family_kids`, `family_elders` |
 | `diet` | `veg`, `jain`, `eggetarian`, `halal`, `non_veg` |
