@@ -239,3 +239,56 @@ data class ChatReplyDto(
 
 @Serializable
 data class ChatReplyEnvelope(val reply: ChatReplyDto)
+
+// A checked phrase card from phrases.json (bundled in the APK). Exactly one of
+// diet, avoid or ask says what it's for.
+@Serializable
+data class PhraseCardDto(
+    val id: String,
+    val diet: String? = null,
+    val avoid: String? = null,
+    val ask: String? = null,
+    val english: String,
+    val japanese: String,
+    val romaji: String,
+) {
+    fun phrase() = PhraseDto(english = english, japanese = japanese, romaji = romaji)
+}
+
+// Restaurant search (GET /v1/food), ranked with Desi Match.
+
+@Serializable
+data class DesiMatchDto(
+    val score: Int,
+    val reasons: List<String> = emptyList(),
+    val caution: String? = null,
+)
+
+@Serializable
+data class FoodResultDto(
+    val id: String,
+    val name: String,
+    @SerialName("name_en") val nameEn: String? = null,
+    val lat: Double,
+    val lng: Double,
+    val tags: Map<String, String> = emptyMap(),
+    @SerialName("distance_m") val distanceM: Int,
+    @SerialName("desi_match") val desiMatch: DesiMatchDto,
+) {
+    // English name first, with the Japanese one so it matches the sign.
+    val displayName: String
+        get() = if (!nameEn.isNullOrBlank() && nameEn != name) "$nameEn ($name)" else name
+}
+
+@Serializable
+data class FoodNearDto(val name: String = "", val lat: Double, val lng: Double)
+
+@Serializable
+data class FoodDto(
+    val near: FoodNearDto,
+    val results: List<FoodResultDto>,
+    val attribution: String = "",
+)
+
+@Serializable
+data class FoodEnvelope(val food: FoodDto)

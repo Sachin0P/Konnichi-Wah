@@ -51,12 +51,13 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
-// Copy the etiquette rulebook from the backend into the app's assets, so the
-// app and the API always ship the same rules and tips work offline. The
-// backend's file is the single source of truth; don't edit the copy.
+// Copy the etiquette rulebook and the checked diet cards from the backend into
+// the app's assets, so the app and the API always ship the same content and
+// it works offline. The backend's files are the single source of truth; don't
+// edit the copies.
 abstract class CopyRulebookTask : DefaultTask() {
-    @get:InputFile
-    abstract val rulebook: RegularFileProperty
+    @get:InputFiles
+    abstract val files: ConfigurableFileCollection
 
     @get:OutputDirectory
     abstract val outputDir: DirectoryProperty
@@ -66,12 +67,15 @@ abstract class CopyRulebookTask : DefaultTask() {
         val out = outputDir.get().asFile
         out.deleteRecursively()
         out.mkdirs()
-        rulebook.get().asFile.copyTo(out.resolve("etiquette.json"))
+        files.forEach { it.copyTo(out.resolve(it.name)) }
     }
 }
 
 val copyRulebook = tasks.register<CopyRulebookTask>("copyRulebook") {
-    rulebook.set(layout.projectDirectory.file("../../backend/rulebook/etiquette.json"))
+    files.from(
+        layout.projectDirectory.file("../../backend/rulebook/etiquette.json"),
+        layout.projectDirectory.file("../../backend/rulebook/phrases.json"),
+    )
 }
 
 androidComponents {

@@ -34,4 +34,18 @@ interface KonnichiApi {
     // Usually 1-6 seconds; the backend caps it at 25.
     @POST("v1/companion/chat")
     suspend fun chat(@Body request: ChatRequestDto): ChatReplyEnvelope
+
+    // Search either near a point (lat and lng) or a place name (near and
+    // city); Retrofit leaves out null parameters. avoid is comma separated,
+    // e.g. "pork,beef".
+    @GET("v1/food")
+    suspend fun food(
+        @Query("lat") lat: Double?,
+        @Query("lng") lng: Double?,
+        @Query("near") near: String?,
+        @Query("city") city: String,
+        @Query("diet") diet: String,
+        @Query("avoid") avoid: String?,
+        @Query("spice") spice: String,
+    ): FoodEnvelope
 }

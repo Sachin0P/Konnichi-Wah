@@ -2,6 +2,7 @@ package com.osakapatnam.konnichiwah.data
 
 import android.content.Context
 import com.osakapatnam.konnichiwah.data.remote.EtiquetteRuleDto
+import com.osakapatnam.konnichiwah.data.remote.PhraseCardDto
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -30,5 +31,11 @@ class RulebookAssets @Inject constructor(
     // The indexed rulebook, parsed once and then kept in memory.
     suspend fun rulebook(): Rulebook = mutex.withLock {
         cached ?: Rulebook(load()).also { cached = it }
+    }
+
+    // The hand-checked Japanese phrase cards (phrases.json), for offline use.
+    suspend fun phraseCards(): List<PhraseCardDto> = withContext(Dispatchers.IO) {
+        val text = context.assets.open("phrases.json").bufferedReader().use { it.readText() }
+        json.decodeFromString<List<PhraseCardDto>>(text)
     }
 }

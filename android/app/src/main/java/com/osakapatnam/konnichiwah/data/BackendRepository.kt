@@ -1,8 +1,14 @@
 package com.osakapatnam.konnichiwah.data
 
 import com.osakapatnam.konnichiwah.data.remote.ApiResult
+import com.osakapatnam.konnichiwah.data.remote.AvoidItem
 import com.osakapatnam.konnichiwah.data.remote.ChatReplyDto
 import com.osakapatnam.konnichiwah.data.remote.ChatRequestDto
+import com.osakapatnam.konnichiwah.data.remote.Diet
+import com.osakapatnam.konnichiwah.data.remote.FoodDto
+import com.osakapatnam.konnichiwah.data.remote.SpiceLevel
+import com.osakapatnam.konnichiwah.data.remote.UserProfileDto
+import kotlinx.serialization.json.jsonPrimitive
 import com.osakapatnam.konnichiwah.data.remote.EtiquetteRuleDto
 import com.osakapatnam.konnichiwah.data.remote.HealthcheckDto
 import com.osakapatnam.konnichiwah.data.remote.KonnichiApi
@@ -32,4 +38,28 @@ class BackendRepository @Inject constructor(
 
     suspend fun chat(request: ChatRequestDto): ApiResult<ChatReplyDto> =
         apiCall(json) { api.chat(request).reply }
+
+    // Searches by the stop's stored coordinates when it has them (set by the
+    // backend when the trip was built), otherwise by its name. The query
+    // parameters use the same strings as the profile's JSON, so we reuse the
+    // serializer rather than spelling them out again.
+    suspend fun food(near: String, city: String, lat: Double?, lng: Double?, profile: UserProfileDto?): ApiResult<FoodDto> =
+        apiCall(json) {
+            val diet = profile?.diet?.let { json.encodeToJsonElement(Diet.serializer(), it).jsonPrimitive.content } ?: "non_veg"
+            val avoid = profile?.avoid.orEmpty()
+                .map { json.encodeToJsonElement(AvoidItem.serializer(), it).jsonPrimitive.content }
+                .joinToString(",")
+                .ifEmpty { null }
+            val spice = profile?.spiceLevel?.let { json.encodeToJsonElement(SpiceLevel.serializer(), it).jsonPrimitive.content } ?: "medium"
+            val hasPoint = lat != null && lng != null
+            api.food(
+                lat = lat.takeIf { hasPoint },
+                lng = lng.takeIf { hasPoint },
+                near = near.takeUnless { hasPoint },
+                city = city,
+                diet = diet,
+                avoid = avoid,
+                spice = spice,
+            ).food
+        }
 }

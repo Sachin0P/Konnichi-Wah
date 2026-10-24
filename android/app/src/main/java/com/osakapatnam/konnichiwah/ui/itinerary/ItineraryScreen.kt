@@ -51,6 +51,8 @@ import com.osakapatnam.konnichiwah.ui.timeSlotLabel
 fun ItineraryScreen(
     onNewTrip: () -> Unit,
     onAsk: () -> Unit,
+    onCards: () -> Unit,
+    onFindFood: (StopDto) -> Unit,
     viewModel: ItineraryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -64,6 +66,7 @@ fun ItineraryScreen(
                 },
                 actions = {
                     TextButton(onClick = onAsk) { Text("Ask") }
+                    TextButton(onClick = onCards) { Text("Cards") }
                     TextButton(onClick = onNewTrip) { Text("New trip") }
                 },
             )
@@ -87,6 +90,7 @@ fun ItineraryScreen(
                     onMoveDown = viewModel::moveDown,
                     onDelete = viewModel::delete,
                     onAddStop = { addingToDay = it },
+                    onFindFood = onFindFood,
                 )
             }
         }
@@ -131,6 +135,7 @@ private fun TripContent(
     onMoveDown: (Int, Int) -> Unit,
     onDelete: (Int, Int) -> Unit,
     onAddStop: (Int) -> Unit,
+    onFindFood: (StopDto) -> Unit,
 ) {
     val lastDay = itinerary.days.lastIndex
 
@@ -169,6 +174,7 @@ private fun TripContent(
                     onMoveUp = { onMoveUp(dayIndex, stopIndex) },
                     onMoveDown = { onMoveDown(dayIndex, stopIndex) },
                     onDelete = { onDelete(dayIndex, stopIndex) },
+                    onFindFood = { onFindFood(stop) },
                 )
             }
         }
@@ -222,6 +228,7 @@ private fun StopCard(
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onDelete: () -> Unit,
+    onFindFood: () -> Unit,
 ) {
     // Tapping the card opens and closes its culture tips.
     OutlinedCard(
@@ -270,7 +277,10 @@ private fun StopCard(
         }
 
         if (expanded) {
-            TipsList(tips, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp))
+            TipsList(tips, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp))
+            TextButton(onClick = onFindFood, modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)) {
+                Text("Find food nearby")
+            }
         }
     }
 }

@@ -1,7 +1,6 @@
 package com.osakapatnam.konnichiwah.ui.chat
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,11 +19,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SuggestionChip
@@ -38,11 +35,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.osakapatnam.konnichiwah.data.remote.PhraseDto
+import com.osakapatnam.konnichiwah.ui.components.EnlargedPhrase
+import com.osakapatnam.konnichiwah.ui.components.PhraseCard
 
 // Starter questions for an empty chat: one per thing the companion is good at.
 private val SUGGESTIONS = listOf(
@@ -166,7 +163,9 @@ private fun Message(entry: ChatEntry, onEnlarge: (PhraseDto) -> Unit) {
     ) {
         Bubble(fromUser = entry.fromUser, isError = entry.isError) { Text(entry.text) }
 
-        entry.phrases.forEach { phrase -> PhraseCard(phrase, onClick = { onEnlarge(phrase) }) }
+        entry.phrases.forEach { phrase ->
+            PhraseCard(phrase, onClick = { onEnlarge(phrase) }, modifier = Modifier.widthIn(max = 320.dp))
+        }
 
         sourceLabel(entry.toolsUsed)?.let {
             Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -182,6 +181,8 @@ private fun sourceLabel(toolsUsed: List<String>): String? {
             "get_train_route" -> "Live train times"
             "get_etiquette" -> "From our etiquette rulebook"
             "show_diet_card" -> "Checked diet card"
+            "find_food" -> "Desi Match from OpenStreetMap"
+            "find_places" -> "Shops from OpenStreetMap"
             else -> null
         }
     }
@@ -202,50 +203,6 @@ private fun Bubble(fromUser: Boolean, isError: Boolean = false, content: @Compos
             .padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
         content()
-    }
-}
-
-@Composable
-private fun PhraseCard(phrase: PhraseDto, onClick: () -> Unit) {
-    OutlinedCard(
-        modifier = Modifier
-            .widthIn(max = 320.dp)
-            .clickable(onClick = onClick),
-    ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(phrase.japanese, style = MaterialTheme.typography.titleLarge)
-            Text(phrase.romaji, style = MaterialTheme.typography.bodyMedium)
-            Text(phrase.english, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Tap to show staff", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-        }
-    }
-}
-
-// Full screen, big Japanese text, for holding the phone up to staff.
-@Composable
-private fun EnlargedPhrase(phrase: PhraseDto, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(phrase.japanese, style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
-                Text(phrase.romaji, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-                Text(
-                    phrase.english,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-                Button(onClick = onDismiss) { Text("Close") }
-            }
-        }
     }
 }
 

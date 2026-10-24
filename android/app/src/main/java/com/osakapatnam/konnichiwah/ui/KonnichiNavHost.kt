@@ -3,14 +3,18 @@ package com.osakapatnam.konnichiwah.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.osakapatnam.konnichiwah.ui.cards.CardsScreen
 import com.osakapatnam.konnichiwah.ui.chat.ChatScreen
 import com.osakapatnam.konnichiwah.ui.devcheck.DevCheckScreen
+import com.osakapatnam.konnichiwah.ui.food.FoodScreen
 import com.osakapatnam.konnichiwah.ui.itinerary.ItineraryScreen
 import com.osakapatnam.konnichiwah.ui.questionnaire.QuestionnaireScreen
 import com.osakapatnam.konnichiwah.ui.suggestions.SuggestionsScreen
@@ -31,6 +35,16 @@ object ItineraryRoute
 
 @Serializable
 object ChatRoute
+
+@Serializable
+object CardsRoute
+
+// The food search is for one stop, so its route carries the stop's name, city
+// and coordinates (type-safe arguments; FoodViewModel reads them back with
+// toRoute()). Nullable Doubles aren't supported as navigation arguments, so
+// lat and lng are NaN when the stop has no coordinates.
+@Serializable
+data class FoodRoute(val placeName: String, val city: String, val lat: Double = Double.NaN, val lng: Double = Double.NaN)
 
 @Serializable
 object DevCheckRoute
@@ -75,13 +89,32 @@ fun KonnichiNavHost(startViewModel: StartViewModel = hiltViewModel()) {
             )
         }
         composable<ItineraryRoute> {
+            // dropUnlessResumed only wraps no-argument callbacks, so the
+            // food search (which takes the stop) checks the lifecycle itself.
+            val lifecycle = LocalLifecycleOwner.current.lifecycle
             ItineraryScreen(
                 onNewTrip = dropUnlessResumed { navController.navigate(QuestionnaireRoute) { launchSingleTop = true } },
                 onAsk = dropUnlessResumed { navController.navigate(ChatRoute) { launchSingleTop = true } },
+                onCards = dropUnlessResumed { navController.navigate(CardsRoute) { launchSingleTop = true } },
+                onFindFood = { stop ->
+                    if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                        val route = FoodRoute(stop.placeName, stop.city, stop.lat ?: Double.NaN, stop.lng ?: Double.NaN)
+                        navController.navigate(route) { launchSingleTop = true }
+                    }
+                },
             )
         }
         composable<ChatRoute> {
             ChatScreen(onBack = dropUnlessResumed { navController.safePop() })
+        }
+        composable<CardsRoute> {
+            CardsScreen(onBack = dropUnlessResumed { navController.safePop() })
+        }
+        composable<FoodRoute> {
+            FoodScreen(
+                onBack = dropUnlessResumed { navController.safePop() },
+                onDietCards = dropUnlessResumed { navController.navigate(CardsRoute) { launchSingleTop = true } },
+            )
         }
         composable<DevCheckRoute> { DevCheckScreen() }
     }
