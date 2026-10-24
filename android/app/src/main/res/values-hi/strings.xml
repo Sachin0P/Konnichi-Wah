@@ -8,10 +8,10 @@
     <!-- Home and the bottom tabs -->
     <string name="tab_home">होम</string>
     <string name="tab_plan">प्लान</string>
-    <string name="home_greeting">कोन्निचिवा!</string>
-    <string name="home_hero_title">प्लान करें। जाएँ। घूमें।</string>
-    <string name="home_hero_new">खाना, ट्रेन और तौर-तरीक़े, सब आसान।</string>
-    <string name="home_open_trip">मेरी यात्रा खोलें</string>
+    <string name="home_greeting">जापान में आपका स्वागत है · कोन्निचिवा!</string>
+    <string name="home_hero_title">Konnichi-Wah! जापान</string>
+    <string name="home_hero_new">जापान यात्रा में खाना, ट्रेन और शिष्टाचार — Konnichi-Wah! के साथ आसान।</string>
+    <string name="home_open_trip">Konnichi-Wah! यात्रा खोलें</string>
     <string name="home_right_now">अभी</string>
     <string name="home_train">मेरी ट्रेन खोजें</string>
     <string name="home_train_sub">रास्ते, निकास और प्लेटफ़ॉर्म</string>
@@ -20,9 +20,9 @@
     <string name="home_menu_sub">कैमरा</string>
     <string name="home_etiquette">शिष्टाचार</string>
     <string name="home_etiquette_sub">हर जगह के लिए सुझाव</string>
-    <string name="home_offline_title">ऑफ़लाइन सेव है</string>
-    <string name="home_offline_trip">आपका यात्रा-कार्यक्रम, डाइट कार्ड और मेन्यू रीडर बिना इंटरनेट के चलते हैं।</string>
-    <string name="home_offline_none">डाइट कार्ड और मेन्यू रीडर बिना इंटरनेट के चलते हैं।</string>
+    <string name="home_offline_title">Konnichi-Wah! ऑफ़लाइन तैयार</string>
+    <string name="home_offline_trip">आपका Konnichi-Wah! यात्रा-कार्यक्रम, डाइट कार्ड और मेन्यू रीडर बिना इंटरनेट के चलते हैं।</string>
+    <string name="home_offline_none">Konnichi-Wah! डाइट कार्ड और मेन्यू रीडर बिना इंटरनेट के चलते हैं।</string>
 
     <string name="back">वापस</string>
     <string name="cancel">रद्द करें</string>
@@ -46,7 +46,7 @@
     <string name="q_next">आगे</string>
     <string name="q_step_of">चरण %1$d / %2$d</string>
     <string name="q_takes_a_minute">लगभग एक मिनट लगेगा।</string>
-    <string name="q_plan_my_trip">मेरी यात्रा प्लान करें</string>
+    <string name="q_plan_my_trip">Konnichi-Wah! से प्लान करें</string>
     <string name="q_interests">जो कुछ भी आपको अच्छा लगे, सब चुनें</string>
     <string name="q_interests_hint">कम से कम एक चुनें।</string>
     <string name="q_days">जापान में कितने दिन?</string>
@@ -85,7 +85,7 @@
     <string name="budget_1_2">बजट (₹50ह–1लाख)</string>
     <string name="budget_2_3">कम्फर्ट (₹1–2लाख)</string>
     <string name="budget_3_plus">लक्ज़री (₹2लाख+)</string>
-    <string name="hotel_stay_label">सुझाया गया होटल</string>
+    <string name="hotel_stay_label">Konnichi-Wah! अनुशंसित होटल</string>
     <string name="hotel_stay_within_budget">बजट के अनुसार</string>
     <string name="pace_relaxed">आराम से</string>
     <string name="pace_balanced">संतुलित</string>
@@ -136,9 +136,9 @@
     <string name="sug_title">आपके सुझाव</string>
     <string name="sug_subtitle">जो पसंद हों उन पर टैप करें। हम उनसे दिन-ब-दिन का प्लान बनाएँगे।</string>
     <string name="sug_edit">बदलें</string>
-    <string name="sug_building">आपका कार्यक्रम बन रहा है…</string>
+    <string name="sug_building">आपकी Konnichi-Wah! यात्रा बन रही है…</string>
     <string name="sug_build">कार्यक्रम बनाएँ (%d चुने गए)</string>
-    <string name="sug_planning">आपकी यात्रा प्लान हो रही है…</string>
+    <string name="sug_planning">Konnichi-Wah! आपकी यात्रा प्लान कर रहा है…</string>
     <string name="sug_wait">इसमें 20 सेकंड तक लग सकते हैं।</string>
     <string name="sug_route">आपका %d दिन का रूट</string>
     <string name="sug_catalogue">हमारा AI प्लानर व्यस्त था, इसलिए ये हमारे चुने हुए सुझाव हैं।</string>
@@ -147,15 +147,15 @@
     <string name="sug_select_all">सभी चुनें (%d)</string>
     <string name="sug_reset_curated">गति अनुसार चुनिंदा</string>
     <string name="trip_title">जापान यात्रा, %1$d दिन · %2$s</string>
-    <string name="trip_title_default">मेरी जापान यात्रा</string>
+    <string name="trip_title_default">मेरी Konnichi-Wah! यात्रा</string>
 
-    <string name="it_your_trip">आपकी यात्रा</string>
+    <string name="it_your_trip">आपकी Konnichi-Wah! यात्रा</string>
     <string name="it_ask">पूछें</string>
     <string name="it_menu">मेन्यू</string>
     <string name="it_more">और</string>
     <string name="it_new_trip">नई यात्रा</string>
-    <string name="it_no_trip">आपने अभी कोई यात्रा प्लान नहीं की है।</string>
-    <string name="it_plan_trip">यात्रा प्लान करें</string>
+    <string name="it_no_trip">आपने अभी कोई Konnichi-Wah! यात्रा प्लान नहीं की है।</string>
+    <string name="it_plan_trip">Konnichi-Wah! से प्लान करें</string>
     <string name="it_free_day">ख़ाली दिन। आराम करें, या कोई जगह जोड़ें।</string>
     <string name="it_saving">सेव हो रहा है…</string>
     <string name="it_not_synced">इस फ़ोन पर सेव है। अभी सिंक नहीं हुआ।</string>
@@ -195,11 +195,11 @@
     <string name="it_rec_category_food">नाश्ता और खाना</string>
     <string name="it_rec_category_nightlife">पब और नाइटलाइफ़</string>
 
-    <string name="chat_title">कुछ भी पूछें</string>
+    <string name="chat_title">Konnichi-Wah! से पूछें</string>
     <string name="chat_subtitle">आपका प्लान और खान-पान जानता है।</string>
     <string name="chat_thinking">सोच रहा हूँ…</string>
     <string name="chat_day">दिन %1$d · %2$s</string>
-    <string name="chat_empty_title">अपनी यात्रा के बारे में कुछ भी पूछें</string>
+    <string name="chat_empty_title">अपनी यात्रा के बारे में Konnichi-Wah! से कुछ भी पूछें</string>
     <string name="chat_empty_hint">ट्रेन रूट लाइव टाइमटेबल से आते हैं, और शिष्टाचार व डाइट कार्ड हमारी जाँची हुई नियम-पुस्तिका से।</string>
     <string-array name="chat_suggestions">
         <item>अपनी अगली जगह तक कैसे पहुँचूँ?</item>
@@ -224,14 +224,14 @@
 
     <string name="card_tap_to_show">स्टाफ़ को दिखाने के लिए टैप करें</string>
     <string name="card_close">बंद करें</string>
-    <string name="cards_title">डाइट कार्ड</string>
+    <string name="cards_title">Konnichi-Wah! डाइट कार्ड्स</string>
     <string name="cards_hint">इन्हें रेस्टोरेंट स्टाफ़ को दिखाएँ। इनकी जापानी जाँची हुई है और ये बिना इंटरनेट के चलते हैं।</string>
     <string name="cards_yours">आपके कार्ड</string>
     <string name="cards_all">सभी कार्ड</string>
 
     <string name="food_title">%s के पास खाना</string>
     <string name="food_none">आसपास आपके खान-पान के लायक़ कोई रेस्टोरेंट हमें नहीं पता। किसी भी रेस्टोरेंट में अपना डाइट कार्ड दिखाएँ, या कन्वीनियंस स्टोर आज़माएँ।</string>
-    <string name="food_ranked">Desi Match के हिसाब से: हर जगह आपके खान-पान के लिए कितनी सही है।</string>
+    <string name="food_ranked">Konnichi-Wah! Desi Match अनुसार: आपके खान-पान के अनुकूल।</string>
     <string name="food_score">Desi Match %d/5</string>
     <string name="food_hours">समय (OpenStreetMap से, पुराना हो सकता है): %s</string>
     <string name="food_metres">%d मी</string>
@@ -240,7 +240,7 @@
     <string name="food_walk_directions">पैदल रास्ता</string>
     <string name="food_open_maps_hint">गूगल मैप्स</string>
 
-    <string name="menu_title">मेन्यू रीडर</string>
+    <string name="menu_title">Konnichi-Wah! मेन्यू रीडर</string>
     <string name="menu_offline">बिना इंटरनेट चलता है</string>
     <string name="menu_ai_translated">AI द्वारा अनुवादित</string>
     <string name="menu_reading">मेन्यू पढ़ा जा रहा है…</string>
@@ -276,7 +276,7 @@
     <string name="menu_filter_warnings">चेतावनियाँ (%d)</string>
     <string name="menu_safe">कोई आहार चेतावनी नहीं</string>
     <string name="menu_retake">फिर से लें</string>
-    <string name="menu_item_detail">मेन्यू आइटम का विवरण</string>
+    <string name="menu_item_detail">Konnichi-Wah! मेन्यू विवरण</string>
     <string name="menu_show_card">डाइट कार्ड दिखाएँ</string>
     <string name="concern_pork">पोर्क</string>
     <string name="concern_beef">बीफ़</string>
@@ -294,7 +294,7 @@
     <string name="reminder_free_day">ख़ाली दिन। आराम करें, या कोई जगह जोड़ने के लिए ऐप खोलें।</string>
     <string name="reminder_tip">टिप: %s</string>
 
-    <string name="dir_title">कैसे पहुँचें</string>
+    <string name="dir_title">Konnichi-Wah! ट्रांज़िट</string>
     <string name="dir_subtitle">लाइव ट्रेन समय, स्टेशन तक पैदल रास्ता, और कौन-सा गेट (exit) लेना है।</string>
     <string name="dir_from">कहाँ से</string>
     <string name="dir_to">कहाँ तक</string>
@@ -361,7 +361,7 @@
     <string name="dir_station_guide">स्टेशन गाइड: %s</string>
     <string name="dir_station_guide_btn">%s गाइड देखें</string>
     <string name="dir_station_maps">स्टेशन मैप</string>
-    <string name="dir_station_maps_title">प्रमुख स्टेशन मैप</string>
+    <string name="dir_station_maps_title">Konnichi-Wah! स्टेशन मैप्स</string>
     <string name="dir_station_maps_subtitle">जापान के सबसे व्यस्त स्टेशनों के फ्लोर गाइड और निकास</string>
     <string name="dir_station_map_btn">🗺️ %s मैप</string>
     <string name="dir_station_floor_overview">अवलोकन</string>
@@ -374,8 +374,8 @@
     <string name="dir_station_guide_exits">प्रमुख निकास और गंतव्य</string>
     <string name="dir_station_guide_tips">सलाह और ट्रांसफर</string>
     <string name="dir_visual_guide">विज़ुअल स्टेशन गाइड</string>
-    <string name="dir_visual_guide_btn">🧭 विज़ुअल बोर्डिंग गाइड</string>
-    <string name="dir_staff_card_title">स्टेशन स्टाफ़ को यह दिखाएँ</string>
+    <string name="dir_visual_guide_btn">🧭 Konnichi-Wah! विज़ुअल गाइड</string>
+    <string name="dir_staff_card_title">Konnichi-Wah! स्टेशन स्टाफ़ कार्ड</string>
     <string name="dir_staff_card_hint">यह स्क्रीन किसी भी स्टेशन कर्मचारी या टिकट काउंटर पर दिखाएँ।</string>
     <string name="dir_try_guide">विज़ुअल गाइड देखें (शिबुया → असाकुसा)</string>
     <string name="dir_timetable_title">लाइव समय सारिणी</string>
@@ -387,7 +387,7 @@
     <string name="dir_timetable_in_mins">%d मिनट में</string>
     <string name="dir_timetable_due">अभी निकलने वाली है</string>
 
-    <string name="near_title">आसपास मदद</string>
+    <string name="near_title">Konnichi-Wah! आस-पास सहायता</string>
     <string name="near_subtitle">अस्पताल, पुलिस बूथ, ATM और भी बहुत कुछ, OpenStreetMap से।</string>
     <string name="near_emergency">आपातकाल? एम्बुलेंस या आग के लिए 119, पुलिस के लिए 110 पर कॉल करें।</string>
     <string name="near_kind_hospital">🏥 अस्पताल</string>

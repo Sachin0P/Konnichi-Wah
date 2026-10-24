@@ -315,12 +315,21 @@ fun RouteGuideScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    if (hindi) "चरण ${i + 1} / ${steps.size}" else "Step ${i + 1} of ${steps.size}",
-                    fontSize = 13.sp,
-                    color = Jp.Mute,
-                    fontWeight = FontWeight.Medium,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        "Konnichi-Wah!",
+                        fontSize = 13.sp,
+                        color = Jp.Maroon,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text("·", fontSize = 13.sp, color = Jp.Mute)
+                    Text(
+                        if (hindi) "चरण ${i + 1} / ${steps.size}" else "Step ${i + 1} of ${steps.size}",
+                        fontSize = 13.sp,
+                        color = Jp.Mute,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
                 Row(
                     Modifier
                         .clip(CircleShape)

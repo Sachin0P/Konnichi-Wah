@@ -67,14 +67,22 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                stringResource(R.string.home_greeting),
-                fontFamily = DisplayFont,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Palette.Mute,
-                modifier = Modifier.weight(1f),
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Konnichi-Wah! 🇯🇵🇮🇳",
+                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    color = Palette.Maroon,
+                )
+                Text(
+                    stringResource(R.string.home_greeting),
+                    fontFamily = DisplayFont,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
+                    color = Palette.Mute,
+                )
+            }
             LanguageSwitch()
         }
 
@@ -148,11 +156,15 @@ private fun Hero(state: HomeUiState, onPlan: () -> Unit) {
 
             Column(
                 modifier = Modifier
-                    .padding(start = 22.dp, top = 22.dp, end = 12.dp)
-                    .widthIn(max = 200.dp),
+                    .padding(start = 22.dp, top = 22.dp, end = 8.dp)
+                    .widthIn(max = 240.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(stringResource(R.string.home_hero_title), style = MaterialTheme.typography.displaySmall)
+                Text(
+                    stringResource(R.string.home_hero_title),
+                    style = MaterialTheme.typography.headlineLarge,
+                    maxLines = 1,
+                )
                 Text(heroLine(state), style = MaterialTheme.typography.bodyLarge, color = HeroInk)
                 PrimaryButton(
                     stringResource(if (state.hasTrip) R.string.home_open_trip else R.string.q_plan_my_trip),

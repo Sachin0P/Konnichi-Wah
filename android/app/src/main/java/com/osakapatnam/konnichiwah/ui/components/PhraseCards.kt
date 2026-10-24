@@ -51,6 +51,12 @@ fun EnlargedPhrase(phrase: PhraseDto, onDismiss: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                Text(
+                    "Konnichi-Wah! 🇯🇵",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Palette.Maroon,
+                )
                 Text(phrase.japanese, fontSize = 34.sp, lineHeight = 46.sp, fontWeight = FontWeight.Bold, color = Palette.Ink, textAlign = TextAlign.Center)
                 Text(phrase.romaji, style = MaterialTheme.typography.bodyLarge, color = Palette.Maroon, textAlign = TextAlign.Center)
                 Text(

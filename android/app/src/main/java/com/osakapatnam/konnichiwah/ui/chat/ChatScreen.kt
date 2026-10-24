@@ -168,8 +168,17 @@ private fun Message(entry: ChatEntry, onEnlarge: (PhraseDto) -> Unit, onOpenPlan
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (entry.fromUser) Alignment.End else Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        if (!entry.fromUser) {
+            Text(
+                "Konnichi-Wah!",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = Palette.Maroon,
+                modifier = Modifier.padding(start = 4.dp),
+            )
+        }
         Bubble(fromUser = entry.fromUser, isError = entry.error != null) {
             Text(entry.error?.userMessage() ?: entry.text, color = if (entry.fromUser) Palette.Tip else Palette.Ink)
         }

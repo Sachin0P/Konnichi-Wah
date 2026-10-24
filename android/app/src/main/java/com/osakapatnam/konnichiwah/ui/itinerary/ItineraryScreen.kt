@@ -81,6 +81,7 @@ import com.osakapatnam.konnichiwah.ui.components.TipQuote
 import com.osakapatnam.konnichiwah.ui.components.Tone
 import com.osakapatnam.konnichiwah.ui.currentLocale
 import com.osakapatnam.konnichiwah.ui.placeTypeLabel
+import com.osakapatnam.konnichiwah.ui.theme.DisplayFont
 import com.osakapatnam.konnichiwah.ui.theme.Palette
 import com.osakapatnam.konnichiwah.ui.timeSlotLabel
 import java.time.Instant
@@ -155,7 +156,14 @@ fun ItineraryScreen(
 private fun TripHeader(title: String, onCards: () -> Unit, onNewTrip: () -> Unit, onSwitchLanguage: () -> Unit) {
     var showMore by remember { mutableStateOf(false) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            "Konnichi-Wah! 🇯🇵",
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp,
+            color = Palette.Maroon,
+        )
         Row(verticalAlignment = Alignment.Top) {
             Text(
                 title.ifBlank { stringResource(R.string.it_your_trip) },
@@ -191,6 +199,13 @@ private fun NoTrip(onNewTrip: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Text(
+            "Konnichi-Wah! 🇯🇵",
+            fontFamily = DisplayFont,
+            fontWeight = FontWeight.Bold,
+            fontSize = 22.sp,
+            color = Palette.Maroon,
+        )
         Text(stringResource(R.string.it_no_trip), style = MaterialTheme.typography.titleLarge)
         PrimaryButton(stringResource(R.string.it_plan_trip), onClick = onNewTrip)
     }
@@ -446,6 +461,12 @@ private fun HotelStayCard(city: String, hotelName: String, hotelPrice: String?, 
         border = BorderStroke(1.dp, Palette.Petal),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                "Konnichi-Wah! Stay Recommendation",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = Palette.Maroon,
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

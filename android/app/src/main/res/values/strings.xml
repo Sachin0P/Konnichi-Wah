@@ -7,10 +7,10 @@
     <!-- Home and the bottom tabs -->
     <string name="tab_home">Home</string>
     <string name="tab_plan">Plan</string>
-    <string name="home_greeting">Konnichiwa!</string>
-    <string name="home_hero_title">Plan. Go. Explore.</string>
-    <string name="home_hero_new">Food, trains and manners, sorted.</string>
-    <string name="home_open_trip">Open my trip</string>
+    <string name="home_greeting">Welcome to Japan! · こんにちは</string>
+    <string name="home_hero_title">Konnichi-Wah!</string>
+    <string name="home_hero_new">Your Japan travel companion for food, trains and manners.</string>
+    <string name="home_open_trip">Open Konnichi-Wah! Trip</string>
     <string name="home_right_now">Right now</string>
     <string name="home_train">Find my train</string>
     <string name="home_train_sub">Routes, exits and platforms</string>
@@ -19,9 +19,9 @@
     <string name="home_menu_sub">Camera</string>
     <string name="home_etiquette">Etiquette</string>
     <string name="home_etiquette_sub">Tips at every stop</string>
-    <string name="home_offline_title">Saved offline</string>
-    <string name="home_offline_trip">Your itinerary, diet cards and menu reader work without internet.</string>
-    <string name="home_offline_none">Diet cards and the menu reader work without internet.</string>
+    <string name="home_offline_title">Konnichi-Wah! Offline Ready</string>
+    <string name="home_offline_trip">Your Konnichi-Wah! itinerary, diet cards and menu reader work 100% offline.</string>
+    <string name="home_offline_none">Konnichi-Wah! diet cards and menu reader work 100% offline.</string>
 
     <!-- Common -->
     <string name="back">Back</string>
@@ -49,7 +49,7 @@
     <string name="q_next">Next</string>
     <string name="q_step_of">Step %1$d of %2$d</string>
     <string name="q_takes_a_minute">Takes about a minute.</string>
-    <string name="q_plan_my_trip">Plan my trip</string>
+    <string name="q_plan_my_trip">Plan with Konnichi-Wah!</string>
     <string name="q_interests">Pick everything that excites you</string>
     <string name="q_interests_hint">Choose at least one.</string>
     <string name="q_days">How many days in Japan?</string>
@@ -89,7 +89,7 @@
     <string name="budget_1_2">Budget (₹50k–1L)</string>
     <string name="budget_2_3">Comfort (₹1–2L)</string>
     <string name="budget_3_plus">Luxury (₹2L+)</string>
-    <string name="hotel_stay_label">Recommended Stay</string>
+    <string name="hotel_stay_label">Konnichi-Wah! Recommended Stay</string>
     <string name="hotel_stay_within_budget">Within budget</string>
     <string name="pace_relaxed">Relaxed</string>
     <string name="pace_balanced">Balanced</string>
@@ -142,9 +142,9 @@
     <string name="sug_title">Your suggestions</string>
     <string name="sug_subtitle">Tap the ones you like. We\'ll make them into a day-by-day plan.</string>
     <string name="sug_edit">Edit</string>
-    <string name="sug_building">Building your itinerary…</string>
+    <string name="sug_building">Building your Konnichi-Wah! itinerary…</string>
     <string name="sug_build" tools:ignore="PluralsCandidate">Build itinerary (%d selected)</string>
-    <string name="sug_planning">Planning your trip…</string>
+    <string name="sug_planning">Konnichi-Wah! is planning your trip…</string>
     <string name="sug_wait">This can take up to 20 seconds.</string>
     <string name="sug_route">Your %d-day route</string>
     <string name="sug_catalogue">Our AI planner was busy, so these are our hand-picked suggestions.</string>
@@ -153,16 +153,16 @@
     <string name="sug_select_all" tools:ignore="PluralsCandidate">Select all (%d)</string>
     <string name="sug_reset_curated">Curated for pace</string>
     <string name="trip_title">%1$d-day Japan trip · %2$s</string>
-    <string name="trip_title_default">My Japan trip</string>
+    <string name="trip_title_default">My Konnichi-Wah! Trip</string>
 
     <!-- Itinerary -->
-    <string name="it_your_trip">Your trip</string>
+    <string name="it_your_trip">Your Konnichi-Wah! Trip</string>
     <string name="it_ask">Ask</string>
     <string name="it_menu">Menu</string>
     <string name="it_more">More</string>
     <string name="it_new_trip">New trip</string>
-    <string name="it_no_trip">You haven\'t planned a trip yet.</string>
-    <string name="it_plan_trip">Plan a trip</string>
+    <string name="it_no_trip">No Konnichi-Wah! trip planned yet</string>
+    <string name="it_plan_trip">Plan with Konnichi-Wah!</string>
     <string name="it_free_day">Free day. Rest, or add a stop.</string>
     <string name="it_saving">Saving…</string>
     <string name="it_not_synced">Saved on this phone. Not synced yet.</string>
@@ -203,11 +203,11 @@
     <string name="it_rec_category_nightlife">Pubs &amp; Nightlife</string>
 
     <!-- Chat -->
-    <string name="chat_title">Ask anything</string>
+    <string name="chat_title">Ask Konnichi-Wah!</string>
     <string name="chat_subtitle">Knows your plan and your diet.</string>
     <string name="chat_thinking">Thinking…</string>
     <string name="chat_day">Day %1$d · %2$s</string>
-    <string name="chat_empty_title">Ask me anything about your trip</string>
+    <string name="chat_empty_title">Ask Konnichi-Wah! anything about your trip</string>
     <string name="chat_empty_hint">Train routes use live timetables, and etiquette and diet cards come from our checked rulebook.</string>
     <string-array name="chat_suggestions">
         <item>How do I get to my next stop?</item>
@@ -233,7 +233,7 @@
     <!-- Phrase and diet cards -->
     <string name="card_tap_to_show">Tap to show staff</string>
     <string name="card_close">Close</string>
-    <string name="cards_title">Diet cards</string>
+    <string name="cards_title">Konnichi-Wah! Diet Cards</string>
     <string name="cards_hint">Show these to restaurant staff. They\'re checked Japanese and work without internet.</string>
     <string name="cards_yours">Your cards</string>
     <string name="cards_all">All cards</string>
@@ -241,7 +241,7 @@
     <!-- Food -->
     <string name="food_title">Food near %s</string>
     <string name="food_none">We don\'t know a restaurant suited to your diet nearby. Show your diet card at any restaurant, or try a convenience store.</string>
-    <string name="food_ranked">Ranked by Desi Match: how well each place suits your diet.</string>
+    <string name="food_ranked">Ranked by Konnichi-Wah! Desi Match: how well each place suits your diet.</string>
     <string name="food_score">Desi Match %d/5</string>
     <string name="food_hours">Hours (from OpenStreetMap, may be out of date): %s</string>
     <string name="food_metres">%d m</string>
@@ -251,7 +251,7 @@
     <string name="food_open_maps_hint">Google Maps</string>
 
     <!-- Menu reader -->
-    <string name="menu_title">Menu reader</string>
+    <string name="menu_title">Konnichi-Wah! Menu Reader</string>
     <string name="menu_offline">Works offline</string>
     <string name="menu_ai_translated">Translated by AI</string>
     <string name="menu_reading">Reading the menu…</string>
@@ -287,7 +287,7 @@
     <string name="menu_filter_warnings">Warnings (%d)</string>
     <string name="menu_safe">No diet warnings</string>
     <string name="menu_retake">Retake</string>
-    <string name="menu_item_detail">Menu Item Details</string>
+    <string name="menu_item_detail">Konnichi-Wah! Menu Details</string>
     <string name="menu_show_card">Show diet card</string>
     <string name="concern_pork">Pork</string>
     <string name="concern_beef">Beef</string>
@@ -307,7 +307,7 @@
     <string name="reminder_tip">Tip: %s</string>
 
     <!-- Directions -->
-    <string name="dir_title">Get there</string>
+    <string name="dir_title">Konnichi-Wah! Transit</string>
     <string name="dir_subtitle">Live train times, the walk to the station, and which exit to use.</string>
     <string name="dir_from">From</string>
     <string name="dir_to">To</string>
@@ -374,7 +374,7 @@
     <string name="dir_station_guide">Station guide: %s</string>
     <string name="dir_station_guide_btn">View %s guide</string>
     <string name="dir_station_maps">Station Maps</string>
-    <string name="dir_station_maps_title">Major Station Maps</string>
+    <string name="dir_station_maps_title">Konnichi-Wah! Station Maps</string>
     <string name="dir_station_maps_subtitle">Floor layouts &amp; exits for Japan\'s busiest hubs</string>
     <string name="dir_station_map_btn">🗺️ %s Map</string>
     <string name="dir_station_floor_overview">Overview</string>
@@ -387,8 +387,8 @@
     <string name="dir_station_guide_exits">Main exits &amp; destinations</string>
     <string name="dir_station_guide_tips">Tips &amp; transfers</string>
     <string name="dir_visual_guide">Visual station guide</string>
-    <string name="dir_visual_guide_btn">🧭 Visual boarding guide</string>
-    <string name="dir_staff_card_title">Show to Station Staff</string>
+    <string name="dir_visual_guide_btn">🧭 Konnichi-Wah! Visual Guide</string>
+    <string name="dir_staff_card_title">Konnichi-Wah! Station Staff Card</string>
     <string name="dir_staff_card_hint">Show this screen to any station staff member or at the ticket counter.</string>
     <string name="dir_try_guide">Try visual guide (Shibuya → Asakusa)</string>
     <string name="dir_timetable_title">Live Timetable</string>
@@ -401,7 +401,7 @@
     <string name="dir_timetable_due">Due now</string>
 
     <!-- Help nearby -->
-    <string name="near_title">Help nearby</string>
+    <string name="near_title">Konnichi-Wah! Help Nearby</string>
     <string name="near_subtitle">Hospitals, police boxes, ATMs and more, from OpenStreetMap.</string>
     <string name="near_emergency">Emergency? Call 119 for an ambulance or fire, 110 for the police.</string>
     <string name="near_kind_hospital">🏥 Hospital</string>

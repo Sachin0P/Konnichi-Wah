@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.osakapatnam.konnichiwah.ui.theme.DisplayFont
 import com.osakapatnam.konnichiwah.ui.theme.Palette
 
 // Small building blocks shared by every screen, so they all follow the same
@@ -92,8 +93,22 @@ fun KCard(
 
 // The big serif title at the top of a screen, with an optional grey line under it.
 @Composable
-fun ScreenHeader(title: String, subtitle: String?, modifier: Modifier = Modifier) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+fun ScreenHeader(
+    title: String,
+    subtitle: String?,
+    modifier: Modifier = Modifier,
+    brandKicker: String? = "Konnichi-Wah!",
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        if (!brandKicker.isNullOrBlank()) {
+            Text(
+                brandKicker,
+                fontFamily = DisplayFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = Palette.Maroon,
+            )
+        }
         Text(title, style = MaterialTheme.typography.headlineMedium)
         if (subtitle != null) {
             Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

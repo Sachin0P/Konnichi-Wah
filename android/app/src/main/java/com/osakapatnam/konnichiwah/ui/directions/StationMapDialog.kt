@@ -117,6 +117,13 @@ fun StationMapDialog(
                     .fillMaxWidth()
                     .padding(20.dp),
             ) {
+                Text(
+                    "Konnichi-Wah! 🗺️",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Palette.Maroon,
+                    modifier = Modifier.padding(bottom = 4.dp),
+                )
                 // Header with Station Name, Japanese Kanji, City badge, and Close
                 Row(
                     modifier = Modifier.fillMaxWidth(),
