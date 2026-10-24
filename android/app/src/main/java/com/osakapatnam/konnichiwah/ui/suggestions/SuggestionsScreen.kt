@@ -227,9 +227,14 @@ private fun RouteCard(plan: PlanDto) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
+                                    verticalAlignment = Alignment.Top,
                                 ) {
-                                    Text("🏨  ${city.hotelName}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                    Text(
+                                        "🏨  ${city.hotelName}",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.weight(1f).padding(end = 8.dp),
+                                    )
                                     if (!city.hotelPrice.isNullOrBlank()) {
                                         Text(city.hotelPrice, style = MaterialTheme.typography.labelMedium, color = Palette.Green, fontWeight = FontWeight.Medium)
                                     }

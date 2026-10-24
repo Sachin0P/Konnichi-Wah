@@ -20,6 +20,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/etiquette", app.listEtiquetteRulesHandler)
 
 	router.HandlerFunc(http.MethodPost, "/v1/plan/suggestions", app.createPlanSuggestionsHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/plan/hotels", app.recommendHotelsHandler)
 
 	router.HandlerFunc(http.MethodPost, "/v1/itineraries", app.createItineraryHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/itineraries/:id", app.showItineraryHandler)

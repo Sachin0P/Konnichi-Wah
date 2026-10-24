@@ -3,13 +3,17 @@ package com.osakapatnam.konnichiwah.data
 import com.osakapatnam.konnichiwah.data.remote.ApiError
 import com.osakapatnam.konnichiwah.data.remote.ApiResult
 import com.osakapatnam.konnichiwah.data.remote.AvoidItem
+import com.osakapatnam.konnichiwah.data.remote.BudgetBand
 import com.osakapatnam.konnichiwah.data.remote.ChatReplyDto
 import com.osakapatnam.konnichiwah.data.remote.ChatRequestDto
 import com.osakapatnam.konnichiwah.data.remote.Diet
 import com.osakapatnam.konnichiwah.data.remote.DirectionsDto
 import com.osakapatnam.konnichiwah.data.remote.EtiquetteRuleDto
 import com.osakapatnam.konnichiwah.data.remote.FoodDto
+import com.osakapatnam.konnichiwah.data.remote.GroupType
 import com.osakapatnam.konnichiwah.data.remote.HealthcheckDto
+import com.osakapatnam.konnichiwah.data.remote.HotelRecommendationDto
+import com.osakapatnam.konnichiwah.data.remote.HotelRequestDto
 import com.osakapatnam.konnichiwah.data.remote.KonnichiApi
 import com.osakapatnam.konnichiwah.data.remote.MenuLineDto
 import com.osakapatnam.konnichiwah.data.remote.MenuTranslateRequestDto
@@ -43,6 +47,25 @@ class BackendRepository @Inject constructor(
 
     suspend fun suggest(request: TripRequestDto): ApiResult<PlanDto> =
         apiCall(json) { api.suggest(request).plan }
+
+    suspend fun recommendHotels(
+        cities: List<String>,
+        budgetBand: BudgetBand? = null,
+        groupType: GroupType? = null,
+        notes: String? = null,
+        itineraryId: Long? = null,
+    ): ApiResult<List<HotelRecommendationDto>> =
+        apiCall(json) {
+            api.recommendHotels(
+                HotelRequestDto(
+                    cities = cities,
+                    budgetBand = budgetBand,
+                    groupType = groupType,
+                    notes = notes,
+                    itineraryId = itineraryId,
+                )
+            ).hotels
+        }
 
     suspend fun chat(request: ChatRequestDto): ApiResult<ChatReplyDto> =
         apiCall(json) { api.chat(request).reply }

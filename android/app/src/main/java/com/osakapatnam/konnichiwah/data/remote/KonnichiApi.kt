@@ -22,6 +22,9 @@ interface KonnichiApi {
     @POST("v1/plan/suggestions")
     suspend fun suggest(@Body request: TripRequestDto): PlanEnvelope
 
+    @POST("v1/plan/hotels")
+    suspend fun recommendHotels(@Body request: HotelRequestDto): HotelResponseEnvelope
+
     @POST("v1/itineraries")
     suspend fun createItinerary(@Body request: CreateItineraryRequestDto): ItineraryEnvelope
 

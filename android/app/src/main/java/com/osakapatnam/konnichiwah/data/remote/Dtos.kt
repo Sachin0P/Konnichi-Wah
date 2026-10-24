@@ -212,6 +212,28 @@ data class UpdateItineraryRequestDto(
     @SerialName("start_date") val startDate: String? = null,
 )
 
+@Serializable
+data class HotelRequestDto(
+    val cities: List<String>,
+    @SerialName("budget_band") val budgetBand: BudgetBand? = null,
+    @SerialName("group_type") val groupType: GroupType? = null,
+    val notes: String? = null,
+    @SerialName("itinerary_id") val itineraryId: Long? = null,
+)
+
+@Serializable
+data class HotelRecommendationDto(
+    val city: String,
+    @SerialName("hotel_name") val hotelName: String,
+    @SerialName("hotel_price") val hotelPrice: String,
+    @SerialName("hotel_reason") val hotelReason: String,
+)
+
+@Serializable
+data class HotelResponseEnvelope(
+    val hotels: List<HotelRecommendationDto>,
+)
+
 // Companion chat (POST /v1/companion/chat). The backend keeps no state: we
 // send the conversation so far plus context about the day.
 

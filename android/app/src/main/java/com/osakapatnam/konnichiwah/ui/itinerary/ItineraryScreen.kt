@@ -111,7 +111,9 @@ fun ItineraryScreen(
                 itinerary = itinerary,
                 rulebook = state.rulebook,
                 syncing = state.syncing,
+                loadingHotels = state.loadingHotels,
                 onSyncNow = viewModel::syncNow,
+                onRecommendHotels = viewModel::recommendHotels,
                 onSetStartDate = viewModel::setStartDate,
                 onMoveUp = viewModel::moveUp,
                 onMoveDown = viewModel::moveDown,
@@ -199,7 +201,9 @@ private fun TripContent(
     itinerary: LocalItinerary,
     rulebook: Rulebook?,
     syncing: Boolean,
+    loadingHotels: Boolean,
     onSyncNow: () -> Unit,
+    onRecommendHotels: () -> Unit,
     onSetStartDate: (LocalDate) -> Unit,
     onMoveUp: (Int, Int) -> Unit,
     onMoveDown: (Int, Int) -> Unit,
@@ -221,13 +225,48 @@ private fun TripContent(
         item { SyncStatus(itinerary.pendingSync, syncing, onSyncNow) }
         item { TripDates(startDate, itinerary.days.size, onSetStartDate) }
 
+        val missingHotels = itinerary.days.any { it.hotelName.isNullOrBlank() }
+        if (missingHotels) {
+            item {
+                KCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, end = 8.dp),
+                    color = Palette.HeroPink,
+                    border = BorderStroke(1.dp, Palette.Petal),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                            Text("🏨  Hotel Recommendations", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = Palette.Maroon)
+                            Text("Find real hotels & ryokans within your budget", style = MaterialTheme.typography.bodySmall, color = Palette.Ink)
+                        }
+                        if (loadingHotels) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Palette.Sun, strokeWidth = 2.dp)
+                        } else {
+                            PillButton("Find Hotels", onClick = onRecommendHotels)
+                        }
+                    }
+                }
+            }
+        }
+
         itinerary.days.forEachIndexed { dayIndex, day ->
             item(key = "day-${day.index}") { DayHeader(day, date = startDate?.plusDays(dayIndex.toLong()), onAdd = { onAddStop(dayIndex) }) }
 
             val isNewCity = dayIndex == 0 || !day.city.equals(itinerary.days[dayIndex - 1].city, ignoreCase = true)
-            if (isNewCity && !day.hotelName.isNullOrBlank()) {
-                item(key = "hotel-${day.index}") {
-                    HotelStayCard(day.city, day.hotelName, day.hotelPrice, day.hotelReason)
+            if (isNewCity) {
+                if (!day.hotelName.isNullOrBlank()) {
+                    item(key = "hotel-${day.index}") {
+                        HotelStayCard(day.city, day.hotelName, day.hotelPrice, day.hotelReason)
+                    }
+                } else {
+                    item(key = "hotel-missing-${day.index}") {
+                        HotelMissingCard(day.city, loadingHotels, onRecommendHotels)
+                    }
                 }
             }
 
@@ -410,15 +449,53 @@ private fun HotelStayCard(city: String, hotelName: String, hotelPrice: String?, 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
-                Text("🏨  $hotelName", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = Palette.Maroon)
+                Text(
+                    "🏨  $hotelName",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Palette.Maroon,
+                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                )
                 if (!hotelPrice.isNullOrBlank()) {
-                    Text(hotelPrice, style = MaterialTheme.typography.labelMedium, color = Palette.Green, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        hotelPrice,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Palette.Green,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
             }
             if (!hotelReason.isNullOrBlank()) {
                 Text(hotelReason, style = MaterialTheme.typography.bodySmall, color = Palette.Ink)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HotelMissingCard(city: String, loading: Boolean, onRecommend: () -> Unit) {
+    KCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp, end = 8.dp),
+        color = Palette.HeroPink,
+        border = BorderStroke(1.dp, Palette.Petal),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                Text("🏨  Recommended Stay in $city", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = Palette.Maroon)
+                Text("Find real hotels & ryokans within your budget", style = MaterialTheme.typography.bodySmall, color = Palette.Ink)
+            }
+            if (loading) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Palette.Sun, strokeWidth = 2.dp)
+            } else {
+                PillButton("Find Hotels", onClick = onRecommend)
             }
         }
     }
