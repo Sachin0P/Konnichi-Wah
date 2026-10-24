@@ -11,6 +11,7 @@ This is the contract between the Android app and the Go backend in `backend/`. I
 - [GET /v1/itineraries/:id](#get-v1itinerariesid)
 - [PATCH /v1/itineraries/:id](#patch-v1itinerariesid)
 - [POST /v1/companion/chat](#post-v1companionchat)
+- [GET /v1/food](#get-v1food)
 - [Permitted values](#permitted-values)
 - [Running the backend for app development](#running-the-backend-for-app-development)
 - [Not built yet](#not-built-yet)
@@ -270,6 +271,8 @@ Answers usually take 1–6 seconds. The backend calls the LLM (Groq, or Gemini a
 
 - `get_train_route`: live timetable routes from Transitous. The model never states routes from memory.
 - `get_etiquette`: our rulebook.
+- `find_food`: Desi Match restaurant search (the same ranking as `GET /v1/food`).
+- `find_places`: anime and figure, toy and game, hobby and model, and 100-yen shops near a place.
 - `show_diet_card`: the hand-checked cards from `backend/rulebook/phrases.json`, picked from the traveller's saved diet.
 - `show_phrase_card`: other phrases ("Where is the toilet?"), translated by the model and checked to be in Japanese script.
 
@@ -315,6 +318,64 @@ Answers usually take 1–6 seconds. The backend calls the LLM (Groq, or Gemini a
 - `tools_used` tells the app where the answer came from, so it can show "Live train times" or "From our etiquette rulebook".
 - A 503 means the chat is busy (try again in a minute), out of today's free quota, or not configured. Show its `error` message to the user.
 
+## GET /v1/food
+
+Finds restaurants near a named place, or a point, and ranks them with **Desi Match**: how well each one suits the traveller's diet, from 1 to 5, with the reasons.
+
+The data is a snapshot of OpenStreetMap (`backend/osmdata/places.json`), loaded by `make db/seed`. It covers Tokyo, Kyoto, Osaka and Nara (Sapporo isn't fetched yet), and only includes places with diet tags or South Asian and curry cuisines. Searches are fast and don't depend on any external service at request time. The one exception is turning a `near` name into a location, which uses Transitous.
+
+```
+GET /v1/food?near=Senso-ji&city=Tokyo&diet=veg&avoid=onion_garlic&spice=indian_spicy
+GET /v1/food?lat=35.7148&lng=139.7967&diet=halal
+```
+
+| Query parameter | Required | Notes |
+|---|---|---|
+| `near` | `near`, or `lat` and `lng` | A station or landmark name |
+| `city` | no | Helps `near` find the right place, e.g. `Tokyo` |
+| `lat`, `lng` | see `near` | A point in Japan |
+| `diet` | no (default `non_veg`) | One of the [diets](#permitted-values) |
+| `avoid` | no | Comma separated, e.g. `pork,beef` |
+| `spice` | no (default `medium`) | One of the spice levels |
+| `radius` | no (default 1000) | Metres, 100–3000 |
+
+The brief has the profile coming from the auth token. There's no auth yet, so the app sends `diet`, `avoid` and `spice` instead.
+
+### Response: 200 OK
+
+```json
+{
+  "food": {
+    "near": { "name": "Sensō-ji", "lat": 35.7148, "lng": 139.7967 },
+    "results": [
+      {
+        "id": "node/123456",
+        "city": "Tokyo",
+        "name": "サウスパーク",
+        "name_en": "South Park - Taste of Kerala",
+        "lat": 35.71,
+        "lng": 139.79,
+        "tags": { "amenity": "restaurant", "cuisine": "indian", "opening_hours": "11:00-22:00" },
+        "distance_m": 420,
+        "desi_match": {
+          "score": 4,
+          "reasons": ["Indian or Nepali food"],
+          "caution": "Ask for Jain food: no onion, garlic or root vegetables. Show your diet card."
+        }
+      }
+    ],
+    "attribution": "Map data © OpenStreetMap contributors"
+  }
+}
+```
+
+- `results` has up to 10 places, best `score` first, then nearest. Places scoring 1 (a poor fit, e.g. a ramen shop for a vegetarian) are left out.
+- Show `name_en` first if present, with `name` (the Japanese sign) next to it.
+- `caution` warns about things to ask, such as dashi or onion and garlic. Always show it.
+- `opening_hours` comes from OpenStreetMap and may be out of date.
+- **You must show `attribution` wherever these results appear.** OpenStreetMap's licence requires it.
+- A 422 means a bad parameter, or that `near` couldn't be found. A 503 means place search is temporarily down.
+
 ## Permitted values
 
 These exact strings are the contract. They are defined in `backend/internal/data/profiles.go`, `etiquette.go` and `plans.go`.
@@ -357,6 +418,4 @@ Debug builds allow plain HTTP to `localhost`, `127.0.0.1` and `10.0.2.2` only. R
 
 ## Not built yet
 
-These endpoints are in the project brief but don't exist yet, so their shapes may change:
-
-- `GET /v1/food?lat=&lng=` (and the companion's `find_places` / `find_food` tools)
+Everything in the project brief's endpoint list now exists. Auth (Firebase ID tokens) isn't built yet.

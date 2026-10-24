@@ -23,11 +23,17 @@ Konnichi-Wah! removes that uncertainty, before the trip and during it.
    - Reorder, remove and add stops.
    - **Saved on the phone and works fully offline.** Edits sync when you're back online.
 4. **Culture tips on every stop.** Each stop shows etiquette tips from our own hand-written rulebook of 78 rules, such as "Remove your shoes", "Bathe without swimwear" or "Don't pass food chopstick to chopstick". The rulebook is bundled in the app, so the tips work with no signal.
-5. **Ask Konnichi, the in-trip chat.** Answers take 1–3 seconds, using tools rather than guesses:
+5. **Desi Match food search.** "Find food nearby" on any stop lists restaurants ranked 1–5 for *your* diet, with the reasons and what to ask:
+   - ★★★★★ "Vegan-only kitchen" for a vegetarian
+   - ★★★★ "Indian or Nepali food", with "Ask for Jain food: no onion, garlic or root vegetables"
+   - A ramen shop is left out for someone avoiding pork, even if it's the closest place.
+6. **Diet cards, offline.** The "Cards" screen shows *your* hand-checked Japanese diet cards first (vegetarian, Jain, eggetarian, halal, no beef, no pork, "does this contain dashi?"). They're bundled in the app and work with no signal.
+7. **Ask Konnichi, the in-trip chat.** Answers take 1–3 seconds, using tools rather than guesses:
    - **Train routes** from live timetable data: *"Take the Miyakoji Rapid from Kyoto 09:04 → Nara 09:51."* The AI never states a route from memory.
    - **Etiquette** only from our rulebook. City-specific rules apply only where they belong, so the tip about feeding Nara's deer doesn't show up for a park in Tokyo.
    - **Diet cards:** hand-checked Japanese cards to show restaurant staff, e.g. 「私はジャイナ教徒です。肉、魚、魚介類、卵、だしは食べられません。…」 They're never machine-translated on the fly.
    - **Phrase cards** for anything else ("Where is the toilet?"), shown full screen to hold up to staff.
+   - **Food and shops nearby:** "Where can we eat near Senso-ji?" uses the same Desi Match ranking. "Figure shops near Akihabara?" lists real anime, collector, toy, hobby and 100-yen shops.
 
 ## How it fits together
 
@@ -54,7 +60,7 @@ Konnichi-Wah! removes that uncertainty, before the trip and during it.
 | [Gemini API](https://ai.google.dev) (free tier) | Trip planner (structured JSON output) | Schema-constrained output. The free tier allows only **20 requests per day per model**, so the backend falls back through several models and then to the catalogue. |
 | [Groq](https://console.groq.com) (free tier) | Companion chat (tool calling) | About 1-second answers and around 1,000 free requests a day |
 | [Transitous](https://transitous.org) | Train, subway, Shinkansen and bus routes | Free, no key, with real timetables for JR, Tokyo Metro, Shinkansen and Kintetsu. Google's transit directions appear not to cover Japan. |
-| [OpenStreetMap](https://www.openstreetmap.org) | Place search (planned for restaurants and shops) | Free, and has vegetarian/vegan diet tags |
+| [OpenStreetMap](https://www.openstreetmap.org) | Restaurants (Desi Match) and shops | Free, and has diet tags (`diet:vegetarian`, `diet:halal`) and cuisines (`indian`, `nepalese`). We keep a snapshot (`osmdata/places.json`) because the public Overpass servers were often too slow or down to use live. |
 
 Transitous is run by volunteers for open-source and non-profit projects. We cache its results and keep request volume low. A public launch would move to NAVITIME or a self-hosted instance. Route data © Transitous and the transit operators whose feeds it uses. Map data © OpenStreetMap contributors (ODbL).
 
@@ -63,12 +69,15 @@ Transitous is run by volunteers for open-source and non-profit projects. We cach
 ```
 backend/            Go JSON API, structured after Alex Edwards' "Let's Go Further"
   cmd/api/            main, routes, handlers, helpers, errors, middleware
-  cmd/seed/           loads the etiquette rulebook into PostgreSQL
+  cmd/seed/           loads the etiquette rulebook and the places snapshot into PostgreSQL
+  cmd/osmfetch/       refreshes osmdata/places.json from OpenStreetMap (make osm/fetch)
+  internal/desimatch/ Desi Match scoring and ranking
   internal/data/      models and validation (itineraries, rules, profiles, phrase cards)
   internal/planner/   Gemini planner, catalogue fallback, day-by-day arranging
   internal/companion/ chat tool loop and tools (provider-neutral: Groq or Gemini)
   internal/gemini/    internal/groq/    internal/transit/   small net/http API clients
   rulebook/           etiquette.json and phrases.json (hand-written content)
+  osmdata/            places.json: the OpenStreetMap snapshot (Tokyo, Kyoto, Osaka, Nara)
   migrations/         golang-migrate SQL migrations
 android/            Kotlin app: Compose, Material 3, Hilt, Retrofit, Room, DataStore
 docs/api.md         the API contract between app and backend
@@ -103,7 +112,7 @@ SQL
 cd backend
 cp .envrc.example .envrc       # then fill in the DSN password and any API keys
 make db/migrations/up          # create the tables
-make db/seed                   # load the etiquette rulebook
+make db/seed                   # load the etiquette rulebook and the places snapshot
 make run/api port=4001         # start the API (default port is 4000)
 ```
 
@@ -135,6 +144,7 @@ The full contract, with request and response examples for every endpoint, is in 
 | POST | `/v1/itineraries` | Chosen cards → a day-by-day itinerary |
 | GET / PATCH | `/v1/itineraries/:id` | Fetch, or save edits (with optimistic locking) |
 | POST | `/v1/companion/chat` | One chat turn; the backend runs the tool loop |
+| GET | `/v1/food?near=Senso-ji&city=Tokyo&diet=veg` | Restaurants nearby, ranked by Desi Match |
 
 ## Testing
 
@@ -143,12 +153,13 @@ The full contract, with request and response examples for every endpoint, is in 
 
 ## What's not built yet
 
-- **Restaurant and shop search** (`/v1/food`, "figure shops near me"), and the **Desi Match** score: how well a restaurant suits an Indian traveller's diet, from 1 to 5.
-- **Offline phrase cards in the app** (the checked cards are already in `phrases.json`), the **menu camera** (on-device OCR and translation), trip reminders, and **Hindi**.
+- **Restaurant coverage beyond the Desi-relevant places.** The snapshot holds only places with diet tags or South Asian and curry cuisines, in four cities. Sapporo isn't in it yet: the Overpass servers timed out every time (add it with `go run ./cmd/osmfetch -cities Sapporo`, then `make db/seed`). OpenStreetMap's diet tags are also incomplete, so a good vegetarian place may simply not be tagged.
+- **"Near me" with the phone's location.** Searches are by place name for now.
+- The **menu camera** (on-device OCR and translation), trip reminders, and **Hindi**.
 - **Sign-in.** Itineraries aren't tied to users yet, so anyone with an itinerary id can read it. Firebase Auth is planned.
 - **Exact locations for stops.** They have no coordinates yet; routes are found by place name.
 - **Content review.** The Japanese phrase cards and the time-sensitive etiquette rules (tax-free shopping, Shinkansen luggage, Gion photo rules) should be checked by a native speaker before any real use.
 
 ## Credits
 
-Etiquette content is based on public guidance from JNTO / [japan.travel](https://www.japan.travel). Route data comes from [Transitous](https://transitous.org) and the operators whose open data it uses. The backend follows the structure of Alex Edwards' [*Let's Go Further*](https://lets-go-further.alexedwards.net).
+Etiquette content is based on public guidance from JNTO / [japan.travel](https://www.japan.travel). Route data comes from [Transitous](https://transitous.org) and the operators whose open data it uses. Restaurant and shop data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database Licence. The backend follows the structure of Alex Edwards' [*Let's Go Further*](https://lets-go-further.alexedwards.net).
