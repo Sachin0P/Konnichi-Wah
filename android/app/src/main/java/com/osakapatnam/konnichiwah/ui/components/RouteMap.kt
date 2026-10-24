@@ -16,6 +16,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.delay
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -129,6 +130,12 @@ fun RouteMap(lines: List<MapLine>, pins: List<MapPin>, modifier: Modifier = Modi
         s.getSourceAs<GeoJsonSource>(PINS)?.setGeoJson(pinsGeoJson(pins))
 
         val points = lines.flatMap { it.points } + pins.map { it.lat to it.lng }
+
+        // Fitting the camera to the points needs the map's size, and the
+        // style can load before the map has been laid out (then the fit
+        // comes out wrong). Wait for the layout first.
+        while (mapView.width == 0 || mapView.height == 0) delay(50)
+
         when {
             points.size >= 2 -> {
                 val bounds = LatLngBounds.Builder().includes(points.map { LatLng(it.first, it.second) }).build()

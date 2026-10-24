@@ -43,16 +43,17 @@ class LocationProvider @Inject constructor(
             .maxByOrNull { it.time }
     }
 
-    // The current location, waiting up to 15 seconds for a fresh fix. Null
-    // without permission, or if the phone can't get one (indoors, location
-    // switched off).
+    // The current location: a fix from the last two minutes if the phone has
+    // one (a traveller doesn't move far in that time), otherwise a fresh fix,
+    // waiting up to 10 seconds. Null without permission, or if the phone
+    // can't get one (indoors, location switched off).
     @SuppressLint("MissingPermission")
     suspend fun current(): Location? {
         if (!hasPermission()) return null
-        recent()?.let { if (System.currentTimeMillis() - it.time < 60 * 1000) return it }
+        recent()?.let { if (System.currentTimeMillis() - it.time < 2 * 60 * 1000) return it }
 
         val provider = providers().firstOrNull() ?: return null
-        return withTimeoutOrNull(15_000) {
+        return withTimeoutOrNull(10_000) {
             suspendCancellableCoroutine { cont ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     val cancel = CancellationSignal()
