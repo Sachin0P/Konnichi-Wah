@@ -281,6 +281,12 @@
     <string name="menu_zoom_hint">Pinch to zoom, and tap a line to see it in full.</string>
     <string name="menu_translating">Translating…</string>
     <string name="menu_flag">⚠ %1$s (%2$s)</string>
+    <string name="menu_filter_all">All</string>
+    <string name="menu_filter_warnings">Warnings (%d)</string>
+    <string name="menu_safe">No diet warnings</string>
+    <string name="menu_retake">Retake</string>
+    <string name="menu_item_detail">Menu Item Details</string>
+    <string name="menu_show_card">Show diet card</string>
     <string name="concern_pork">Pork</string>
     <string name="concern_beef">Beef</string>
     <string name="concern_chicken">Chicken</string>

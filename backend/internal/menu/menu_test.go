@@ -68,6 +68,19 @@ func TestTranslatePriceFallback(t *testing.T) {
 	}
 }
 
+func TestTranslateFragmentFallback(t *testing.T) {
+	// If the model left text empty for a kana particle/fragment (like の), it should fall back
+	llm := &fakeLLM{reply: `{"lines": [{"japanese": "の", "text": "", "note": ""}]}`}
+
+	lines, err := (Translator{LLM: llm}).Translate(context.Background(), data.MenuRequest{Lines: []string{"の"}})
+	if err != nil {
+		t.Fatalf("expected success with fragment fallback, got: %v", err)
+	}
+	if len(lines) != 1 || lines[0].Text != "の" {
+		t.Errorf("expected text 'の', got %+v", lines)
+	}
+}
+
 // A reply the app can't line up with its photo must be refused, so the app
 // falls back to its own translation rather than labelling the wrong lines.
 func TestTranslateRejectsBadOutput(t *testing.T) {

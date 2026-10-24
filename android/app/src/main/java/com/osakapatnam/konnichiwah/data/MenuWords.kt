@@ -145,5 +145,21 @@ fun menuConcernsFor(profile: UserProfileDto?): Set<MenuConcern> {
 // next to English letters or numbers ("Pork cutlet", "¥ 850") are kept.
 private val japaneseChar = """[\p{IsHan}\p{IsHiragana}\p{IsKatakana}ー々]"""
 private val spaceInJapanese = Regex("(?<=$japaneseChar)\\s+(?=$japaneseChar)")
+private val japaneseCharRegex = Regex(japaneseChar)
+private val priceOrNumberRegex = Regex("""^[\d\s¥￥円$€£,./\-:〜~+*]+$""")
+
+fun hasJapanese(text: String): Boolean = japaneseCharRegex.containsMatchIn(text)
+
+fun isPriceOrNumber(text: String): Boolean {
+    val trimmed = text.trim()
+    return trimmed.isNotEmpty() && priceOrNumberRegex.matches(trimmed)
+}
+
+fun isNoiseOrFragment(text: String): Boolean {
+    val trimmed = text.trim()
+    if (trimmed.isEmpty() || trimmed.length <= 1) return true
+    if (trimmed in listOf("ちの", "もの", "みち", "じの", "への", "かの")) return true
+    return false
+}
 
 fun joinJapanese(text: String): String = text.replace(spaceInJapanese, "")

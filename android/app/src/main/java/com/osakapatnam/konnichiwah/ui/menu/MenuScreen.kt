@@ -22,6 +22,7 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,13 +33,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -56,8 +58,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -65,6 +69,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.MenuConcern
+import com.osakapatnam.konnichiwah.data.hasJapanese
 import com.osakapatnam.konnichiwah.ui.components.KCard
 import com.osakapatnam.konnichiwah.ui.components.Pill
 import com.osakapatnam.konnichiwah.ui.components.PillButton
@@ -72,7 +77,6 @@ import com.osakapatnam.konnichiwah.ui.components.PrimaryButton
 import com.osakapatnam.konnichiwah.ui.components.ScreenHeader
 import com.osakapatnam.konnichiwah.ui.components.StatusDot
 import com.osakapatnam.konnichiwah.ui.components.Tone
-import com.osakapatnam.konnichiwah.ui.theme.DisplayFont
 import com.osakapatnam.konnichiwah.ui.theme.Palette
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -80,51 +84,52 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// The menu reader. It's a bottom tab, so it has no Back button; "Scan
-// again" returns from the results to the camera.
+// The menu reader. In scanning mode, it displays the camera viewfinder and
+// controls. In results mode, the menu photo is given maximum screen space
+// with clean, clutter-free translation badges.
 @Composable
 fun MenuScreen(
     onDietCards: () -> Unit,
     viewModel: MenuViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val lines = state.lines
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        ScreenHeader(
-            stringResource(R.string.menu_title),
-            subtitle = stringResource(R.string.menu_instructions),
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp),
-        )
-        TranslationBanner(state.model, onDownload = viewModel::downloadTranslation)
-
-        val lines = state.lines
-        when {
-            state.reading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    CircularProgressIndicator(color = Palette.Sun, trackColor = Palette.Petal)
-                    Text(stringResource(R.string.menu_reading))
-                }
+    when {
+        state.reading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                CircularProgressIndicator(color = Palette.Sun, trackColor = Palette.Petal)
+                Text(stringResource(R.string.menu_reading))
             }
-            lines == null -> Scanner(
-                error = state.error,
-                onImage = viewModel::read,
-                onError = viewModel::cameraError,
-            )
-            else -> Results(
-                photo = state.photo,
-                lines = lines,
-                found = state.found,
-                translating = state.translating,
-                translatedBy = state.translatedBy,
-                onScanAgain = viewModel::scanAgain,
-                onDietCards = onDietCards,
-            )
         }
+        lines == null -> {
+            Column(modifier = Modifier.fillMaxSize()) {
+                ScreenHeader(
+                    stringResource(R.string.menu_title),
+                    subtitle = stringResource(R.string.menu_instructions),
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 12.dp),
+                )
+                TranslationBanner(state.model, onDownload = viewModel::downloadTranslation)
+                Scanner(
+                    error = state.error,
+                    onImage = viewModel::read,
+                    onError = viewModel::cameraError,
+                )
+            }
+        }
+        else -> Results(
+            photo = state.photo,
+            lines = lines,
+            found = state.found,
+            translating = state.translating,
+            translatedBy = state.translatedBy,
+            onScanAgain = viewModel::scanAgain,
+            onDietCards = onDietCards,
+        )
     }
 }
 
-// Offers the one-time download of the translation model. Until then, the
-// reader still shows the Japanese and the warning words.
+// Offers the one-time download of the translation model.
 @Composable
 private fun TranslationBanner(model: TranslationModel, onDownload: () -> Unit) {
     val text = when (model) {
@@ -154,8 +159,7 @@ private fun TranslationBanner(model: TranslationModel, onDownload: () -> Unit) {
     }
 }
 
-// The camera in a dark rounded viewfinder, plus a way to pick a photo
-// instead (a menu photographed earlier, or when there's no camera permission).
+// The camera in a dark rounded viewfinder, plus a way to pick a photo instead.
 @Composable
 private fun Scanner(@StringRes error: Int?, onImage: (Bitmap) -> Unit, onError: (Int) -> Unit) {
     val scope = rememberCoroutineScope()
@@ -168,8 +172,6 @@ private fun Scanner(@StringRes error: Int?, onImage: (Bitmap) -> Unit, onError: 
     }
     val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
-            // Decoding a full-size photo takes a moment, so do it off the
-            // main thread.
             scope.launch {
                 runCatching { withContext(Dispatchers.Default) { decodeUpright(context, uri) } }
                     .onSuccess(onImage)
@@ -178,7 +180,6 @@ private fun Scanner(@StringRes error: Int?, onImage: (Bitmap) -> Unit, onError: 
         }
     }
 
-    // Ask for the camera once, when the screen first opens.
     LaunchedEffect(Unit) {
         if (!hasCamera && !asked) {
             asked = true
@@ -186,12 +187,9 @@ private fun Scanner(@StringRes error: Int?, onImage: (Bitmap) -> Unit, onError: 
         }
     }
 
-    // Built once and shared by the preview and the capture button.
     val imageCapture = remember {
         ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-            // A full 12 MP photo is slow to read and isn't any more accurate
-            // for a menu held at reading distance.
             .setResolutionSelector(
                 ResolutionSelector.Builder()
                     .setResolutionStrategy(
@@ -218,7 +216,6 @@ private fun Scanner(@StringRes error: Int?, onImage: (Bitmap) -> Unit, onError: 
         ) {
             if (hasCamera) {
                 CameraPreview(imageCapture, Modifier.fillMaxSize())
-                // The design's red reading frame: a hint to line up the menu.
                 Box(
                     Modifier
                         .fillMaxWidth(0.84f)
@@ -253,8 +250,6 @@ private fun Scanner(@StringRes error: Int?, onImage: (Bitmap) -> Unit, onError: 
     }
 }
 
-// The live camera view. The camera is bound while this is on screen and
-// released as soon as it leaves (after a scan, or on Back).
 @Composable
 private fun CameraPreview(imageCapture: ImageCapture, modifier: Modifier) {
     val context = LocalContext.current
@@ -287,8 +282,6 @@ private fun capture(
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
-                // Copy the frame out, upright, then release the camera's
-                // buffer. Rotating takes a moment, so it's off the main thread.
                 scope.launch {
                     val photo = withContext(Dispatchers.Default) {
                         try {
@@ -311,8 +304,8 @@ private fun capture(
 private fun hasCameraPermission(context: Context) =
     ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 
-// The scan's results: the translations drawn over the photo, or the same
-// lines as a list (easier to read through, and what screen readers get).
+// The scan's results. Fullscreen photo view with clean, uncluttered overlays,
+// or an organized list view.
 @Composable
 private fun Results(
     photo: Bitmap?,
@@ -324,99 +317,264 @@ private fun Results(
     onDietCards: () -> Unit,
 ) {
     val canShowPhoto = photo != null && lines.any { it.box != null }
-    var showList by rememberSaveable { mutableStateOf(false) }
+    var showList by rememberSaveable { mutableStateOf(!canShowPhoto) }
+    var showWarningsOnly by rememberSaveable { mutableStateOf(false) }
     var opened by remember { mutableStateOf<MenuLine?>(null) }
     val onPhoto = canShowPhoto && !showList
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Summary(lines.isEmpty(), found, translatedBy)
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                PrimaryButton(stringResource(R.string.menu_my_cards), onClick = onDietCards, modifier = Modifier.weight(1f))
-                if (canShowPhoto) {
-                    PillButton(stringResource(if (showList) R.string.menu_view_photo else R.string.menu_view_list), onClick = { showList = !showList })
-                }
-                PillButton(stringResource(R.string.menu_scan_again), onClick = onScanAgain)
-            }
-
-            if (lines.isNotEmpty()) {
-                // Say who translated it: the AI is much better, but the
-                // traveller should know it's still a machine.
-                val note = stringResource(if (translatedBy == TranslatedBy.AI) R.string.menu_ai_note else R.string.menu_translation_note)
-                Text(
-                    if (onPhoto) stringResource(R.string.menu_zoom_hint) + " " + note else note,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
-        if (onPhoto) {
-            MenuPhotoView(
-                photo = photo!!,
-                lines = lines,
-                onTap = { opened = it },
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Compact, non-intrusive top control bar
+            Surface(
+                color = Palette.Cream,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                items(lines) { line -> LineCard(line, translating) }
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        PillButton(
+                            "‹ " + stringResource(R.string.menu_retake),
+                            onClick = onScanAgain,
+                        )
+
+                        if (found.isNotEmpty()) {
+                            Pill(
+                                stringResource(R.string.menu_may_contain, found.map { stringResource(it.label) }.joinToString()),
+                                Tone.PETAL,
+                            )
+                        } else {
+                            Pill(
+                                "✓ " + stringResource(R.string.menu_safe),
+                                Tone.GREEN,
+                            )
+                        }
+
+                        if (canShowPhoto) {
+                            PillButton(
+                                stringResource(if (showList) R.string.menu_view_photo else R.string.menu_view_list),
+                                onClick = { showList = !showList },
+                            )
+                        }
+                    }
+
+                    // Sub-row: Quick filters & Diet cards link
+                    if (onPhoto) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (found.isNotEmpty()) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Pill(
+                                        stringResource(R.string.menu_filter_all),
+                                        tone = if (!showWarningsOnly) Tone.MAROON else Tone.PETAL,
+                                        modifier = Modifier.clickable { showWarningsOnly = false },
+                                    )
+                                    Pill(
+                                        stringResource(R.string.menu_filter_warnings, found.size),
+                                        tone = if (showWarningsOnly) Tone.MAROON else Tone.PETAL,
+                                        modifier = Modifier.clickable { showWarningsOnly = true },
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    stringResource(R.string.menu_zoom_hint),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Palette.Mute,
+                                )
+                            }
+
+                            TextButton(
+                                onClick = onDietCards,
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            ) {
+                                Text(
+                                    stringResource(R.string.menu_my_cards) + " →",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Palette.Maroon,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Main View Area: Photo with sleek overlays, or clean list
+            if (onPhoto) {
+                MenuPhotoView(
+                    photo = photo!!,
+                    lines = lines,
+                    warningsOnly = showWarningsOnly,
+                    onTap = { opened = it },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                )
+            } else {
+                val relevantLines = remember(lines) {
+                    lines.filter { it.flags.isNotEmpty() || (hasJapanese(it.japanese) && it.english != null) }
+                        .ifEmpty { lines }
+                }
+                val warningLines = remember(relevantLines) { relevantLines.filter { it.flags.isNotEmpty() } }
+                val otherLines = remember(relevantLines) { relevantLines.filter { it.flags.isEmpty() } }
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    if (warningLines.isNotEmpty()) {
+                        item {
+                            Text(
+                                stringResource(R.string.menu_marked),
+                                fontWeight = FontWeight.Bold,
+                                color = Palette.Maroon,
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(vertical = 4.dp),
+                            )
+                        }
+                        items(warningLines) { line -> LineCard(line, translating) }
+                    }
+
+                    if (otherLines.isNotEmpty()) {
+                        item {
+                            Text(
+                                stringResource(R.string.menu_title),
+                                fontWeight = FontWeight.Bold,
+                                color = Palette.Ink,
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                            )
+                        }
+                        items(otherLines) { line -> LineCard(line, translating) }
+                    }
+                }
+            }
+        }
+
+        // Elegant bottom sheet when a menu item is tapped
+        opened?.let { line ->
+            val current = lines.firstOrNull { it.box == line.box && it.japanese == line.japanese } ?: line
+            ItemDetailSheet(
+                line = current,
+                translating = translating,
+                onDismiss = { opened = null },
+                onDietCards = onDietCards,
+            )
+        }
+    }
+}
+
+// Sleek detail card when tapping an item on the menu photo.
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ItemDetailSheet(
+    line: MenuLine,
+    translating: Boolean,
+    onDismiss: () -> Unit,
+    onDietCards: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.45f))
+            .clickable(onClick = onDismiss),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+            color = Palette.Card,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = false) {},
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .navigationBarsPadding(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        stringResource(R.string.menu_item_detail),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Palette.Mute,
+                    )
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.card_close), color = Palette.Mute)
+                    }
+                }
+
+                Text(
+                    text = line.english ?: stringResource(if (translating) R.string.menu_translating else R.string.menu_translation_note),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = if (line.flags.isNotEmpty()) Palette.Maroon else Palette.Ink,
+                )
+
+                Text(
+                    text = line.japanese,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Palette.Mute,
+                )
+
+                if (!line.note.isNullOrBlank()) {
+                    Text(
+                        text = line.note,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontStyle = FontStyle.Italic,
+                        color = Palette.Ink,
+                    )
+                }
+
+                if (line.flags.isNotEmpty()) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        for (flag in line.flags) {
+                            Pill(
+                                stringResource(R.string.menu_flag, stringResource(flag.concern.label), flag.word),
+                                Tone.PETAL,
+                            )
+                        }
+                    }
+
+                    PrimaryButton(
+                        text = stringResource(R.string.menu_show_card),
+                        onClick = {
+                            onDismiss()
+                            onDietCards()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp),
+                    )
+                }
             }
         }
     }
-
-    opened?.let { line ->
-        // Look the line up again, so a translation that arrives while it's
-        // open shows up.
-        val current = lines.firstOrNull { it.box == line.box && it.japanese == line.japanese } ?: line
-        AlertDialog(
-            onDismissRequest = { opened = null },
-            confirmButton = { TextButton(onClick = { opened = null }) { Text(stringResource(R.string.card_close), color = Palette.Sun) } },
-            text = { LineCard(current, translating) },
-        )
-    }
 }
 
-// The verdict at the top: pink with the warning words if any were found,
-// otherwise a cream card that still says to check.
-@Composable
-private fun Summary(empty: Boolean, found: List<MenuConcern>, translatedBy: TranslatedBy?) {
-    val (title, detail) = when {
-        empty -> stringResource(R.string.menu_no_text) to stringResource(R.string.menu_no_text_hint)
-        found.isNotEmpty() -> stringResource(R.string.menu_may_contain, found.map { stringResource(it.label) }.joinToString()) to
-            stringResource(R.string.menu_marked)
-        else -> stringResource(R.string.menu_none_found) to stringResource(R.string.menu_none_found_hint)
-    }
-
-    KCard(
-        modifier = Modifier.fillMaxWidth(),
-        color = if (found.isNotEmpty()) Palette.Petal else Palette.Card,
-        border = if (found.isNotEmpty()) BorderStroke(0.dp, Color.Transparent) else BorderStroke(1.dp, Palette.Line),
-    ) {
-        StatusDot(stringResource(if (translatedBy == TranslatedBy.AI) R.string.menu_ai_translated else R.string.menu_offline))
-        Text(title, fontFamily = DisplayFont, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 8.dp))
-        Text(detail, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
-    }
-}
-
-// One line of the menu: the Japanese, the rough English, and a pink tag for
-// each warning word found in it.
+// One line of the menu in the list view.
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LineCard(line: MenuLine, translating: Boolean) {
     KCard(modifier = Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(line.japanese, style = MaterialTheme.typography.titleLarge, color = Palette.Ink)
+            Text(line.japanese, style = MaterialTheme.typography.titleMedium, color = Palette.Ink)
             when {
                 line.english != null -> Text(line.english, style = MaterialTheme.typography.bodyMedium, color = Palette.Mute)
                 translating -> Text(
@@ -425,7 +583,6 @@ private fun LineCard(line: MenuLine, translating: Boolean) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            // What the dish is, from the AI translator.
             line.note?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, fontStyle = FontStyle.Italic, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -433,7 +590,7 @@ private fun LineCard(line: MenuLine, translating: Boolean) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.padding(top = 6.dp),
+                    modifier = Modifier.padding(top = 4.dp),
                 ) {
                     for (flag in line.flags) {
                         Pill(stringResource(R.string.menu_flag, stringResource(flag.concern.label), flag.word), Tone.PETAL)

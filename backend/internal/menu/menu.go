@@ -104,9 +104,9 @@ func (t Translator) translateChunk(ctx context.Context, lines []string, language
 		out.Lines[i].Text = strings.TrimSpace(out.Lines[i].Text)
 		out.Lines[i].Note = strings.TrimSpace(out.Lines[i].Note)
 
-		// If the model left text empty for a price or numeric line, keep the original line
-		if out.Lines[i].Text == "" && i < len(lines) && isPriceOrSymbol(lines[i]) {
-			out.Lines[i].Text = lines[i]
+		// If the model left text empty for a price, symbol, or isolated kana fragment (e.g. の, ちの), keep the original line
+		if out.Lines[i].Text == "" && i < len(lines) && isPriceOrFragment(lines[i]) {
+			out.Lines[i].Text = strings.TrimSpace(lines[i])
 		}
 	}
 
@@ -116,6 +116,31 @@ func (t Translator) translateChunk(ctx context.Context, lines []string, language
 	}
 
 	return out.Lines, nil
+}
+
+func isPriceOrFragment(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return true
+	}
+	if isPriceOrSymbol(s) {
+		return true
+	}
+	// Isolated Japanese particles or short reading fragments (e.g. の, ちの) that models leave untranslated
+	runes := []rune(s)
+	if len(runes) <= 3 && isKanaOnly(runes) {
+		return true
+	}
+	return false
+}
+
+func isKanaOnly(runes []rune) bool {
+	for _, r := range runes {
+		if !unicode.In(r, unicode.Hiragana, unicode.Katakana) && r != 'ー' {
+			return false
+		}
+	}
+	return len(runes) > 0
 }
 
 func isPriceOrSymbol(s string) bool {

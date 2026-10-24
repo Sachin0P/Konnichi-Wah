@@ -102,4 +102,35 @@ class MenuWordsTest {
             menuConcernsFor(profile(Diet.NON_VEG, listOf(AvoidItem.BEEF, AvoidItem.PORK))),
         )
     }
+
+    @Test
+    fun detectsJapaneseCharacters() {
+        assertTrue(hasJapanese("ラーメン"))
+        assertTrue(hasJapanese("牛タン"))
+        assertTrue(hasJapanese("定食 ¥850"))
+        assertFalse(hasJapanese("¥450"))
+        assertFalse(hasJapanese("Corn Potage Soup"))
+        assertFalse(hasJapanese("Beverages"))
+    }
+
+    @Test
+    fun detectsPricesAndNumbers() {
+        assertTrue(isPriceOrNumber("¥450"))
+        assertTrue(isPriceOrNumber("980 円"))
+        assertTrue(isPriceOrNumber("1,500 円"))
+        assertTrue(isPriceOrNumber("2000"))
+        assertTrue(isPriceOrNumber("$12.50"))
+        assertFalse(isPriceOrNumber("ラーメン"))
+        assertFalse(isPriceOrNumber("ポークカレー"))
+    }
+
+    @Test
+    fun detectsNoiseOrFuriganaFragments() {
+        assertTrue(isNoiseOrFragment("の"))
+        assertTrue(isNoiseOrFragment("ちの"))
+        assertTrue(isNoiseOrFragment("もの"))
+        assertTrue(isNoiseOrFragment(""))
+        assertFalse(isNoiseOrFragment("カレーライス"))
+        assertFalse(isNoiseOrFragment("ビーフステーキ"))
+    }
 }

@@ -270,6 +270,12 @@
     <string name="menu_zoom_hint">ज़ूम करने के लिए दो उँगलियों से फैलाएँ, और पूरी लाइन देखने के लिए उस पर टैप करें।</string>
     <string name="menu_translating">अनुवाद हो रहा है…</string>
     <string name="menu_flag">⚠ %1$s (%2$s)</string>
+    <string name="menu_filter_all">सभी</string>
+    <string name="menu_filter_warnings">चेतावनियाँ (%d)</string>
+    <string name="menu_safe">कोई आहार चेतावनी नहीं</string>
+    <string name="menu_retake">फिर से लें</string>
+    <string name="menu_item_detail">मेन्यू आइटम का विवरण</string>
+    <string name="menu_show_card">डाइट कार्ड दिखाएँ</string>
     <string name="concern_pork">पोर्क</string>
     <string name="concern_beef">बीफ़</string>
     <string name="concern_chicken">चिकन</string>
