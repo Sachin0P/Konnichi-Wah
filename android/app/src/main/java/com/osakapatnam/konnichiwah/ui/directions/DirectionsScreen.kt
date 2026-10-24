@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,16 +24,20 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -89,6 +94,10 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
     val journeys = state.result?.journeys.orEmpty()
     val journey = journeys.getOrNull(state.selected)
     val problem = state.apiError?.userMessage() ?: state.message?.let { stringResource(it) }
+
+    var activeGuideSteps by remember { mutableStateOf<List<GuideStep>?>(null) }
+    var guideDestName by remember { mutableStateOf("") }
+    var guideDestNameJa by remember { mutableStateOf("") }
 
     val matchingGuides = remember(journey, state.stationGuides) {
         if (journey == null) emptyList() else {
@@ -184,22 +193,41 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
                 )
             }
 
-            if (matchingGuides.isNotEmpty()) {
-                item {
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(matchingGuides) { guide ->
-                            PillButton(
-                                stringResource(R.string.dir_station_guide_btn, guide.name),
-                                onClick = { viewModel.viewGuide(guide) },
-                                tone = Tone.MAROON,
-                            )
-                        }
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        PillButton(
+                            stringResource(R.string.dir_try_guide),
+                            onClick = {
+                                activeGuideSteps = sampleGuide
+                                guideDestName = "Asakusa"
+                                guideDestNameJa = "浅草"
+                            },
+                            tone = Tone.ORANGE,
+                        )
+                    }
+                    items(matchingGuides) { guide ->
+                        PillButton(
+                            stringResource(R.string.dir_station_guide_btn, guide.name),
+                            onClick = { viewModel.viewGuide(guide) },
+                            tone = Tone.MAROON,
+                        )
                     }
                 }
             }
 
             itemsIndexed(journey.legs) { i, leg ->
-                LegCard(leg, first = i == 0, last = i == journey.legs.lastIndex, steps = rideSteps(journey.legs, i))
+                LegCard(
+                    leg = leg,
+                    first = i == 0,
+                    last = i == journey.legs.lastIndex,
+                    steps = rideSteps(journey.legs, i),
+                    onOpenVisualGuide = {
+                        activeGuideSteps = buildGuideFromLeg(leg)
+                        guideDestName = leg.to.name
+                        guideDestNameJa = leg.to.nameJa.orEmpty()
+                    },
+                )
             }
 
             // Station numbers are the easiest way to follow a line, once
@@ -258,9 +286,46 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
                             Text("• $tip", style = MaterialTheme.typography.bodySmall, color = Palette.Ink)
                         }
                     }
+                    item {
+                        OutlinedButton(
+                            onClick = {
+                                activeGuideSteps = sampleGuide
+                                guideDestName = guide.name
+                                guideDestNameJa = guide.name_ja.orEmpty()
+                                viewModel.viewGuide(null)
+                            },
+                            shape = CircleShape,
+                            border = BorderStroke(1.5.dp, Palette.Sun),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Palette.Sun),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                LifesaverIcon(color = Palette.Sun, modifier = Modifier.size(16.dp))
+                                Text(
+                                    stringResource(R.string.dir_visual_guide_btn),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                )
+                            }
+                        }
+                    }
                 }
             },
             containerColor = Palette.Card,
+        )
+    }
+
+    activeGuideSteps?.let { steps ->
+        RouteGuideDialog(
+            steps = steps,
+            destinationName = guideDestName,
+            destinationNameJa = guideDestNameJa,
+            onDismiss = { activeGuideSteps = null },
         )
     }
 }
@@ -417,7 +482,13 @@ private fun rideSteps(legs: List<JourneyLegDto>, i: Int): List<String> {
 }
 
 @Composable
-private fun LegCard(leg: JourneyLegDto, first: Boolean, last: Boolean, steps: List<String>) {
+private fun LegCard(
+    leg: JourneyLegDto,
+    first: Boolean,
+    last: Boolean,
+    steps: List<String>,
+    onOpenVisualGuide: () -> Unit = {},
+) {
     val context = LocalContext.current
 
     KCard(modifier = Modifier.fillMaxWidth()) {
@@ -487,6 +558,28 @@ private fun LegCard(leg: JourneyLegDto, first: Boolean, last: Boolean, steps: Li
                                 }
                                 Text(step, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                             }
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = onOpenVisualGuide,
+                        shape = CircleShape,
+                        border = BorderStroke(1.5.dp, Palette.Sun),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Palette.Sun),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            LifesaverIcon(color = Palette.Sun, modifier = Modifier.size(16.dp))
+                            Text(
+                                stringResource(R.string.dir_visual_guide_btn),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                            )
                         }
                     }
                 }

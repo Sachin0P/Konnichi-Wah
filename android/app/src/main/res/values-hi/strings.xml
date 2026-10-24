@@ -331,6 +331,11 @@
     <string name="dir_station_guide_lines">लाइनें</string>
     <string name="dir_station_guide_exits">प्रमुख निकास और गंतव्य</string>
     <string name="dir_station_guide_tips">सलाह और ट्रांसफर</string>
+    <string name="dir_visual_guide">विज़ुअल स्टेशन गाइड</string>
+    <string name="dir_visual_guide_btn">🧭 विज़ुअल बोर्डिंग गाइड</string>
+    <string name="dir_staff_card_title">स्टेशन स्टाफ़ को यह दिखाएँ</string>
+    <string name="dir_staff_card_hint">यह स्क्रीन किसी भी स्टेशन कर्मचारी या टिकट काउंटर पर दिखाएँ।</string>
+    <string name="dir_try_guide">विज़ुअल गाइड देखें (शिबुया → असाकुसा)</string>
 
     <string name="near_title">आसपास मदद</string>
     <string name="near_subtitle">अस्पताल, पुलिस बूथ, ATM और भी बहुत कुछ, OpenStreetMap से।</string>

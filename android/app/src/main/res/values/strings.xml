@@ -344,6 +344,11 @@
     <string name="dir_station_guide_lines">Lines</string>
     <string name="dir_station_guide_exits">Main exits &amp; destinations</string>
     <string name="dir_station_guide_tips">Tips &amp; transfers</string>
+    <string name="dir_visual_guide">Visual station guide</string>
+    <string name="dir_visual_guide_btn">🧭 Visual boarding guide</string>
+    <string name="dir_staff_card_title">Show to Station Staff</string>
+    <string name="dir_staff_card_hint">Show this screen to any station staff member or at the ticket counter.</string>
+    <string name="dir_try_guide">Try visual guide (Shibuya → Asakusa)</string>
 
     <!-- Help nearby -->
     <string name="near_title">Help nearby</string>
