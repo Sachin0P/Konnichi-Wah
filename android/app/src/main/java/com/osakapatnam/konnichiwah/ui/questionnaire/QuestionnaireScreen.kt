@@ -1,29 +1,32 @@
 package com.osakapatnam.konnichiwah.ui.questionnaire
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -42,13 +45,16 @@ import com.osakapatnam.konnichiwah.data.remote.Pace
 import com.osakapatnam.konnichiwah.data.remote.SpiceLevel
 import com.osakapatnam.konnichiwah.ui.LanguageSwitch
 import com.osakapatnam.konnichiwah.ui.components.ChoiceChips
+import com.osakapatnam.konnichiwah.ui.components.PrimaryButton
 import com.osakapatnam.konnichiwah.ui.components.Question
+import com.osakapatnam.konnichiwah.ui.components.ScreenHeader
+import com.osakapatnam.konnichiwah.ui.components.Segmented
 import com.osakapatnam.konnichiwah.ui.currentLocale
 import com.osakapatnam.konnichiwah.ui.labelRes
 import com.osakapatnam.konnichiwah.ui.monthLabel
+import com.osakapatnam.konnichiwah.ui.theme.Palette
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuestionnaireScreen(
     onSubmitted: () -> Unit,
@@ -63,43 +69,59 @@ fun QuestionnaireScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(state.step.title)) },
-                actions = {
-                    LanguageSwitch()
-                    if (BuildConfig.DEBUG) {
-                        TextButton(onClick = onOpenDevCheck) { Text("Dev") }
-                    }
-                },
-            )
+            // Step counter on the left; language switch (and, in debug
+            // builds, the developer check) on the right.
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(start = 20.dp, end = 8.dp, top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.q_step_of, state.step.ordinal + 1, Step.entries.size),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                LanguageSwitch()
+                if (BuildConfig.DEBUG) {
+                    TextButton(onClick = onOpenDevCheck) { Text("Dev") }
+                }
+            }
         },
         bottomBar = {
-            // Pad for the system navigation bar, and for the keyboard while
-            // it's open, so "Plan my trip" stays visible while typing notes.
-            // navigationBarsPadding() runs first and consumes the nav bar
-            // inset, so imePadding() doesn't add it a second time.
+            // Pad for the keyboard while it's open, so "Plan my trip" stays
+            // visible while typing notes.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .imePadding()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (!state.isFirstStep) {
-                    TextButton(onClick = viewModel::back) { Text(stringResource(R.string.back)) }
-                } else {
-                    Spacer(Modifier)
+                    TextButton(onClick = viewModel::back) {
+                        Text(stringResource(R.string.back), color = Palette.Maroon, style = MaterialTheme.typography.labelLarge)
+                    }
                 }
 
                 if (state.isLastStep) {
-                    Button(onClick = { viewModel.submit(onSubmitted) }, enabled = state.canContinue && !state.saving) {
-                        Text(stringResource(R.string.q_plan_my_trip))
-                    }
+                    PrimaryButton(
+                        stringResource(R.string.q_plan_my_trip),
+                        onClick = { viewModel.submit(onSubmitted) },
+                        enabled = state.canContinue && !state.saving,
+                        modifier = Modifier.weight(1f),
+                    )
                 } else {
-                    Button(onClick = viewModel::next, enabled = state.canContinue) {
-                        Text(stringResource(R.string.q_next))
-                    }
+                    PrimaryButton(
+                        stringResource(R.string.q_next),
+                        onClick = viewModel::next,
+                        enabled = state.canContinue,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         },
@@ -108,14 +130,14 @@ fun QuestionnaireScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            LinearProgressIndicator(
-                progress = { (state.step.ordinal + 1f) / Step.entries.size },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                ScreenHeader(stringResource(state.step.title), subtitle = stringResource(R.string.q_takes_a_minute))
+                StepBar(current = state.step.ordinal, count = Step.entries.size)
+            }
 
             when (state.step) {
                 Step.INTERESTS -> InterestsStep(state, viewModel)
@@ -124,6 +146,21 @@ fun QuestionnaireScreen(
                 Step.TASTE -> TasteStep(state, viewModel)
                 Step.EXTRAS -> ExtrasStep(state, viewModel)
             }
+        }
+    }
+}
+
+// Progress as a row of short bars: red for done and current, pink for to come.
+@Composable
+private fun StepBar(current: Int, count: Int) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+        repeat(count) { i ->
+            Box(
+                Modifier
+                    .weight(1f)
+                    .height(5.dp)
+                    .background(if (i <= current) Palette.Sun else Palette.Petal, CircleShape),
+            )
         }
     }
 }
@@ -145,7 +182,7 @@ private fun TripStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewMo
     Question(stringResource(R.string.q_days)) {
         Text(
             pluralStringResource(R.plurals.days, state.tripDays, state.tripDays),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.headlineMedium,
         )
         Slider(
             value = state.tripDays.toFloat(),
@@ -186,9 +223,9 @@ private fun StyleStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewM
     }
 
     Question(stringResource(R.string.q_pace)) {
-        ChoiceChips(
+        Segmented(
             options = Pace.entries,
-            isSelected = { it == state.pace },
+            selected = state.pace,
             onClick = viewModel::setPace,
             label = { stringResource(it.labelRes) },
         )
@@ -216,9 +253,9 @@ private fun TasteStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewM
     }
 
     Question(stringResource(R.string.q_spice)) {
-        ChoiceChips(
+        Segmented(
             options = SpiceLevel.entries,
-            isSelected = { it == state.spiceLevel },
+            selected = state.spiceLevel,
             onClick = viewModel::setSpiceLevel,
             label = { stringResource(it.labelRes) },
         )
@@ -228,9 +265,9 @@ private fun TasteStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewM
 @Composable
 private fun ExtrasStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewModel) {
     Question(stringResource(R.string.q_japanese)) {
-        ChoiceChips(
+        Segmented(
             options = JapaneseLevel.entries,
-            isSelected = { it == state.japaneseLevel },
+            selected = state.japaneseLevel,
             onClick = viewModel::setJapaneseLevel,
             label = { stringResource(it.labelRes) },
         )
@@ -243,6 +280,13 @@ private fun ExtrasStep(state: QuestionnaireUiState, viewModel: QuestionnaireView
             onValueChange = viewModel::setNotes,
             modifier = Modifier.fillMaxWidth(),
             minLines = 4,
+            shape = RoundedCornerShape(20.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = Palette.Card,
+                focusedContainerColor = Palette.Card,
+                unfocusedBorderColor = Palette.Line,
+                focusedBorderColor = Palette.Sun,
+            ),
             placeholder = { Text(stringResource(R.string.q_notes_placeholder)) },
             isError = tooLong,
             supportingText = {

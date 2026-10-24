@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Compose draws the UI; this theme only controls the window before the first frame. -->
-    <style name="Theme.KonnichiWah" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Compose draws the UI; this theme only controls the window before the
+         first frame. The cream background avoids a white flash at launch. -->
+    <style name="Theme.KonnichiWah" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#FFF7F0E4</item>
+    </style>
 </resources>

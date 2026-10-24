@@ -4,6 +4,25 @@
     <!-- The other language, written in its own script, for the language switch. -->
     <string name="switch_language">हिन्दी</string>
 
+    <!-- Home and the bottom tabs -->
+    <string name="tab_home">Home</string>
+    <string name="tab_plan">Plan</string>
+    <string name="home_greeting">Konnichiwa!</string>
+    <string name="home_hero_title">Plan. Go. Explore.</string>
+    <string name="home_hero_new">Food, trains and manners, sorted.</string>
+    <string name="home_open_trip">Open my trip</string>
+    <string name="home_right_now">Right now</string>
+    <string name="home_train">Find my train</string>
+    <string name="home_train_sub">Live routes, just ask</string>
+    <string name="home_cards_sub">Show staff what you eat</string>
+    <string name="home_menu">Read a menu</string>
+    <string name="home_menu_sub">Camera</string>
+    <string name="home_etiquette">Etiquette</string>
+    <string name="home_etiquette_sub">Tips at every stop</string>
+    <string name="home_offline_title">Saved offline</string>
+    <string name="home_offline_trip">Your itinerary, diet cards and menu reader work without internet.</string>
+    <string name="home_offline_none">Diet cards and the menu reader work without internet.</string>
+
     <!-- Common -->
     <string name="back">Back</string>
     <string name="cancel">Cancel</string>
@@ -28,6 +47,8 @@
     <string name="q_step_taste">Your taste profile</string>
     <string name="q_step_extras">Anything else?</string>
     <string name="q_next">Next</string>
+    <string name="q_step_of">Step %1$d of %2$d</string>
+    <string name="q_takes_a_minute">Takes about a minute.</string>
     <string name="q_plan_my_trip">Plan my trip</string>
     <string name="q_interests">Pick everything that excites you</string>
     <string name="q_interests_hint">Choose at least one.</string>
@@ -111,6 +132,7 @@
 
     <!-- Suggestions -->
     <string name="sug_title">Your suggestions</string>
+    <string name="sug_subtitle">Tap the ones you like. We\'ll make them into a day-by-day plan.</string>
     <string name="sug_edit">Edit</string>
     <string name="sug_building">Building your itinerary…</string>
     <string name="sug_build" tools:ignore="PluralsCandidate">Build itinerary (%d selected)</string>
@@ -126,7 +148,6 @@
     <string name="it_your_trip">Your trip</string>
     <string name="it_ask">Ask</string>
     <string name="it_menu">Menu</string>
-    <string name="it_cards">Cards</string>
     <string name="it_more">More</string>
     <string name="it_new_trip">New trip</string>
     <string name="it_no_trip">You haven\'t planned a trip yet.</string>
@@ -165,7 +186,8 @@
     <string name="it_add">Add</string>
 
     <!-- Chat -->
-    <string name="chat_title">Ask Konnichi</string>
+    <string name="chat_title">Ask anything</string>
+    <string name="chat_subtitle">Knows your plan and your diet.</string>
     <string name="chat_thinking">Thinking…</string>
     <string name="chat_day">Day %1$d · %2$s</string>
     <string name="chat_empty_title">Ask me anything about your trip</string>
@@ -204,6 +226,7 @@
 
     <!-- Menu reader -->
     <string name="menu_title">Menu reader</string>
+    <string name="menu_offline">Works offline</string>
     <string name="menu_reading">Reading the menu…</string>
     <string name="menu_model_missing">English translation needs a one-time download (about 30 MB). Warnings work without it.</string>
     <string name="menu_model_downloading">Downloading the translation…</string>

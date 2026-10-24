@@ -5,6 +5,25 @@
 
     <string name="switch_language">English</string>
 
+    <!-- Home and the bottom tabs -->
+    <string name="tab_home">होम</string>
+    <string name="tab_plan">प्लान</string>
+    <string name="home_greeting">कोन्निचिवा!</string>
+    <string name="home_hero_title">प्लान करें। जाएँ। घूमें।</string>
+    <string name="home_hero_new">खाना, ट्रेन और तौर-तरीक़े, सब आसान।</string>
+    <string name="home_open_trip">मेरी यात्रा खोलें</string>
+    <string name="home_right_now">अभी</string>
+    <string name="home_train">मेरी ट्रेन खोजें</string>
+    <string name="home_train_sub">लाइव रूट, बस पूछें</string>
+    <string name="home_cards_sub">स्टाफ़ को बताएँ आप क्या खाते हैं</string>
+    <string name="home_menu">मेन्यू पढ़ें</string>
+    <string name="home_menu_sub">कैमरा</string>
+    <string name="home_etiquette">शिष्टाचार</string>
+    <string name="home_etiquette_sub">हर जगह के लिए सुझाव</string>
+    <string name="home_offline_title">ऑफ़लाइन सेव है</string>
+    <string name="home_offline_trip">आपका यात्रा-कार्यक्रम, डाइट कार्ड और मेन्यू रीडर बिना इंटरनेट के चलते हैं।</string>
+    <string name="home_offline_none">डाइट कार्ड और मेन्यू रीडर बिना इंटरनेट के चलते हैं।</string>
+
     <string name="back">वापस</string>
     <string name="cancel">रद्द करें</string>
     <string name="ok">ठीक है</string>
@@ -25,6 +44,8 @@
     <string name="q_step_taste">आपका खान-पान</string>
     <string name="q_step_extras">कुछ और?</string>
     <string name="q_next">आगे</string>
+    <string name="q_step_of">चरण %1$d / %2$d</string>
+    <string name="q_takes_a_minute">लगभग एक मिनट लगेगा।</string>
     <string name="q_plan_my_trip">मेरी यात्रा प्लान करें</string>
     <string name="q_interests">जो कुछ भी आपको अच्छा लगे, सब चुनें</string>
     <string name="q_interests_hint">कम से कम एक चुनें।</string>
@@ -105,6 +126,7 @@
     <string name="slot_dinner">रात का खाना</string>
 
     <string name="sug_title">आपके सुझाव</string>
+    <string name="sug_subtitle">जो पसंद हों उन पर टैप करें। हम उनसे दिन-ब-दिन का प्लान बनाएँगे।</string>
     <string name="sug_edit">बदलें</string>
     <string name="sug_building">आपका कार्यक्रम बन रहा है…</string>
     <string name="sug_build">कार्यक्रम बनाएँ (%d चुने गए)</string>
@@ -119,7 +141,6 @@
     <string name="it_your_trip">आपकी यात्रा</string>
     <string name="it_ask">पूछें</string>
     <string name="it_menu">मेन्यू</string>
-    <string name="it_cards">कार्ड</string>
     <string name="it_more">और</string>
     <string name="it_new_trip">नई यात्रा</string>
     <string name="it_no_trip">आपने अभी कोई यात्रा प्लान नहीं की है।</string>
@@ -157,7 +178,8 @@
     <string name="it_when">कब?</string>
     <string name="it_add">जोड़ें</string>
 
-    <string name="chat_title">Konnichi से पूछें</string>
+    <string name="chat_title">कुछ भी पूछें</string>
+    <string name="chat_subtitle">आपका प्लान और खान-पान जानता है।</string>
     <string name="chat_thinking">सोच रहा हूँ…</string>
     <string name="chat_day">दिन %1$d · %2$s</string>
     <string name="chat_empty_title">अपनी यात्रा के बारे में कुछ भी पूछें</string>
@@ -193,6 +215,7 @@
     <string name="food_walk">%1$s · लगभग %2$d मिनट पैदल</string>
 
     <string name="menu_title">मेन्यू रीडर</string>
+    <string name="menu_offline">बिना इंटरनेट चलता है</string>
     <string name="menu_reading">मेन्यू पढ़ा जा रहा है…</string>
     <string name="menu_model_missing">अंग्रेज़ी अनुवाद के लिए एक बार डाउनलोड चाहिए (लगभग 30 MB)। चेतावनियाँ इसके बिना भी काम करती हैं।</string>
     <string name="menu_model_downloading">अनुवाद डाउनलोड हो रहा है…</string>

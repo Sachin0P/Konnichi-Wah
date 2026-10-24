@@ -4,24 +4,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.osakapatnam.konnichiwah.data.ItineraryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
-// Decides the first screen: the saved trip if there is one (so the app opens
-// straight to it, even offline), otherwise the questionnaire. null means
-// "still checking".
+// Whether a trip is saved on the phone, which decides where the Plan tab
+// goes: the saved trip if there is one (it works offline), otherwise the
+// questionnaire. It follows Room, so it turns true as soon as a trip is
+// built. null means "still checking".
 @HiltViewModel
 class StartViewModel @Inject constructor(
     itineraryRepository: ItineraryRepository,
 ) : ViewModel() {
 
-    private val _hasItinerary = MutableStateFlow<Boolean?>(null)
-    val hasItinerary: StateFlow<Boolean?> = _hasItinerary.asStateFlow()
-
-    init {
-        viewModelScope.launch { _hasItinerary.value = itineraryRepository.hasItinerary() }
-    }
+    val hasItinerary: StateFlow<Boolean?> = itineraryRepository.latest
+        .map { it != null }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 }

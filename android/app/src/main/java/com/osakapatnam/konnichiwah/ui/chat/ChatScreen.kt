@@ -1,9 +1,11 @@
 package com.osakapatnam.konnichiwah.ui.chat
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,40 +19,42 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.remote.PhraseDto
 import com.osakapatnam.konnichiwah.ui.components.EnlargedPhrase
+import com.osakapatnam.konnichiwah.ui.components.Pill
+import com.osakapatnam.konnichiwah.ui.components.PillButton
 import com.osakapatnam.konnichiwah.ui.components.PhraseCard
+import com.osakapatnam.konnichiwah.ui.components.ScreenHeader
+import com.osakapatnam.konnichiwah.ui.components.Tone
+import com.osakapatnam.konnichiwah.ui.theme.Palette
 import com.osakapatnam.konnichiwah.ui.userMessage
 
-@OptIn(ExperimentalMaterial3Api::class)
+// The companion chat. It's a bottom tab, so it has no Back button.
 @Composable
-fun ChatScreen(
-    onBack: () -> Unit,
-    viewModel: ChatViewModel = hiltViewModel(),
-) {
+fun ChatScreen(viewModel: ChatViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
@@ -62,10 +66,16 @@ fun ChatScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.chat_title)) },
-                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
-            )
+            Column(modifier = Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ScreenHeader(
+                    stringResource(R.string.chat_title),
+                    subtitle = stringResource(R.string.chat_subtitle),
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+                if (state.days.isNotEmpty()) {
+                    DayPicker(state, onSelect = viewModel::selectDay)
+                }
+            }
         },
         bottomBar = {
             InputBar(
@@ -76,29 +86,25 @@ fun ChatScreen(
             )
         },
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            if (state.days.isNotEmpty()) {
-                DayPicker(state, onSelect = viewModel::selectDay)
-            }
-
-            Box(modifier = Modifier.weight(1f)) {
-                if (state.entries.isEmpty()) {
-                    Suggestions(onAsk = viewModel::send)
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(state.entries, key = { it.id }) { entry ->
-                            Message(entry, onEnlarge = viewModel::enlarge)
-                        }
-                        if (state.sending) {
-                            item(key = "thinking") { Bubble(fromUser = false) { Text(stringResource(R.string.chat_thinking)) } }
+            if (state.entries.isEmpty()) {
+                Suggestions(onAsk = viewModel::send)
+            } else {
+                LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    items(state.entries, key = { it.id }) { entry ->
+                        Message(entry, onEnlarge = viewModel::enlarge)
+                    }
+                    if (state.sending) {
+                        item(key = "thinking") {
+                            Bubble(fromUser = false) { Text(stringResource(R.string.chat_thinking), color = Palette.Mute) }
                         }
                     }
                 }
@@ -115,38 +121,41 @@ fun ChatScreen(
 @Composable
 private fun DayPicker(state: ChatUiState, onSelect: (Int) -> Unit) {
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         itemsIndexed(state.days) { index, day ->
-            FilterChip(
-                selected = index == state.selectedDay,
+            PillButton(
+                stringResource(R.string.chat_day, day.index, day.city),
                 onClick = { onSelect(index) },
-                label = { Text(stringResource(R.string.chat_day, day.index, day.city)) },
+                tone = if (index == state.selectedDay) Tone.MAROON else Tone.PETAL,
             )
         }
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Suggestions(onAsk: (String) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(stringResource(R.string.chat_empty_title), style = MaterialTheme.typography.titleMedium)
-        Text(
-            stringResource(R.string.chat_empty_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+        // The companion's opening line, as its first chat bubble.
+        Bubble(fromUser = false) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(stringResource(R.string.chat_empty_title), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.chat_empty_hint), style = MaterialTheme.typography.bodyMedium, color = Palette.Mute)
+            }
+        }
         // Starter questions: one per thing the companion is good at.
-        stringArrayResource(R.array.chat_suggestions).forEach { question ->
-            SuggestionChip(onClick = { onAsk(question) }, label = { Text(question) })
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            stringArrayResource(R.array.chat_suggestions).forEach { question ->
+                PillButton(question, onClick = { onAsk(question) })
+            }
         }
     }
 }
@@ -156,17 +165,17 @@ private fun Message(entry: ChatEntry, onEnlarge: (PhraseDto) -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (entry.fromUser) Alignment.End else Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Bubble(fromUser = entry.fromUser, isError = entry.error != null) { Text(entry.error?.userMessage() ?: entry.text) }
+        Bubble(fromUser = entry.fromUser, isError = entry.error != null) {
+            Text(entry.error?.userMessage() ?: entry.text, color = if (entry.fromUser) Palette.Tip else Palette.Ink)
+        }
 
         entry.phrases.forEach { phrase ->
             PhraseCard(phrase, onClick = { onEnlarge(phrase) }, modifier = Modifier.widthIn(max = 320.dp))
         }
 
-        sourceLabel(entry.toolsUsed)?.let {
-            Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        sourceLabel(entry.toolsUsed)?.let { Pill("✓ $it", Tone.GREEN) }
     }
 }
 
@@ -187,35 +196,42 @@ private fun sourceLabel(toolsUsed: List<String>): String? {
     return labels.takeIf { it.isNotEmpty() }?.map { stringResource(it) }?.joinToString(" · ")
 }
 
+// The traveller's messages are maroon on the right; the companion's are
+// cream cards on the left (pink if something went wrong).
 @Composable
 private fun Bubble(fromUser: Boolean, isError: Boolean = false, content: @Composable () -> Unit) {
     val colour = when {
-        isError -> MaterialTheme.colorScheme.errorContainer
-        fromUser -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.surfaceVariant
+        isError -> Palette.Petal
+        fromUser -> Palette.Maroon
+        else -> Palette.Card
     }
-    Box(
-        modifier = Modifier
-            .widthIn(max = 320.dp)
-            .background(colour, RoundedCornerShape(16.dp))
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+    val shape = if (fromUser) {
+        RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 20.dp, bottomEnd = 6.dp)
+    } else {
+        RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 6.dp, bottomEnd = 20.dp)
+    }
+    Surface(
+        shape = shape,
+        color = colour,
+        border = if (fromUser || isError) null else BorderStroke(1.dp, Palette.Line),
+        modifier = Modifier.widthIn(max = 300.dp),
     ) {
-        content()
+        Box(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) { content() }
     }
 }
 
+// A rounded field with "Send" inside it, as in the design.
 @Composable
 private fun InputBar(input: String, sending: Boolean, onInput: (String) -> Unit, onSend: () -> Unit) {
-    // Pad for the nav bar and the keyboard, so the field stays visible while
-    // typing (navigationBarsPadding first, so imePadding doesn't add it twice).
+    // Pad for the keyboard, so the field stays visible while typing
+    // (navigationBarsPadding first, so imePadding doesn't add it twice).
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .imePadding()
-            .padding(12.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         OutlinedTextField(
             value = input,
@@ -223,7 +239,22 @@ private fun InputBar(input: String, sending: Boolean, onInput: (String) -> Unit,
             modifier = Modifier.weight(1f),
             placeholder = { Text(stringResource(R.string.chat_placeholder)) },
             maxLines = 4,
+            shape = RoundedCornerShape(28.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = Palette.Card,
+                focusedContainerColor = Palette.Card,
+                unfocusedBorderColor = Palette.Line,
+                focusedBorderColor = Palette.Sun,
+            ),
+            trailingIcon = {
+                TextButton(onClick = onSend, enabled = input.isNotBlank() && !sending) {
+                    Text(
+                        stringResource(R.string.chat_send),
+                        fontWeight = FontWeight.Bold,
+                        color = if (input.isNotBlank() && !sending) Palette.Sun else Color(0x667A6868),
+                    )
+                }
+            },
         )
-        Button(onClick = onSend, enabled = input.isNotBlank() && !sending) { Text(stringResource(R.string.chat_send)) }
     }
 }
