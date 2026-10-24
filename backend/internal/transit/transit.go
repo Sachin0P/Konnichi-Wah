@@ -102,11 +102,18 @@ type Leg struct {
 	Departs  string `json:"departs"`
 	Arrives  string `json:"arrives"`
 	Minutes  int    `json:"minutes"`
+	// Exit is the station exit a walk uses ("A1"), when the map data names it.
+	Exit string `json:"exit,omitempty"`
 }
 
 // Client calls Transitous. It caches results for a while: a traveller asking
 // about the same journey twice shouldn't cost the volunteers two lookups.
+//
+// Stations, if set, gives English names to stations the timetables only name
+// in Japanese.
 type Client struct {
+	Stations *StationNames
+
 	baseURL   string
 	userAgent string
 	http      *http.Client
@@ -353,6 +360,9 @@ func (c *Client) Route(ctx context.Context, from, to LatLng, departAt time.Time)
 					Name    string    `json:"name"`
 					Arrival time.Time `json:"arrival"`
 				} `json:"to"`
+				Steps []struct {
+					StreetName string `json:"streetName"`
+				} `json:"steps"`
 			} `json:"legs"`
 		} `json:"itineraries"`
 	}
@@ -374,7 +384,7 @@ func (c *Client) Route(ctx context.Context, from, to LatLng, departAt time.Time)
 		}
 
 		var signature []string
-		for _, leg := range it.Legs {
+		for i, leg := range it.Legs {
 			l := Leg{
 				Mode:    strings.ToLower(leg.Mode),
 				From:    leg.From.Name,
@@ -383,7 +393,13 @@ func (c *Client) Route(ctx context.Context, from, to LatLng, departAt time.Time)
 				Arrives: leg.To.Arrival.In(japan).Format("15:04"),
 				Minutes: leg.Duration / 60,
 			}
-			if leg.Mode != "WALK" {
+			if leg.Mode == "WALK" {
+				names := make([]string, len(leg.Steps))
+				for k, s := range leg.Steps {
+					names[k] = s.StreetName
+				}
+				l.Exit = exitName(names, i > 0) // see Directions
+			} else {
 				l.Line = lineName(leg.RouteShortName, leg.RouteLongName)
 				l.Operator = operatorName(leg.AgencyName, leg.Mode)
 				l.Towards = leg.Headsign

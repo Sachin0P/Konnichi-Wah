@@ -46,10 +46,12 @@ import com.osakapatnam.konnichiwah.ui.cards.CardsScreen
 import com.osakapatnam.konnichiwah.ui.chat.ChatScreen
 import com.osakapatnam.konnichiwah.ui.components.TabIcons
 import com.osakapatnam.konnichiwah.ui.devcheck.DevCheckScreen
+import com.osakapatnam.konnichiwah.ui.directions.DirectionsScreen
 import com.osakapatnam.konnichiwah.ui.food.FoodScreen
 import com.osakapatnam.konnichiwah.ui.home.HomeScreen
 import com.osakapatnam.konnichiwah.ui.itinerary.ItineraryScreen
 import com.osakapatnam.konnichiwah.ui.menu.MenuScreen
+import com.osakapatnam.konnichiwah.ui.nearby.NearbyScreen
 import com.osakapatnam.konnichiwah.ui.questionnaire.QuestionnaireScreen
 import com.osakapatnam.konnichiwah.ui.suggestions.SuggestionsScreen
 import com.osakapatnam.konnichiwah.ui.theme.Palette
@@ -89,6 +91,14 @@ data class FoodRoute(val placeName: String, val city: String, val lat: Double = 
 
 @Serializable
 object DevCheckRoute
+
+// Directions can open with a destination (a stop, with its coordinates when it
+// has them) or empty, from Home. Like FoodRoute, missing coordinates are NaN.
+@Serializable
+data class DirectionsRoute(val toName: String = "", val toLat: Double = Double.NaN, val toLng: Double = Double.NaN, val city: String = "")
+
+@Serializable
+object NearbyRoute
 
 // The four bottom tabs. Plan covers the whole planning flow (questionnaire,
 // suggestions, itinerary and a stop's food search).
@@ -161,6 +171,8 @@ fun KonnichiNavHost(startViewModel: StartViewModel = hiltViewModel()) {
                     onAsk = dropUnlessResumed { openTab(Tab.ASK) },
                     onMenu = dropUnlessResumed { openTab(Tab.MENU) },
                     onCards = dropUnlessResumed { navController.navigate(CardsRoute) { launchSingleTop = true } },
+                    onDirections = dropUnlessResumed { navController.navigate(DirectionsRoute()) { launchSingleTop = true } },
+                    onHelp = dropUnlessResumed { navController.navigate(NearbyRoute) { launchSingleTop = true } },
                 )
             }
             composable<QuestionnaireRoute> {
@@ -190,6 +202,12 @@ fun KonnichiNavHost(startViewModel: StartViewModel = hiltViewModel()) {
                             navController.navigate(route) { launchSingleTop = true }
                         }
                     },
+                    onDirections = { stop ->
+                        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                            val route = DirectionsRoute(stop.placeName, stop.lat ?: Double.NaN, stop.lng ?: Double.NaN, stop.city)
+                            navController.navigate(route) { launchSingleTop = true }
+                        }
+                    },
                 )
             }
             composable<ChatRoute> { ChatScreen() }
@@ -204,6 +222,22 @@ fun KonnichiNavHost(startViewModel: StartViewModel = hiltViewModel()) {
             }
             composable<MenuRoute> {
                 MenuScreen(onDietCards = dropUnlessResumed { navController.navigate(CardsRoute) { launchSingleTop = true } })
+            }
+            composable<DirectionsRoute> {
+                DirectionsScreen(onBack = dropUnlessResumed { navController.safePop() })
+            }
+            composable<NearbyRoute> {
+                // Like the stop's food search, the place is an argument, so
+                // the lifecycle check is done by hand.
+                val lifecycle = LocalLifecycleOwner.current.lifecycle
+                NearbyScreen(
+                    onBack = dropUnlessResumed { navController.safePop() },
+                    onDirections = { place ->
+                        if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                            navController.navigate(DirectionsRoute(place.name, place.lat, place.lng)) { launchSingleTop = true }
+                        }
+                    },
+                )
             }
             composable<DevCheckRoute> { DevCheckScreen() }
         }

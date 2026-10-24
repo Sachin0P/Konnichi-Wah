@@ -260,4 +260,57 @@
     <string name="reminder_title">कल: दिन %1$d, %2$s में</string>
     <string name="reminder_free_day">ख़ाली दिन। आराम करें, या कोई जगह जोड़ने के लिए ऐप खोलें।</string>
     <string name="reminder_tip">टिप: %s</string>
+
+    <string name="dir_title">कैसे पहुँचें</string>
+    <string name="dir_subtitle">लाइव ट्रेन समय, स्टेशन तक पैदल रास्ता, और कौन-सा गेट (exit) लेना है।</string>
+    <string name="dir_from">कहाँ से</string>
+    <string name="dir_to">कहाँ तक</string>
+    <string name="dir_my_location">📍 मेरी लोकेशन</string>
+    <string name="dir_type_place">इसके बजाय जगह लिखें</string>
+    <string name="dir_use_location">मेरी लोकेशन इस्तेमाल करें</string>
+    <string name="dir_to_hint">स्टेशन, दर्शनीय स्थल या होटल</string>
+    <string name="dir_from_hint">आप कहाँ से चल रहे हैं</string>
+    <string name="dir_find">रास्ते ढूँढ़ें</string>
+    <string name="dir_finding">रास्ते ढूँढ़े जा रहे हैं…</string>
+    <string name="dir_need_location">जहाँ आप हैं वहाँ से शुरू करने के लिए लोकेशन की अनुमति दें, या शुरुआती जगह लिखें।</string>
+    <string name="dir_no_fix">आपकी लोकेशन नहीं मिल पाई। बाहर या खिड़की के पास जाएँ, या शुरुआती जगह लिखें।</string>
+    <string name="dir_no_routes">कोई सार्वजनिक परिवहन रास्ता नहीं मिला। मंज़िल के पास का कोई स्टेशन आज़माएँ, या स्टेशन स्टाफ़ से पूछें या टैक्सी लें।</string>
+    <plurals name="dir_changes">
+        <item quantity="one">%d बार बदलें</item>
+        <item quantity="other">%d बार बदलें</item>
+    </plurals>
+    <string name="dir_direct">सीधी</string>
+    <string name="dir_option">%1$s–%2$s · %3$d मिनट · %4$s</string>
+    <string name="dir_walk">%3$s तक %1$d मिनट पैदल (%2$s)</string>
+    <string name="dir_change">बदलें: %2$s तक %1$d मिनट पैदल</string>
+    <string name="dir_enter_exit">Exit %s से अंदर जाएँ</string>
+    <string name="dir_leave_exit">Exit %s से बाहर निकलें</string>
+    <string name="dir_platform">प्लेटफ़ॉर्म %s</string>
+    <string name="dir_via">%s होते हुए</string>
+    <string name="dir_towards">%s की ओर</string>
+    <plurals name="dir_stops">
+        <item quantity="one">%1$d स्टॉप · %2$d मिनट</item>
+        <item quantity="other">%1$d स्टॉप · %2$d मिनट</item>
+    </plurals>
+    <string name="dir_open_walk">मैप्स में पैदल रास्ता</string>
+    <string name="dir_from_stop">रास्ता</string>
+
+    <string name="near_title">आसपास मदद</string>
+    <string name="near_subtitle">अस्पताल, पुलिस बूथ, ATM और भी बहुत कुछ, OpenStreetMap से।</string>
+    <string name="near_emergency">आपातकाल? एम्बुलेंस या आग के लिए 119, पुलिस के लिए 110 पर कॉल करें।</string>
+    <string name="near_kind_hospital">🏥 अस्पताल</string>
+    <string name="near_kind_clinic">🩺 क्लिनिक</string>
+    <string name="near_kind_pharmacy">💊 दवा की दुकान</string>
+    <string name="near_kind_police">👮 पुलिस बूथ</string>
+    <string name="near_kind_atm">🏧 ATM (एटीएम)</string>
+    <string name="near_kind_toilet">🚻 टॉयलेट</string>
+    <string name="near_kind_convenience_store">🏪 कन्वीनियंस स्टोर</string>
+    <string name="near_search_hint">या खोजें: सुपरमार्केट, लॉन्ड्री…</string>
+    <string name="near_search">खोजें</string>
+    <string name="near_call">कॉल करें</string>
+    <string name="near_directions">रास्ता</string>
+    <string name="near_emergency_dept">इमरजेंसी विभाग</string>
+    <string name="near_none">आसपास कुछ नहीं मिला। किसी स्टेशन या कन्वीनियंस स्टोर में पूछें, या अपने होटल में।</string>
+    <string name="home_help">आसपास मदद</string>
+    <string name="home_help_sub">अस्पताल, पुलिस, ATM, टॉयलेट</string>
 </resources>

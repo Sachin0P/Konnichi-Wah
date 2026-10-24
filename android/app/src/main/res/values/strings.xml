@@ -272,4 +272,59 @@
     <string name="reminder_title">Tomorrow: Day %1$d in %2$s</string>
     <string name="reminder_free_day">A free day. Rest, or open the app to add a stop.</string>
     <string name="reminder_tip">Tip: %s</string>
+
+    <!-- Directions -->
+    <string name="dir_title">Get there</string>
+    <string name="dir_subtitle">Live train times, the walk to the station, and which exit to use.</string>
+    <string name="dir_from">From</string>
+    <string name="dir_to">To</string>
+    <string name="dir_my_location">📍 My location</string>
+    <string name="dir_type_place">Type a place instead</string>
+    <string name="dir_use_location">Use my location</string>
+    <string name="dir_to_hint">Station, sight or hotel</string>
+    <string name="dir_from_hint">Where you\'re starting</string>
+    <string name="dir_find">Find routes</string>
+    <string name="dir_finding">Finding routes…</string>
+    <string name="dir_need_location">Allow location to start from where you are, or type a starting point.</string>
+    <string name="dir_no_fix">Couldn\'t get your location. Go outside or near a window, or type a starting point.</string>
+    <string name="dir_no_routes">No public transport route found. Try a nearby station as the destination, or ask station staff or take a taxi.</string>
+    <plurals name="dir_changes">
+        <item quantity="one">%d change</item>
+        <item quantity="other">%d changes</item>
+    </plurals>
+    <string name="dir_direct">direct</string>
+    <string name="dir_option">%1$s–%2$s · %3$d min · %4$s</string>
+    <string name="dir_walk">Walk %1$d min (%2$s) to %3$s</string>
+    <string name="dir_change">Change: walk %1$d min to %2$s</string>
+    <string name="dir_enter_exit">Go in at Exit %s</string>
+    <string name="dir_leave_exit">Leave by Exit %s</string>
+    <string name="dir_platform">Platform %s</string>
+    <string name="dir_via">Via %s</string>
+    <string name="dir_towards">towards %s</string>
+    <plurals name="dir_stops">
+        <item quantity="one">%1$d stop · %2$d min</item>
+        <item quantity="other">%1$d stops · %2$d min</item>
+    </plurals>
+    <string name="dir_open_walk">Walking directions in Maps</string>
+    <string name="dir_from_stop">Directions</string>
+
+    <!-- Help nearby -->
+    <string name="near_title">Help nearby</string>
+    <string name="near_subtitle">Hospitals, police boxes, ATMs and more, from OpenStreetMap.</string>
+    <string name="near_emergency">Emergency? Call 119 for an ambulance or fire, 110 for the police.</string>
+    <string name="near_kind_hospital">🏥 Hospital</string>
+    <string name="near_kind_clinic">🩺 Clinic</string>
+    <string name="near_kind_pharmacy">💊 Pharmacy</string>
+    <string name="near_kind_police">👮 Police box</string>
+    <string name="near_kind_atm">🏧 ATM</string>
+    <string name="near_kind_toilet">🚻 Toilet</string>
+    <string name="near_kind_convenience_store">🏪 Konbini</string>
+    <string name="near_search_hint">Or search: supermarket, laundromat…</string>
+    <string name="near_search">Search</string>
+    <string name="near_call">Call</string>
+    <string name="near_directions">Directions</string>
+    <string name="near_emergency_dept">Emergency department</string>
+    <string name="near_none">Nothing found nearby. Try a station or a convenience store, or ask at your hotel.</string>
+    <string name="home_help">Help nearby</string>
+    <string name="home_help_sub">Hospital, police, ATM, toilet</string>
 </resources>

@@ -35,6 +35,31 @@ interface KonnichiApi {
     @POST("v1/companion/chat")
     suspend fun chat(@Body request: ChatRequestDto): ChatReplyEnvelope
 
+    // Either end is a place name (near city) or a point: pass one or the other.
+    // depart is "09:00" Japan time; leave it out to leave now.
+    @GET("v1/directions")
+    suspend fun directions(
+        @Query("from") from: String?,
+        @Query("from_lat") fromLat: Double?,
+        @Query("from_lng") fromLng: Double?,
+        @Query("to") to: String?,
+        @Query("to_lat") toLat: Double?,
+        @Query("to_lng") toLng: Double?,
+        @Query("city") city: String,
+        @Query("depart") depart: String?,
+    ): DirectionsEnvelope
+
+    // kind (hospital, pharmacy, ...) or q, near a point or a named place.
+    @GET("v1/places")
+    suspend fun places(
+        @Query("kind") kind: String?,
+        @Query("q") query: String?,
+        @Query("lat") lat: Double?,
+        @Query("lng") lng: Double?,
+        @Query("near") near: String?,
+        @Query("city") city: String,
+    ): PlacesEnvelope
+
     // A few seconds for a whole menu from the cloud, longer with a local model.
     @POST("v1/menu/translate")
     suspend fun translateMenu(@Body request: MenuTranslateRequestDto): MenuEnvelope

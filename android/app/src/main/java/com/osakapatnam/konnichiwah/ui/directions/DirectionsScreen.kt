@@ -1,0 +1,300 @@
+package com.osakapatnam.konnichiwah.ui.directions
+
+import android.Manifest
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
+import androidx.core.net.toUri
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.osakapatnam.konnichiwah.R
+import com.osakapatnam.konnichiwah.data.remote.JourneyDto
+import com.osakapatnam.konnichiwah.data.remote.JourneyLegDto
+import com.osakapatnam.konnichiwah.data.remote.JourneyStopDto
+import com.osakapatnam.konnichiwah.ui.components.BackLink
+import com.osakapatnam.konnichiwah.ui.components.KCard
+import com.osakapatnam.konnichiwah.ui.components.MapLine
+import com.osakapatnam.konnichiwah.ui.components.MapPin
+import com.osakapatnam.konnichiwah.ui.components.PillButton
+import com.osakapatnam.konnichiwah.ui.components.PrimaryButton
+import com.osakapatnam.konnichiwah.ui.components.RouteMap
+import com.osakapatnam.konnichiwah.ui.components.ScreenHeader
+import com.osakapatnam.konnichiwah.ui.components.Tone
+import com.osakapatnam.konnichiwah.ui.theme.Palette
+import com.osakapatnam.konnichiwah.ui.userMessage
+
+// How to get somewhere by train, subway and bus: up to three journeys, each
+// on a map and as cards a traveller can follow on the platform: which
+// station to walk to and which exit to go in by, which line (in its colour,
+// with the code on the signs) and towards where, how many stops, and which
+// exit to leave by.
+@Composable
+fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    // Ask for location the first time it's needed, then search.
+    val askLocation = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
+        if (granted.values.any { it }) viewModel.search() else viewModel.locationDenied()
+    }
+    val search = {
+        if (state.fromHere && !viewModel.hasLocationPermission) {
+            askLocation.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+        } else {
+            viewModel.search()
+        }
+    }
+
+    val journeys = state.result?.journeys.orEmpty()
+    val journey = journeys.getOrNull(state.selected)
+    val problem = state.apiError?.userMessage() ?: state.message?.let { stringResource(it) }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item { BackLink(stringResource(R.string.back), onBack) }
+        item { ScreenHeader(stringResource(R.string.dir_title), stringResource(R.string.dir_subtitle)) }
+
+        item {
+            KCard(modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.dir_from), style = MaterialTheme.typography.labelLarge)
+                if (state.fromHere) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PillButton(stringResource(R.string.dir_my_location), onClick = {}, tone = Tone.GREEN)
+                        TextButton(onClick = { viewModel.setFromHere(false) }) { Text(stringResource(R.string.dir_type_place)) }
+                    }
+                } else {
+                    OutlinedTextField(
+                        value = state.fromText,
+                        onValueChange = viewModel::setFrom,
+                        placeholder = { Text(stringResource(R.string.dir_from_hint)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    TextButton(onClick = { viewModel.setFromHere(true) }) { Text(stringResource(R.string.dir_use_location)) }
+                }
+
+                Text(stringResource(R.string.dir_to), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 8.dp))
+                OutlinedTextField(
+                    value = state.toText,
+                    onValueChange = viewModel::setTo,
+                    placeholder = { Text(stringResource(R.string.dir_to_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                PrimaryButton(
+                    stringResource(if (state.loading) R.string.dir_finding else R.string.dir_find),
+                    onClick = search,
+                    enabled = state.canSearch,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                )
+            }
+        }
+
+        if (state.loading) {
+            item { Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator() } }
+        }
+
+        if (problem != null) {
+            item { Text(problem, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
+        }
+
+        if (journeys.size > 1) {
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    itemsIndexed(journeys) { i, j ->
+                        PillButton(optionLabel(j), onClick = { viewModel.select(i) }, tone = if (i == state.selected) Tone.MAROON else Tone.PETAL)
+                    }
+                }
+            }
+        }
+
+        if (journey != null) {
+            item {
+                if (journeys.size == 1) Text(optionLabel(journey), style = MaterialTheme.typography.titleMedium)
+                RouteMap(
+                    lines = journey.legs.map { leg ->
+                        MapLine(leg.path.mapNotNull { p -> if (p.size == 2) p[0] to p[1] else null }, legColor(leg), walk = leg.mode == "walk")
+                    },
+                    pins = listOf(
+                        MapPin(journey.legs.first().from.lat, journey.legs.first().from.lng, Palette.Green),
+                        MapPin(journey.legs.last().to.lat, journey.legs.last().to.lng, Palette.Sun),
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        // Short enough to scroll past: drags on the map move the map.
+                        .height(240.dp)
+                        .clip(RoundedCornerShape(20.dp)),
+                )
+            }
+
+            itemsIndexed(journey.legs) { i, leg ->
+                LegCard(leg, first = i == 0, last = i == journey.legs.lastIndex)
+            }
+
+            item {
+                Text(
+                    state.result?.attribution.orEmpty(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+// "09:04–09:46 · 42 min · 1 change".
+@Composable
+private fun optionLabel(j: JourneyDto): String {
+    val changes = if (j.transfers == 0) stringResource(R.string.dir_direct) else pluralStringResource(R.plurals.dir_changes, j.transfers, j.transfers)
+    return stringResource(R.string.dir_option, j.departs, j.arrives, j.minutes, changes)
+}
+
+private val walkGrey = Color(0xFF7A6868)
+
+private fun legColor(leg: JourneyLegDto): Color =
+    if (leg.mode == "walk") walkGrey else leg.color?.let { runCatching { Color(it.toColorInt()) }.getOrNull() } ?: Palette.Maroon
+
+private fun modeEmoji(mode: String): String = when (mode) {
+    "walk" -> "🚶"
+    "shinkansen" -> "🚄"
+    "subway" -> "🚇"
+    "tram" -> "🚋"
+    "bus" -> "🚌"
+    "ferry" -> "⛴️"
+    else -> "🚆"
+}
+
+// "Sendagaya 千駄ケ谷 (JB12)": the English name, the Japanese on the signs,
+// and the station number.
+private fun stopLabel(s: JourneyStopDto): String = buildString {
+    append(s.name)
+    if (!s.nameJa.isNullOrBlank()) append(" ").append(s.nameJa)
+    if (!s.code.isNullOrBlank()) append(" (").append(s.code).append(")")
+}
+
+@Composable
+private fun LegCard(leg: JourneyLegDto, first: Boolean, last: Boolean) {
+    val context = LocalContext.current
+
+    KCard(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            LineBadge(leg)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (leg.mode == "walk") {
+                    val distance = if (leg.distanceM < 1000) stringResource(R.string.food_metres, leg.distanceM) else stringResource(R.string.food_km, leg.distanceM / 1000.0)
+                    val title = if (first || last) {
+                        stringResource(R.string.dir_walk, leg.minutes, distance, stopLabel(leg.to))
+                    } else {
+                        stringResource(R.string.dir_change, leg.minutes, stopLabel(leg.to))
+                    }
+                    Text(title, style = MaterialTheme.typography.titleSmall)
+
+                    // The exit: walking out of a station on every walk but
+                    // the first, which walks into one.
+                    leg.exit?.let {
+                        Text(stringResource(if (first) R.string.dir_enter_exit else R.string.dir_leave_exit, it), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = Palette.Maroon)
+                    }
+                    leg.platform?.let { Text(stringResource(R.string.dir_platform, it), style = MaterialTheme.typography.bodyMedium) }
+                    if (leg.via.isNotEmpty()) {
+                        Text(stringResource(R.string.dir_via, leg.via.joinToString(", ")), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+
+                    // For the walks at either end, hand over to a maps app
+                    // for turn-by-turn directions.
+                    if (first || last) {
+                        TextButton(
+                            onClick = {
+                                val uri = (
+                                    "https://www.google.com/maps/dir/?api=1&origin=${leg.from.lat},${leg.from.lng}" +
+                                        "&destination=${leg.to.lat},${leg.to.lng}&travelmode=walking"
+                                    ).toUri()
+                                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+                            },
+                            contentPadding = PaddingValues(0.dp),
+                        ) { Text(stringResource(R.string.dir_open_walk)) }
+                    }
+                } else {
+                    Text(leg.line ?: leg.operator.orEmpty(), style = MaterialTheme.typography.titleSmall)
+                    if (!leg.lineJa.isNullOrBlank()) {
+                        Text(leg.lineJa, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    leg.towards?.takeIf { it.isNotBlank() }?.let {
+                        Text(stringResource(R.string.dir_towards, it), style = MaterialTheme.typography.bodyMedium)
+                    }
+                    Text("${leg.departs}  ${stopLabel(leg.from)}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+                    Text("${leg.arrives}  ${stopLabel(leg.to)}", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        pluralStringResource(R.plurals.dir_stops, leg.stops, leg.stops, leg.minutes),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+// A round badge in the line's colour with its code ("JB"), like the signs;
+// or the mode's emoji when there's no code (walks, most buses).
+@Composable
+private fun LineBadge(leg: JourneyLegDto) {
+    val code = leg.lineCode?.takeIf { leg.mode != "walk" && it.isNotBlank() }
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .background(if (code != null) legColor(leg) else Palette.Petal, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (code != null) {
+            Text(code, color = textOn(legColor(leg)), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        } else {
+            Text(modeEmoji(leg.mode), fontSize = 18.sp)
+        }
+    }
+}
+
+// Black or white text, whichever reads better on the line's colour (the
+// Chuo-Sobu Line is yellow, the Tsukuba Express dark blue).
+private fun textOn(background: Color): Color {
+    val luminance = 0.299 * background.red + 0.587 * background.green + 0.114 * background.blue
+    return if (luminance > 0.6) Color(0xFF1B1B1B) else Color.White
+}

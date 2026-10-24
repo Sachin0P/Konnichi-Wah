@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.osakapatnam.konnichiwah.data.BackendRepository
 import com.osakapatnam.konnichiwah.data.ItineraryRepository
 import com.osakapatnam.konnichiwah.data.LanguageRepository
+import com.osakapatnam.konnichiwah.data.LocationProvider
 import com.osakapatnam.konnichiwah.data.ProfileRepository
 import com.osakapatnam.konnichiwah.data.remote.ApiError
 import com.osakapatnam.konnichiwah.data.remote.ApiResult
@@ -13,6 +14,7 @@ import com.osakapatnam.konnichiwah.data.remote.ChatMessageDto
 import com.osakapatnam.konnichiwah.data.remote.ChatRequestDto
 import com.osakapatnam.konnichiwah.data.remote.ChatStopDto
 import com.osakapatnam.konnichiwah.data.remote.DayDto
+import com.osakapatnam.konnichiwah.data.remote.GeoPointDto
 import com.osakapatnam.konnichiwah.data.remote.PhraseDto
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,6 +60,7 @@ class ChatViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val backendRepository: BackendRepository,
     private val languageRepository: LanguageRepository,
+    private val location: LocationProvider,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatUiState())
@@ -132,6 +135,9 @@ class ChatViewModel @Inject constructor(
                 ChatStopDto(placeName = it.placeName.take(100), placeType = it.placeType, timeSlot = it.timeSlot)
             },
             profile = profile,
+            // Only if they've already allowed location (for directions or
+            // help nearby): the chat doesn't ask for it itself.
+            location = location.recent()?.let { GeoPointDto(it.latitude, it.longitude) },
         )
     }
 }

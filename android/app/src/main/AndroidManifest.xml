@@ -7,6 +7,10 @@
     <!-- For the menu reader. Without a camera you can still pick a photo. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- For "from my location" in directions and "near me". Asked for the
+         first time a traveller uses either. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:name=".KonnichiApp"

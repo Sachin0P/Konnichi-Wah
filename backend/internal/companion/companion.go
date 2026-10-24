@@ -14,6 +14,7 @@ import (
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/gemini"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/groq"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/photon"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
 )
 
@@ -67,7 +68,13 @@ type Transit interface {
 }
 
 type Places interface {
-	Near(lat, lng float64, radiusM int, food bool) ([]*data.NearbyPlace, error)
+	Near(lat, lng float64, radiusM int, kind string) ([]*data.NearbyPlace, error)
+}
+
+// Search is live OpenStreetMap search (Photon), for places the snapshot
+// doesn't have.
+type Search interface {
+	Search(ctx context.Context, query string, lat, lng float64, limit int) ([]photon.Place, error)
 }
 
 // Companion answers a traveller's questions during the trip. It runs the
@@ -79,7 +86,8 @@ type Companion struct {
 	LLM       LLM
 	Rules     Rules
 	Transit   Transit
-	Places    Places            // restaurants and shops from the OpenStreetMap snapshot
+	Places    Places            // restaurants, shops and places to get help, from the OpenStreetMap snapshot
+	Search    Search            // optional; live search for anything else
 	DietCards []data.PhraseCard // checked phrase cards from rulebook/phrases.json
 	Hindi     *data.Hindi       // Hindi rules and card meanings; nil means English only
 	Now       func() time.Time  // time.Now, or a fixed time in tests
@@ -276,6 +284,10 @@ func buildInstructions(c data.ChatContext, language string, now time.Time) strin
 		fmt.Fprintf(&b, "- Today's plan, in order: %s.\n", strings.Join(stops, "; "))
 	}
 
+	if c.Location != nil {
+		b.WriteString("- Their current location is known (the tools use it when you leave near or from empty).\n")
+	}
+
 	if p := c.Profile; p != nil {
 		fmt.Fprintf(&b, "- Diet: %s.", dietRules[p.Diet])
 		if len(p.Avoid) > 0 {
@@ -310,12 +322,14 @@ How to answer:
 - Keep it short: 1 to 4 sentences, practical and specific, like a friend who lives in Japan.
 
 Rules you must follow:
-- Getting around: for any question about getting somewhere by train, subway or bus, call get_train_route. Never give lines, times, transfers or fares from memory. Give the line names in English and how long it takes. The route ends exactly at route_ends_at: if that's a station rather than the sight they asked about, say they'll need to walk or take a bus from there, without guessing how long. Only mention walking times that appear in the route. The route has lines, stations and minutes only: never invent station exits, street names, landmarks or turn-by-turn walking directions; for a walk, say how long it takes and suggest following the signs or a map app. If the tool finds no route, say so and suggest asking station staff or taking a taxi.
+- Getting around: for any question about getting somewhere by train, subway or bus, call get_train_route. Never give lines, times, transfers or fares from memory. Give the line names in English and how long it takes. The route ends exactly at route_ends_at: if that's a station rather than the sight they asked about, say they'll need to walk or take a bus from there, without guessing how long. Only mention walking times that appear in the route, and the station exit when a walk gives one ("leave by Exit A1"). The route has lines, stations, minutes and sometimes an exit: never invent exits it doesn't give, street names, landmarks or turn-by-turn walking directions; for a walk, say how long it takes and suggest following the signs or a map app. If the tool finds no route, say so and suggest asking station staff or taking a taxi.
 - Etiquette: call get_etiquette with the city where the place is (Nara for Nara Park, even if they're staying in Kyoto), and base etiquette advice only on the rules it returns. If the rules don't cover the question, say you don't have a tip for that rather than guessing.
 - Diet: whenever the traveller needs to explain their diet or what they can't eat, call show_diet_card. Never translate diet statements yourself: those cards are checked and must be exact.
 - Other Japanese phrases: translate into short, polite Japanese (desu/masu form) and call show_phrase_card with the English, the Japanese and Hepburn romaji. The app shows it as a large card, so don't repeat the Japanese in your answer.
 - Food: to find somewhere to eat, call find_food with a place they're near. Recommend only restaurants it returns, best Desi Match first: give the name, how far it is, why it suits them, and its caution if it has one. Respect the diet strictly, and warn that dashi (fish stock) is in miso soup, udon and soba broth and many sauces.
-- Shops: for anime, figure, manga, toy, game, hobby or 100-yen shops, call find_places. Name only shops it returns, with distances, and say to check opening hours. For other kinds of shop or sight, only name well-known places you are sure exist.
+- Shops: for anime, figure, manga, toy, game, hobby or 100-yen shops, call find_places. Name only shops it returns, with distances, and say to check opening hours.
+- Help and everyday places: for a hospital, clinic, pharmacy or drugstore, police box (koban), ATM, toilet or convenience store, call find_nearby with that kind; for anything else (a supermarket, a laundromat, a shop by name) call find_nearby with a query. Name only places it returns, with distances, and opening hours and phone numbers when given. In an emergency, first tell them to call 119 for an ambulance or fire, or 110 for the police. For other sights, only name well-known places you are sure exist.
+- Where they are: if they say "near me" or "from here" and the context below gives their location, leave near (or from) empty and the tools use it. If it doesn't, ask where they are.
 - If you don't know, say so. Never make up prices, opening hours, addresses or routes.`
 
 // hindiInstructions is added for travellers using the app in Hindi. Names

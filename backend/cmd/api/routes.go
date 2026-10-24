@@ -29,6 +29,9 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/food", app.listFoodHandler)
 
+	router.HandlerFunc(http.MethodGet, "/v1/directions", app.listDirectionsHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/places", app.listPlacesHandler)
+
 	router.HandlerFunc(http.MethodPost, "/v1/menu/translate", app.translateMenuHandler)
 
 	// recoverPanic must be the outermost middleware, so that it catches panics

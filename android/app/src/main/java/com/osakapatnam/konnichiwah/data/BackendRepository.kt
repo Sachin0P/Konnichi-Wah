@@ -6,12 +6,14 @@ import com.osakapatnam.konnichiwah.data.remote.AvoidItem
 import com.osakapatnam.konnichiwah.data.remote.ChatReplyDto
 import com.osakapatnam.konnichiwah.data.remote.ChatRequestDto
 import com.osakapatnam.konnichiwah.data.remote.Diet
+import com.osakapatnam.konnichiwah.data.remote.DirectionsDto
 import com.osakapatnam.konnichiwah.data.remote.EtiquetteRuleDto
 import com.osakapatnam.konnichiwah.data.remote.FoodDto
 import com.osakapatnam.konnichiwah.data.remote.HealthcheckDto
 import com.osakapatnam.konnichiwah.data.remote.KonnichiApi
 import com.osakapatnam.konnichiwah.data.remote.MenuLineDto
 import com.osakapatnam.konnichiwah.data.remote.MenuTranslateRequestDto
+import com.osakapatnam.konnichiwah.data.remote.PlacesDto
 import com.osakapatnam.konnichiwah.data.remote.PlanDto
 import com.osakapatnam.konnichiwah.data.remote.SpiceLevel
 import com.osakapatnam.konnichiwah.data.remote.TripRequestDto
@@ -42,6 +44,23 @@ class BackendRepository @Inject constructor(
 
     suspend fun chat(request: ChatRequestDto): ApiResult<ChatReplyDto> =
         apiCall(json) { api.chat(request).reply }
+
+    // Directions between two places. A Point end can carry a label (a stop's
+    // name), which the backend uses instead of "Your location".
+    suspend fun directions(from: RouteEnd, to: RouteEnd, city: String, depart: String? = null): ApiResult<DirectionsDto> =
+        apiCall(json) {
+            api.directions(
+                from = from.name, fromLat = from.lat, fromLng = from.lng,
+                to = to.name, toLat = to.lat, toLng = to.lng,
+                city = city, depart = depart,
+            ).directions
+        }
+
+    // Help nearby (kind) or anything else (query), around a point or a place.
+    suspend fun places(kind: String?, query: String?, near: RouteEnd, city: String): ApiResult<PlacesDto> =
+        apiCall(json) {
+            api.places(kind = kind, query = query, lat = near.lat, lng = near.lng, near = near.name.takeIf { near is RouteEnd.Named }, city = city).places
+        }
 
     // The AI translation of a menu's lines, one for each line sent, in order.
     // Any failure (no internet, the AI busy) is the caller's cue to translate
@@ -81,4 +100,22 @@ class BackendRepository @Inject constructor(
                 spice = spice,
             ).food
         }
+}
+
+// One end of a journey, or the centre of a search: a place name the backend
+// looks up, or a point (the traveller's location, or a stop that has
+// coordinates).
+sealed interface RouteEnd {
+    val name: String?
+    val lat: Double?
+    val lng: Double?
+
+    data class Named(override val name: String) : RouteEnd {
+        override val lat: Double? get() = null
+        override val lng: Double? get() = null
+    }
+
+    data class Point(override val lat: Double, override val lng: Double, val label: String? = null) : RouteEnd {
+        override val name: String? get() = label
+    }
 }

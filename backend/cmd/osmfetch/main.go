@@ -17,14 +17,23 @@ import (
 	"time"
 )
 
-// osmfetch downloads the restaurants and shops that matter to our travellers
-// from OpenStreetMap, and writes them to osmdata/places.json. That file is
-// committed and loaded into PostgreSQL by `make db/seed`, so the app never
-// depends on the (often overloaded) public Overpass servers at runtime.
+// osmfetch downloads the places that matter to our travellers from
+// OpenStreetMap. There are two sets, each in its own file:
 //
-// Run it occasionally to refresh the data:
+//   - food (osmdata/places.json): restaurants and the shops travellers ask
+//     about.
+//   - help (osmdata/help.json): hospitals, clinics, pharmacies, police boxes,
+//     ATMs, toilets and convenience stores.
+//   - stations (osmdata/stations.json): railway and subway stations with
+//     their English names, which some operators' timetables don't have.
 //
-//	go run ./cmd/osmfetch
+// The files are committed and loaded into PostgreSQL by `make db/seed`, so
+// the app never depends on the (often overloaded) public Overpass servers at
+// runtime. Run it occasionally to refresh the data:
+//
+//	go run ./cmd/osmfetch -set=food
+//	go run ./cmd/osmfetch -set=help
+//	go run ./cmd/osmfetch -set=stations
 //
 // It takes a few minutes: one query per city, one city at a time, to be kind
 // to the volunteer-run servers.
@@ -49,10 +58,10 @@ var servers = []string{
 	"https://overpass-api.de/api/interpreter",
 }
 
-// The query: food places with diet tags or Indian-style cuisine (Desi Match
-// candidates), and the shops travellers ask about (anime, figures, toys,
-// hobby, 100-yen stores).
-const queryTemplate = `[out:json][timeout:240][bbox:%s];
+// The food query: food places with diet tags or Indian-style cuisine (Desi
+// Match candidates), and the shops travellers ask about (anime, figures,
+// toys, hobby, 100-yen stores).
+const foodQuery = `[out:json][timeout:240][bbox:%s];
 (nwr["amenity"~"^(restaurant|fast_food|cafe|food_court)$"]["diet:vegetarian"~"yes|only"];
  nwr["amenity"~"^(restaurant|fast_food|cafe|food_court)$"]["diet:vegan"~"yes|only"];
  nwr["amenity"~"^(restaurant|fast_food|cafe|food_court)$"]["diet:halal"~"yes|only"];
@@ -60,12 +69,39 @@ const queryTemplate = `[out:json][timeout:240][bbox:%s];
  nwr["shop"~"^(anime|collector|games|model|hobby|toys|variety_store)$"];);
 out center tags;`
 
-// keptTags are the OSM tags we keep. Everything else is dropped to keep the
-// snapshot small (and free of personal data like phone numbers).
-var keptTags = []string{
-	"amenity", "shop", "cuisine", "brand", "brand:en",
-	"diet:vegetarian", "diet:vegan", "diet:halal",
-	"opening_hours", "website",
+// The help query: what a traveller needs when something goes wrong, or just
+// a toilet. Most Japanese drugstores are tagged shop=chemist rather than
+// amenity=pharmacy, and small clinics are often amenity=doctors.
+const helpQuery = `[out:json][timeout:240][bbox:%s];
+(nwr["amenity"~"^(hospital|clinic|doctors|pharmacy|police|atm|toilets)$"];
+ nwr["shop"~"^(convenience|chemist)$"];);
+out center tags;`
+
+// The stations query. Only stations with an English name are any use to us.
+const stationsQuery = `[out:json][timeout:240][bbox:%s];
+(nwr["railway"~"^(station|halt)$"]["name:en"];);
+out center tags;`
+
+// sets are the three snapshots: the query, the file, and the OSM tags we keep.
+// Everything else is dropped to keep the files small and free of personal
+// data. The help set keeps phone numbers, because those are businesses' and
+// public offices' numbers, and calling a hospital is the point.
+var sets = map[string]struct {
+	query string
+	out   string
+	tags  []string
+}{
+	"food": {foodQuery, "osmdata/places.json", []string{
+		"amenity", "shop", "cuisine", "brand", "brand:en",
+		"diet:vegetarian", "diet:vegan", "diet:halal",
+		"opening_hours", "website",
+	}},
+	"help": {helpQuery, "osmdata/help.json", []string{
+		"amenity", "shop", "brand", "brand:en", "operator",
+		"emergency", "healthcare:speciality", "phone",
+		"opening_hours", "website", "wheelchair", "toilets:wheelchair", "fee",
+	}},
+	"stations": {stationsQuery, "osmdata/stations.json", []string{"railway", "operator", "station"}},
 }
 
 // Place is one record in places.json. The shape must match data.Place's JSON.
@@ -80,13 +116,20 @@ type Place struct {
 }
 
 func main() {
-	var out, userAgent, only string
-	flag.StringVar(&out, "out", "osmdata/places.json", "Output file")
+	var setName, userAgent, only string
+	flag.StringVar(&setName, "set", "food", "Which places to fetch (food|help|stations)")
 	flag.StringVar(&userAgent, "user-agent", "KonnichiWah/1.0 (hackathon prototype; github.com/Sachin0P/Konnichi-Wah)", "User-Agent sent to Overpass (no personal data)")
 	flag.StringVar(&only, "cities", "", "Comma-separated cities to fetch (default: all)")
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	set, ok := sets[setName]
+	if !ok {
+		logger.Error("-set must be food, help or stations", "set", setName)
+		os.Exit(2)
+	}
+	out := set.out
 
 	// Connect over IPv4 only. In testing, IPv6 connections to the Overpass
 	// servers stalled for minutes (through a VPN), while IPv4 answered in
@@ -118,7 +161,7 @@ func main() {
 			continue
 		}
 
-		got, err := fetchWithRetries(client, userAgent, city.name, city.bbox)
+		got, err := fetchWithRetries(client, userAgent, set.query, set.tags, city.name, city.bbox)
 		if err != nil {
 			failed++
 			logger.Error("fetch failed, keeping the old data", "city", city.name, "old_places", len(byCity[city.name]), "error", err)
@@ -142,11 +185,11 @@ func main() {
 
 // fetchWithRetries tries every server, up to three rounds, pausing between
 // rounds: a 504 from a busy server is usually gone a minute later.
-func fetchWithRetries(client *http.Client, userAgent, city, bbox string) ([]Place, error) {
+func fetchWithRetries(client *http.Client, userAgent, query string, tags []string, city, bbox string) ([]Place, error) {
 	var err error
 	for round := 1; round <= 3; round++ {
 		var places []Place
-		places, err = fetchCity(client, userAgent, city, bbox)
+		places, err = fetchCity(client, userAgent, query, tags, city, bbox)
 		if err == nil {
 			return places, nil
 		}
@@ -158,8 +201,9 @@ func fetchWithRetries(client *http.Client, userAgent, city, bbox string) ([]Plac
 	return nil, err
 }
 
-// write saves the snapshot, sorted so that re-running the fetch gives a
-// readable diff.
+// write saves the snapshot, sorted, with one place per line: re-running the
+// fetch gives a readable diff, and the file is half the size of indented
+// JSON (the help set has 30,000 places).
 func write(out string, byCity map[string][]Place) error {
 	var places []Place
 	for _, ps := range byCity {
@@ -169,14 +213,25 @@ func write(out string, byCity map[string][]Place) error {
 		return strings.Compare(a.City+a.ID, b.City+b.ID)
 	})
 
-	js, err := json.MarshalIndent(places, "", " ")
-	if err != nil {
-		return err
+	var b strings.Builder
+	b.WriteString("[\n")
+	for i, p := range places {
+		js, err := json.Marshal(p)
+		if err != nil {
+			return err
+		}
+		b.Write(js)
+		if i < len(places)-1 {
+			b.WriteByte(',')
+		}
+		b.WriteByte('\n')
 	}
-	return os.WriteFile(out, append(js, '\n'), 0o644)
+	b.WriteString("]\n")
+
+	return os.WriteFile(out, []byte(b.String()), 0o644)
 }
 
-func fetchCity(client *http.Client, userAgent, city, bbox string) ([]Place, error) {
+func fetchCity(client *http.Client, userAgent, queryTemplate string, keptTags []string, city, bbox string) ([]Place, error) {
 	query := fmt.Sprintf(queryTemplate, bbox)
 
 	var lastErr error
@@ -206,7 +261,10 @@ func fetchCity(client *http.Client, userAgent, city, bbox string) ([]Place, erro
 
 		var places []Place
 		for _, e := range res.Elements {
-			name := e.Tags["name"]
+			name, nameEn := e.Tags["name"], e.Tags["name:en"]
+			if name == "" {
+				name, nameEn = unnamed(e.Tags)
+			}
 			if name == "" {
 				continue // a nameless place is no use to a traveller
 			}
@@ -227,7 +285,7 @@ func fetchCity(client *http.Client, userAgent, city, bbox string) ([]Place, erro
 				ID:     fmt.Sprintf("%s/%d", e.Type, e.ID),
 				City:   city,
 				Name:   name,
-				NameEn: e.Tags["name:en"],
+				NameEn: nameEn,
 				Lat:    lat,
 				Lng:    lng,
 				Tags:   tags,
@@ -237,6 +295,21 @@ func fetchCity(client *http.Client, userAgent, city, bbox string) ([]Place, erro
 	}
 
 	return nil, lastErr
+}
+
+// unnamed gives a name to the places that are useful without one: most
+// public toilets and ATMs aren't named in OpenStreetMap.
+func unnamed(tags map[string]string) (name, nameEn string) {
+	switch tags["amenity"] {
+	case "toilets":
+		return "公衆トイレ", "Public toilet"
+	case "atm":
+		if op := tags["operator"]; op != "" {
+			return op + " ATM", "ATM"
+		}
+		return "ATM", "ATM"
+	}
+	return "", ""
 }
 
 func post(client *http.Client, userAgent, server, query string) ([]byte, error) {

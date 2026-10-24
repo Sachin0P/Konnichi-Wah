@@ -16,8 +16,10 @@ import (
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/gemini"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/groq"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/menu"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/photon"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/planner"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
+	"github.com/Sachin0P/Konnichi-Wah/backend/osmdata"
 	"github.com/Sachin0P/Konnichi-Wah/backend/rulebook"
 
 	// Import the pq driver so that it can register itself with the database/sql
@@ -94,11 +96,13 @@ func (cfg config) replyTimeout() time.Duration {
 // The planner field is an interface, so we can switch from the built-in
 // catalogue to a real LLM planner without touching the handlers. The
 // companion and the menu translator are nil when there's no LLM configured.
-// The transit client also geocodes place names for /v1/food.
+// The transit client also geocodes place names for /v1/food and /v1/places,
+// and photon searches OpenStreetMap for places the snapshot doesn't have.
 type application struct {
 	config    config
 	logger    *slog.Logger
 	transit   *transit.Client
+	photon    *photon.Client
 	models    data.Models
 	planner   planner.Planner
 	companion *companion.Companion
@@ -254,7 +258,24 @@ func main() {
 
 	// Transitous needs no key. Name the app in the User-Agent, as its usage
 	// policy asks, but never include personal data.
-	transitClient := transit.New(transit.DefaultBaseURL, "KonnichiWah/"+version+" (hackathon prototype; github.com/Sachin0P/Konnichi-Wah)", 10*time.Second)
+	userAgent := "KonnichiWah/" + version + " (hackathon prototype; github.com/Sachin0P/Konnichi-Wah)"
+	transitClient := transit.New(transit.DefaultBaseURL, userAgent, 10*time.Second)
+
+	// English names for stations the timetables only name in Japanese.
+	stations, err := data.LoadStations(osmdata.Files)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+	names := make([]transit.Station, len(stations))
+	for i, s := range stations {
+		names[i] = transit.Station{Name: s.Name, NameEn: s.NameEn, Lat: s.Lat, Lng: s.Lng}
+	}
+	transitClient.Stations = transit.NewStationNames(names)
+	logger.Info("station names loaded", "stations", len(names))
+	// Photon is used live, so its timeout is short: a slow answer is no
+	// answer to someone looking for a pharmacy.
+	photonClient := photon.New(photon.DefaultBaseURL, userAgent, 8*time.Second)
 
 	var c *companion.Companion
 	if chatLLM != nil {
@@ -263,6 +284,7 @@ func main() {
 			Rules:     models.EtiquetteRules,
 			Transit:   transitClient,
 			Places:    models.Places,
+			Search:    photonClient,
 			DietCards: dietCards,
 			Hindi:     hindi,
 			Now:       time.Now,
@@ -274,6 +296,7 @@ func main() {
 		config:    cfg,
 		logger:    logger,
 		transit:   transitClient,
+		photon:    photonClient,
 		models:    models,
 		planner:   p,
 		companion: c,

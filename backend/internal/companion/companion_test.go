@@ -10,6 +10,7 @@ import (
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/gemini"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/photon"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
 	"github.com/Sachin0P/Konnichi-Wah/backend/rulebook"
 )
@@ -83,14 +84,18 @@ func (f *fakeTransit) Route(ctx context.Context, from, to transit.LatLng, depart
 // fakePlaces returns fixed restaurants and shops around any point.
 type fakePlaces struct{}
 
-func (fakePlaces) Near(lat, lng float64, radiusM int, food bool) ([]*data.NearbyPlace, error) {
+func (fakePlaces) Near(lat, lng float64, radiusM int, kind string) ([]*data.NearbyPlace, error) {
 	food1 := &data.Place{Name: "Ramen Tonkotsu", Tags: map[string]string{"amenity": "restaurant", "cuisine": "ramen"}}
 	food2 := &data.Place{Name: "Taste of Kerala", NameEn: "Taste of Kerala", Tags: map[string]string{"amenity": "restaurant", "cuisine": "indian"}}
 	food3 := &data.Place{Name: "Bon", Tags: map[string]string{"amenity": "restaurant", "diet:vegan": "only", "cuisine": "japanese"}}
 	shop1 := &data.Place{Name: "Mandarake", Tags: map[string]string{"shop": "collector"}}
 	shop2 := &data.Place{Name: "Daiso", Tags: map[string]string{"shop": "variety_store"}}
 
-	if food {
+	if kind == "hospital" {
+		hospital := &data.Place{Name: "聖路加国際病院", NameEn: "St. Luke's International Hospital", Tags: map[string]string{"amenity": "hospital", "emergency": "yes", "phone": "+81 3-3541-5151"}}
+		return []*data.NearbyPlace{{Place: hospital, DistanceM: 900}}, nil
+	}
+	if kind == data.KindFood {
 		return []*data.NearbyPlace{{Place: food1, DistanceM: 100}, {Place: food2, DistanceM: 300}, {Place: food3, DistanceM: 600}}, nil
 	}
 	return []*data.NearbyPlace{{Place: shop2, DistanceM: 50}, {Place: shop1, DistanceM: 200}}, nil
@@ -544,5 +549,59 @@ func TestDietStatementsNeedTheCheckedCards(t *testing.T) {
 		if got := isDietStatement(tt.japanese); got != tt.diet {
 			t.Errorf("isDietStatement(%q) = %v; want %v", tt.japanese, got, tt.diet)
 		}
+	}
+}
+
+// fakeSearch stands in for Photon.
+type fakeSearch struct{ lat, lng float64 }
+
+func (f *fakeSearch) Search(ctx context.Context, query string, lat, lng float64, limit int) ([]photon.Place, error) {
+	f.lat, f.lng = lat, lng
+	return []photon.Place{{Name: "Coin Laundry Asakusa", Kind: "laundry", Lat: lat + 0.001, Lng: lng}}, nil
+}
+
+func TestFindNearby(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     string
+		location *data.ChatLocation
+		want     string
+	}{
+		{"a kind, from the snapshot", `{"kind": "hospital", "near": "Ginza"}`, nil, "St. Luke"},
+		{"anything else, by search", `{"query": "laundromat", "near": "Senso-ji"}`, nil, "Coin Laundry"},
+		{"near me", `{"kind": "hospital"}`, &data.ChatLocation{Lat: 35.67, Lng: 139.77}, "your location"},
+		{"near me, location unknown", `{"kind": "hospital"}`, nil, "ask which station"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			llm := &fakeLLM{turns: []turn{call("find_nearby", tt.args), text("ok")}}
+			c := newCompanion(t, llm, &fakeTransit{}, nil)
+			c.Places = fakePlaces{}
+			c.Search = &fakeSearch{}
+
+			req := ask("?")
+			req.Context.Location = tt.location
+			if _, err := c.Reply(context.Background(), req); err != nil {
+				t.Fatal(err)
+			}
+			if r := llm.lastResult(); !strings.Contains(r, tt.want) {
+				t.Errorf("got %s; want it to contain %q", r, tt.want)
+			}
+		})
+	}
+}
+
+func TestTrainRouteFromHere(t *testing.T) {
+	llm := &fakeLLM{turns: []turn{call("get_train_route", `{"to": "Senso-ji"}`), text("ok")}}
+	c := newCompanion(t, llm, &fakeTransit{}, nil)
+
+	req := ask("How do I get to Senso-ji from here?")
+	req.Context.Location = &data.ChatLocation{Lat: 35.68, Lng: 139.76}
+	if _, err := c.Reply(context.Background(), req); err != nil {
+		t.Fatal(err)
+	}
+	if r := llm.lastResult(); !strings.Contains(r, `"from":"your location"`) {
+		t.Errorf("got %s", r)
 	}
 }

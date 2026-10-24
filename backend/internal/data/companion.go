@@ -25,11 +25,20 @@ type ChatStop struct {
 
 // ChatContext tells the companion where the traveller is in their trip, so
 // "how do I get to my next stop?" makes sense. Everything in it is optional.
+//
+// Location is where the traveller is right now, if they let the app use it,
+// so "a pharmacy near me" and "how do I get there from here?" work.
 type ChatContext struct {
-	City     string       `json:"city"`
-	DayIndex int          `json:"day_index"`
-	Stops    []ChatStop   `json:"stops"`
-	Profile  *UserProfile `json:"profile"`
+	City     string        `json:"city"`
+	DayIndex int           `json:"day_index"`
+	Stops    []ChatStop    `json:"stops"`
+	Profile  *UserProfile  `json:"profile"`
+	Location *ChatLocation `json:"location"`
+}
+
+type ChatLocation struct {
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
 }
 
 // Language is the language the traveller reads ("en" or "hi"); it's optional
@@ -90,5 +99,9 @@ func ValidateChatRequest(v *validator.Validator, req *ChatRequest) {
 
 	if c.Profile != nil {
 		ValidateUserProfile(v, c.Profile)
+	}
+
+	if l := c.Location; l != nil {
+		v.Check(l.Lat >= 24 && l.Lat <= 46 && l.Lng >= 122 && l.Lng <= 146, "context.location", "must be a point in Japan")
 	}
 }

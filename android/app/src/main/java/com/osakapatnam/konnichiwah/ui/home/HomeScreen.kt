@@ -52,6 +52,8 @@ fun HomeScreen(
     onAsk: () -> Unit,
     onMenu: () -> Unit,
     onCards: () -> Unit,
+    onDirections: () -> Unit,
+    onHelp: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -80,13 +82,14 @@ fun HomeScreen(
 
         Text(stringResource(R.string.home_right_now), style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Shortcut("🚆", stringResource(R.string.home_train), stringResource(R.string.home_train_sub), onAsk, Modifier.weight(1f))
+            Shortcut("🚆", stringResource(R.string.home_train), stringResource(R.string.home_train_sub), onDirections, Modifier.weight(1f))
             Shortcut("🥗", stringResource(R.string.cards_title), stringResource(R.string.home_cards_sub), onCards, Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Shortcut("📷", stringResource(R.string.home_menu), stringResource(R.string.home_menu_sub), onMenu, Modifier.weight(1f))
             Shortcut("🙇", stringResource(R.string.home_etiquette), stringResource(R.string.home_etiquette_sub), onPlan, Modifier.weight(1f))
         }
+        Shortcut("🏥", stringResource(R.string.home_help), stringResource(R.string.home_help_sub), onHelp, Modifier.fillMaxWidth())
 
         KCard(modifier = Modifier.fillMaxWidth()) {
             StatusDot(stringResource(R.string.home_offline_title))

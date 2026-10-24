@@ -37,13 +37,13 @@ var toolDeclarations = []Tool{
 		Parameters: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
-				"from":        map[string]any{"type": "string", "description": "Station or landmark name, e.g. 'Asakusa Station' or 'Fushimi Inari Taisha'."},
+				"from":        map[string]any{"type": "string", "description": "Station or landmark name, e.g. 'Asakusa Station' or 'Fushimi Inari Taisha'. Leave empty to start from the traveller's current location."},
 				"from_city":   map[string]any{"type": "string", "description": "City the starting point is in, e.g. Tokyo."},
 				"to":          map[string]any{"type": "string", "description": "Station or landmark name."},
 				"to_city":     map[string]any{"type": "string", "description": "City the destination is in."},
 				"depart_time": map[string]any{"type": "string", "description": "Optional local departure time as HH:MM. Leave out to leave now."},
 			},
-			"required": []string{"from", "to"},
+			"required": []string{"to"},
 		},
 	},
 	{
@@ -69,6 +69,19 @@ var toolDeclarations = []Tool{
 				"city": map[string]any{"type": "string", "description": "City it's in, e.g. Tokyo."},
 			},
 			"required": []string{"kind", "near"},
+		},
+	},
+	{
+		Name:        "find_nearby",
+		Description: "Find places to get help, or everyday places, near the traveller or a named place, nearest first. Give kind for the common ones, or query for anything else.",
+		Parameters: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"kind":  map[string]any{"type": "string", "enum": data.HelpKinds, "description": "hospital; clinic (doctors); pharmacy (including drugstores); police (police box, koban); atm; toilet; convenience_store."},
+				"query": map[string]any{"type": "string", "description": "For anything else, in English, e.g. 'supermarket', 'laundromat', 'Uniqlo'. Leave out if you give kind."},
+				"near":  map[string]any{"type": "string", "description": "Station or landmark. Leave empty to use the traveller's current location."},
+				"city":  map[string]any{"type": "string", "description": "City it's in, e.g. Tokyo."},
+			},
 		},
 	},
 	{
@@ -122,6 +135,8 @@ func (t tools) run(ctx context.Context, call ToolCall) any {
 		result, err = t.trainRoute(ctx, call.Arguments)
 	case "find_food":
 		result, err = t.findFood(ctx, call.Arguments)
+	case "find_nearby":
+		result, err = t.findNearby(ctx, call.Arguments)
 	case "find_places":
 		result, err = t.findPlaces(ctx, call.Arguments)
 	case "show_diet_card":
@@ -181,16 +196,17 @@ func (t tools) trainRoute(ctx context.Context, args json.RawMessage) (any, error
 		ToCity     string `json:"to_city"`
 		DepartTime string `json:"depart_time"`
 	}
-	if err := json.Unmarshal(args, &in); err != nil || in.From == "" || in.To == "" {
-		return nil, errors.New("invalid arguments: from and to are required")
+	if err := json.Unmarshal(args, &in); err != nil || in.To == "" {
+		return nil, errors.New("invalid arguments: to is required")
 	}
 
 	fromCity := firstNonEmpty(in.FromCity, t.chat.City)
 	toCity := firstNonEmpty(in.ToCity, fromCity)
 
-	from, err := t.companion.Transit.Geocode(ctx, in.From, centre(fromCity))
+	// An empty from is where they are now (locate says if that's unknown).
+	from, err := t.locate(ctx, in.From, fromCity)
 	if err != nil {
-		return nil, t.placeError(in.From, err)
+		return nil, err
 	}
 	to, err := t.companion.Transit.Geocode(ctx, in.To, centre(toCity))
 	if err != nil {
@@ -275,10 +291,14 @@ func (t tools) route(ctx context.Context, from, to transit.LatLng, at time.Time)
 const searchRadiusM = 1000
 
 // locate turns a place name into a point for a search, aiming at the city.
+// With no name, it's where the traveller is, if the app sent their location.
 func (t tools) locate(ctx context.Context, near, city string) (*transit.Place, error) {
 	near = strings.TrimSpace(near)
-	if near == "" {
-		return nil, errors.New("invalid arguments: near is required")
+	if near == "" || strings.EqualFold(near, "my location") || strings.EqualFold(near, "here") {
+		if l := t.chat.Location; l != nil {
+			return &transit.Place{Name: "your location", Location: transit.LatLng{Lat: l.Lat, Lng: l.Lng}}, nil
+		}
+		return nil, errors.New("their location isn't known: ask which station or landmark they're near")
 	}
 	place, err := t.companion.Transit.Geocode(ctx, near, centre(firstNonEmpty(city, t.chat.City)))
 	if err != nil {
@@ -378,7 +398,7 @@ func (t tools) findPlaces(ctx context.Context, args json.RawMessage) (any, error
 		return nil, err
 	}
 
-	places, err := t.companion.Places.Near(where.Location.Lat, where.Location.Lng, searchRadiusM, false)
+	places, err := t.companion.Places.Near(where.Location.Lat, where.Location.Lng, searchRadiusM, data.KindShop)
 	if err != nil {
 		t.companion.log("places search failed", "error", err)
 		return nil, errors.New("shop search unavailable")
@@ -401,6 +421,77 @@ func (t tools) findPlaces(ctx context.Context, args json.RawMessage) (any, error
 	}
 
 	return map[string]any{"near": where.Name, "shops": out}, nil
+}
+
+// findNearby finds help (from the snapshot, by kind) or anything else (live,
+// by query) near the traveller or a named place.
+func (t tools) findNearby(ctx context.Context, args json.RawMessage) (any, error) {
+	var in struct {
+		Kind  string `json:"kind"`
+		Query string `json:"query"`
+		Near  string `json:"near"`
+		City  string `json:"city"`
+	}
+	if err := json.Unmarshal(args, &in); err != nil {
+		return nil, errors.New("invalid arguments")
+	}
+	in.Query = strings.TrimSpace(in.Query)
+
+	switch {
+	case in.Kind == "" && in.Query == "":
+		return nil, errors.New("invalid arguments: give kind or query")
+	case in.Kind != "" && !slices.Contains(data.HelpKinds, in.Kind):
+		return nil, errors.New("invalid arguments: kind must be one of " + strings.Join(data.HelpKinds, ", "))
+	}
+
+	where, err := t.locate(ctx, in.Near, in.City)
+	if err != nil {
+		return nil, err
+	}
+	lat, lng := where.Location.Lat, where.Location.Lng
+
+	// Keep the result small: it all goes back through the model.
+	type place struct {
+		Name      string `json:"name"`
+		NameJa    string `json:"name_ja,omitempty"`
+		DistanceM int    `json:"distance_m"`
+		Hours     string `json:"opening_hours,omitempty"`
+		Phone     string `json:"phone,omitempty"`
+		Emergency bool   `json:"emergency_department,omitempty"`
+		Address   string `json:"address,omitempty"`
+	}
+	out := []place{}
+
+	if in.Kind != "" {
+		found, err := data.Nearest(t.companion.Places, lat, lng, in.Kind, 3, 5)
+		if err != nil {
+			t.companion.log("places search failed", "error", err)
+			return nil, errors.New("place search unavailable")
+		}
+		for _, p := range found {
+			s := data.Summarize(p, in.Kind)
+			out = append(out, place{Name: s.Name, NameJa: s.NameJa, DistanceM: s.DistanceM, Hours: s.OpeningHours, Phone: s.Phone, Emergency: s.Emergency})
+		}
+		if len(out) == 0 {
+			return map[string]any{"near": where.Name, "places": out, "note": "None listed within 5 km. Suggest asking at a station, hotel or convenience store."}, nil
+		}
+		return map[string]any{"near": where.Name, "places": out}, nil
+	}
+
+	if t.companion.Search == nil {
+		return nil, errors.New("search for that kind of place isn't available")
+	}
+	found, err := t.companion.Search.Search(ctx, in.Query, lat, lng, 5)
+	if err != nil {
+		t.companion.log("live search failed", "error", err)
+		return nil, errors.New("search isn't responding right now: suggest a map app, or asking at a station or convenience store")
+	}
+	for _, p := range found {
+		out = append(out, place{Name: p.Name, DistanceM: data.DistanceM(lat, lng, p.Lat, p.Lng), Address: p.Address})
+	}
+	slices.SortFunc(out, func(a, b place) int { return a.DistanceM - b.DistanceM })
+
+	return map[string]any{"near": where.Name, "places": out}, nil
 }
 
 // dietCovers lists the avoid items each diet's card already covers, so we
@@ -537,20 +628,7 @@ func hasJapaneseScript(s string) bool {
 // departAt works out when to leave: now, or today at HH:MM in Japan time. A
 // time more than an hour in the past means tomorrow ("09:00" asked at 22:00).
 func departAt(now time.Time, hhmm string) time.Time {
-	if hhmm == "" {
-		return now
-	}
-
-	t, err := time.ParseInLocation("15:04", hhmm, japan)
-	if err != nil {
-		return now
-	}
-
-	at := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), 0, 0, japan)
-	if at.Before(now.Add(-time.Hour)) {
-		at = at.AddDate(0, 0, 1)
-	}
-	return at
+	return transit.DepartAt(now, hhmm)
 }
 
 func centre(city string) *transit.LatLng {

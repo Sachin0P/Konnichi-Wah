@@ -58,3 +58,34 @@ func TestLive(t *testing.T) {
 		}
 	}
 }
+
+// TestLiveDirections prints a real journey in full, to check the exits,
+// platforms and paths against the map data. Like TestLive, it only runs with
+// TRANSIT_LIVE=1.
+func TestLiveDirections(t *testing.T) {
+	if os.Getenv("TRANSIT_LIVE") != "1" {
+		t.Skip("set TRANSIT_LIVE=1 to call the real Transitous API")
+	}
+
+	c := New(DefaultBaseURL, "KonnichiWah/test (hackathon prototype; github.com/Sachin0P/Konnichi-Wah)", 20*time.Second)
+	at := time.Date(2026, 10, 26, 9, 0, 0, 0, time.FixedZone("JST", 9*60*60))
+
+	journeys, err := c.Directions(context.Background(), LatLng{35.6852, 139.7100}, LatLng{35.7148, 139.7967}, "Shinjuku Gyoen", "Senso-ji", at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(journeys) == 0 {
+		t.Fatal("no journeys")
+	}
+
+	for _, j := range journeys {
+		t.Logf("%s-%s, %d min, %d transfers, %d min walking", j.Departs, j.Arrives, j.Minutes, j.Transfers, j.WalkMinutes)
+		for _, l := range j.Legs {
+			t.Logf("  %-6s %-30s %s (%s %s) -> %s (%s %s) | %d min, stops %d | exit %q platform %q via %v | %d points | %s",
+				l.Mode, l.Line, l.From.Name, l.From.NameJa, l.From.Code, l.To.Name, l.To.NameJa, l.To.Code, l.Minutes, l.Stops, l.Exit, l.Platform, l.Via, len(l.Path), l.Color)
+		}
+		if len(j.Legs) == 0 || len(j.Legs[0].Path) < 2 {
+			t.Error("journey without a path")
+		}
+	}
+}

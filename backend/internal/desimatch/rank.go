@@ -9,7 +9,7 @@ import (
 
 // Finder is the part of data.PlaceModel that Search needs.
 type Finder interface {
-	Near(lat, lng float64, radiusM int, food bool) ([]*data.NearbyPlace, error)
+	Near(lat, lng float64, radiusM int, kind string) ([]*data.NearbyPlace, error)
 }
 
 // searchRadii are tried in turn until enough good restaurants turn up: a
@@ -22,7 +22,7 @@ var searchRadii = []int{1000, 2000, 3000}
 func Search(f Finder, lat, lng float64, profile data.UserProfile, limit int) ([]Result, error) {
 	var results []Result
 	for _, radius := range searchRadii {
-		places, err := f.Near(lat, lng, radius, true)
+		places, err := f.Near(lat, lng, radius, data.KindFood)
 		if err != nil {
 			return nil, err
 		}

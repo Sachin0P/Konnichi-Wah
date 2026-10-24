@@ -85,7 +85,7 @@ func (app *application) listFoodHandler(w http.ResponseWriter, r *http.Request) 
 	// search (1, 2, then 3 km) until there are a few good results.
 	var results []desimatch.Result
 	if qs.Has("radius") {
-		places, err := app.models.Places.Near(centre.Lat, centre.Lng, input.RadiusM, true)
+		places, err := app.models.Places.Near(centre.Lat, centre.Lng, input.RadiusM, data.KindFood)
 		if err != nil {
 			app.serverErrorResponse(w, r, err)
 			return

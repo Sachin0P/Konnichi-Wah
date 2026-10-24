@@ -141,6 +141,10 @@ dependencies {
     implementation(libs.mlkit.text.recognition.japanese)
     implementation(libs.mlkit.translate)
 
+    // Maps for directions and places nearby: MapLibre, an open-source map
+    // library, with free OpenStreetMap tiles from OpenFreeMap (no key).
+    implementation(libs.maplibre.android)
+
     testImplementation(libs.junit)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

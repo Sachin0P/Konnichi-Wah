@@ -88,6 +88,7 @@ fun ItineraryScreen(
     onNewTrip: () -> Unit,
     onCards: () -> Unit,
     onFindFood: (StopDto) -> Unit,
+    onDirections: (StopDto) -> Unit,
     viewModel: ItineraryViewModel = hiltViewModel(),
     languageViewModel: LanguageViewModel = hiltViewModel(),
 ) {
@@ -110,6 +111,7 @@ fun ItineraryScreen(
                 onDelete = viewModel::delete,
                 onAddStop = { addingToDay = it },
                 onFindFood = onFindFood,
+                onDirections = onDirections,
                 header = {
                     TripHeader(
                         title = itinerary.title,
@@ -197,6 +199,7 @@ private fun TripContent(
     onDelete: (Int, Int) -> Unit,
     onAddStop: (Int) -> Unit,
     onFindFood: (StopDto) -> Unit,
+    onDirections: (StopDto) -> Unit,
     header: @Composable () -> Unit,
 ) {
     val lastDay = itinerary.days.lastIndex
@@ -238,6 +241,7 @@ private fun TripContent(
                     onMoveDown = { onMoveDown(dayIndex, stopIndex) },
                     onDelete = { onDelete(dayIndex, stopIndex) },
                     onFindFood = { onFindFood(stop) },
+                    onDirections = { onDirections(stop) },
                 )
             }
         }
@@ -397,6 +401,7 @@ private fun StopItem(
     onMoveDown: () -> Unit,
     onDelete: () -> Unit,
     onFindFood: () -> Unit,
+    onDirections: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -455,7 +460,10 @@ private fun StopItem(
             }
 
             if (expanded) {
-                PillButton("🍛  " + stringResource(R.string.it_find_food), onClick = onFindFood, tone = Tone.GREEN)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PillButton("🍛  " + stringResource(R.string.it_find_food), onClick = onFindFood, tone = Tone.GREEN)
+                    PillButton("🚆  " + stringResource(R.string.dir_from_stop), onClick = onDirections, tone = Tone.ORANGE)
+                }
             }
         }
     }

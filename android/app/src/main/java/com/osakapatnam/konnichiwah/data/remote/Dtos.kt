@@ -216,13 +216,19 @@ data class ChatStopDto(
     @SerialName("time_slot") val timeSlot: String,
 )
 
+// location is where the traveller is now, sent only if they've let the app
+// use it, so "a pharmacy near me" works.
 @Serializable
 data class ChatContextDto(
     val city: String = "",
     @SerialName("day_index") val dayIndex: Int = 0,
     val stops: List<ChatStopDto> = emptyList(),
     val profile: UserProfileDto? = null,
+    val location: GeoPointDto? = null,
 )
+
+@Serializable
+data class GeoPointDto(val lat: Double, val lng: Double)
 
 // language is "en" or "hi": the companion answers in it.
 @Serializable
@@ -323,3 +329,96 @@ data class MenuDto(val lines: List<MenuLineDto>)
 
 @Serializable
 data class MenuEnvelope(val menu: MenuDto)
+
+// Directions (GET /v1/directions): up to three journeys, each a list of walks
+// and rides with everything needed to follow them on the ground.
+
+@Serializable
+data class NamedPointDto(val name: String, val lat: Double, val lng: Double)
+
+// name is English when the data has it, nameJa the Japanese on the station
+// signs, and code the station number on the signs ("JB12").
+@Serializable
+data class JourneyStopDto(
+    val name: String,
+    @SerialName("name_ja") val nameJa: String? = null,
+    val code: String? = null,
+    val lat: Double,
+    val lng: Double,
+)
+
+// mode is walk, train, shinkansen, subway, tram, bus, ferry or other. exit and
+// platform are only set when the map data names them. path is [lat, lng]
+// pairs for the map.
+@Serializable
+data class JourneyLegDto(
+    val mode: String,
+    val line: String? = null,
+    @SerialName("line_ja") val lineJa: String? = null,
+    @SerialName("line_code") val lineCode: String? = null,
+    val color: String? = null,
+    val operator: String? = null,
+    val towards: String? = null,
+    val from: JourneyStopDto,
+    val to: JourneyStopDto,
+    val departs: String,
+    val arrives: String,
+    val minutes: Int,
+    val stops: Int = 0,
+    @SerialName("distance_m") val distanceM: Int = 0,
+    val exit: String? = null,
+    val platform: String? = null,
+    val via: List<String> = emptyList(),
+    val path: List<List<Double>> = emptyList(),
+)
+
+@Serializable
+data class JourneyDto(
+    val minutes: Int,
+    val transfers: Int,
+    @SerialName("walk_minutes") val walkMinutes: Int = 0,
+    val departs: String,
+    val arrives: String,
+    val legs: List<JourneyLegDto>,
+)
+
+@Serializable
+data class DirectionsDto(
+    val from: NamedPointDto,
+    val to: NamedPointDto,
+    val journeys: List<JourneyDto>,
+    val attribution: String = "",
+)
+
+@Serializable
+data class DirectionsEnvelope(val directions: DirectionsDto)
+
+// Places nearby (GET /v1/places): help from our snapshot by kind, or anything
+// else by search.
+
+@Serializable
+data class PlaceSummaryDto(
+    val name: String,
+    @SerialName("name_ja") val nameJa: String? = null,
+    val kind: String,
+    val lat: Double,
+    val lng: Double,
+    @SerialName("distance_m") val distanceM: Int,
+    val address: String? = null,
+    @SerialName("opening_hours") val openingHours: String? = null,
+    val phone: String? = null,
+    val website: String? = null,
+    val emergency: Boolean = false,
+    val wheelchair: String? = null,
+)
+
+@Serializable
+data class PlacesDto(
+    val near: NamedPointDto,
+    val results: List<PlaceSummaryDto>,
+    val source: String = "",
+    val attribution: String = "",
+)
+
+@Serializable
+data class PlacesEnvelope(val places: PlacesDto)
