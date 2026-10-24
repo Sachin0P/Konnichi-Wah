@@ -166,6 +166,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	// The Hindi rules and card meanings are embedded too. Like the cards, a
+	// broken file should stop the server starting.
+	hindi, err := data.LoadHindi(rulebook.Files)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
 	// The planner uses Gemini (for its JSON schema output) with the
 	// catalogue as fallback, or the catalogue alone without a key.
 	var p planner.Planner = planner.Catalogue{}
@@ -209,6 +217,7 @@ func main() {
 			Transit:   transitClient,
 			Places:    models.Places,
 			DietCards: dietCards,
+			Hindi:     hindi,
 			Now:       time.Now,
 			Logger:    logger,
 		}

@@ -81,6 +81,7 @@ type Companion struct {
 	Transit   Transit
 	Places    Places            // restaurants and shops from the OpenStreetMap snapshot
 	DietCards []data.PhraseCard // checked phrase cards from rulebook/phrases.json
+	Hindi     *data.Hindi       // Hindi rules and card meanings; nil means English only
 	Now       func() time.Time  // time.Now, or a fixed time in tests
 	Logger    *slog.Logger      // optional; logs each model and tool call
 }
@@ -94,10 +95,10 @@ func (c Companion) log(msg string, args ...any) {
 // Reply answers the last message in the conversation.
 func (c Companion) Reply(ctx context.Context, req data.ChatRequest) (*data.ChatReply, error) {
 	now := c.Now().In(japan)
-	conv := c.LLM.Start(buildInstructions(req.Context, now), req.Messages, toolDeclarations)
+	conv := c.LLM.Start(buildInstructions(req.Context, req.Language, now), req.Messages, toolDeclarations)
 
 	reply := &data.ChatReply{Phrases: []data.Phrase{}, ToolsUsed: []string{}}
-	t := tools{companion: c, chat: req.Context, now: now, reply: reply}
+	t := tools{companion: c, chat: req.Context, language: req.Language, now: now, reply: reply}
 
 	for range maxToolRounds {
 		text, calls, err := c.next(ctx, conv, true)
@@ -126,7 +127,11 @@ func (c Companion) Reply(ctx context.Context, req data.ChatRequest) (*data.ChatR
 		// answer: reply now instead of spending another (rate-limited) model
 		// call just to say "show this to staff".
 		if onlyPhraseCards(calls) && len(reply.Phrases) > 0 {
-			return finish(reply, cmp.Or(strings.TrimSpace(text), phraseCardReply))
+			fallback := phraseCardReply
+			if req.Language == "hi" {
+				fallback = phraseCardReplyHindi
+			}
+			return finish(reply, cmp.Or(strings.TrimSpace(text), fallback))
 		}
 	}
 
@@ -197,7 +202,10 @@ func (c Companion) next(ctx context.Context, conv Conversation, allowTools bool)
 
 // phraseCardReply is what we say when the model's whole answer is a phrase
 // card and it didn't add any text of its own.
-const phraseCardReply = "Show this card to the staff. Tap it to make the Japanese bigger."
+const (
+	phraseCardReply      = "Show this card to the staff. Tap it to make the Japanese bigger."
+	phraseCardReplyHindi = "यह कार्ड स्टाफ़ को दिखाएँ। जापानी को बड़ा करने के लिए उस पर टैप करें।"
+)
 
 func onlyPhraseCards(calls []ToolCall) bool {
 	for _, call := range calls {
@@ -242,10 +250,13 @@ func trimRepeat(text string) string {
 
 // buildInstructions writes the system prompt, including what we know about
 // the traveller and their day.
-func buildInstructions(c data.ChatContext, now time.Time) string {
+func buildInstructions(c data.ChatContext, language string, now time.Time) string {
 	var b strings.Builder
 
 	b.WriteString(baseInstructions)
+	if language == "hi" {
+		b.WriteString(hindiInstructions)
+	}
 	b.WriteString("\n\nAbout the traveller and today:\n")
 	fmt.Fprintf(&b, "- Time in Japan now: %s.\n", now.Format("Monday 2 January, 15:04"))
 
@@ -306,3 +317,10 @@ Rules you must follow:
 - Food: to find somewhere to eat, call find_food with a place they're near. Recommend only restaurants it returns, best Desi Match first: give the name, how far it is, why it suits them, and its caution if it has one. Respect the diet strictly, and warn that dashi (fish stock) is in miso soup, udon and soba broth and many sauces.
 - Shops: for anime, figure, manga, toy, game, hobby or 100-yen shops, call find_places. Name only shops it returns, with distances, and say to check opening hours. For other kinds of shop or sight, only name well-known places you are sure exist.
 - If you don't know, say so. Never make up prices, opening hours, addresses or routes.`
+
+// hindiInstructions is added for travellers using the app in Hindi. Names
+// stay in English letters because that's how they appear on signs and maps.
+// The tools already return our rulebook, diet cards and Desi Match reasons
+// in Hindi, so the model only has to pass them on.
+const hindiInstructions = `
+- Language: the traveller reads Hindi. Write your whole answer in simple, everyday Hindi in Devanagari script. Keep station, line, place and restaurant names in English letters exactly as the tools give them, and times as numbers (09:04). In show_phrase_card, put the meaning in Hindi in the english field: the app shows it to the traveller under the Japanese.`

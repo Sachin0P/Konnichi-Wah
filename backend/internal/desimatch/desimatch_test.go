@@ -76,3 +76,25 @@ func TestScoreExplainsItself(t *testing.T) {
 		}
 	}
 }
+
+// Every reason and caution needs a Hindi version, or a Hindi-speaking
+// traveller would see a stray English line.
+func TestEveryTextHasHindi(t *testing.T) {
+	for _, s := range allTexts {
+		if hindi[s] == "" {
+			t.Errorf("no Hindi for %q", s)
+		}
+	}
+}
+
+func TestMatchInHindi(t *testing.T) {
+	m := Score(place(map[string]string{"cuisine": "indian"}), data.UserProfile{Diet: "jain"})
+
+	hi := m.In("hi")
+	if hi.Score != m.Score || hi.Reasons[0] != "भारतीय या नेपाली खाना" || !strings.Contains(hi.Caution, "जैन") {
+		t.Errorf("In(hi) = %+v", hi)
+	}
+	if en := m.In("en"); en.Caution != m.Caution {
+		t.Errorf("In(en) changed the caution to %q", en.Caution)
+	}
+}

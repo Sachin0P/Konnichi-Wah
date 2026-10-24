@@ -21,12 +21,13 @@ import (
 // so for now the app sends diet, avoid and spice as query parameters.
 func (app *application) listFoodHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Lat     float64
-		Lng     float64
-		Near    string
-		City    string
-		RadiusM int
-		Profile data.UserProfile
+		Lat      float64
+		Lng      float64
+		Near     string
+		City     string
+		RadiusM  int
+		Profile  data.UserProfile
+		Language string
 	}
 
 	v := validator.New()
@@ -40,6 +41,7 @@ func (app *application) listFoodHandler(w http.ResponseWriter, r *http.Request) 
 	input.Profile.Diet = app.readString(qs, "diet", "non_veg")
 	input.Profile.Avoid = app.readCSV(qs, "avoid", []string{})
 	input.Profile.SpiceLevel = app.readString(qs, "spice", "medium")
+	input.Language = app.readString(qs, "language", "en")
 
 	hasPoint := input.Lat != 0 || input.Lng != 0
 	v.Check(hasPoint || input.Near != "", "near", "must be provided, or lat and lng")
@@ -53,6 +55,7 @@ func (app *application) listFoodHandler(w http.ResponseWriter, r *http.Request) 
 		v.Check(validator.PermittedValue(item, data.AvoidItems...), "avoid", "must be one of: "+strings.Join(data.AvoidItems, ", "))
 	}
 	v.Check(validator.PermittedValue(input.Profile.SpiceLevel, data.SpiceLevels...), "spice", "must be one of: "+strings.Join(data.SpiceLevels, ", "))
+	v.Check(validator.PermittedValue(input.Language, data.Languages...), "language", "must be one of: "+strings.Join(data.Languages, ", "))
 
 	if !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
@@ -95,6 +98,12 @@ func (app *application) listFoodHandler(w http.ResponseWriter, r *http.Request) 
 			app.serverErrorResponse(w, r, err)
 			return
 		}
+	}
+
+	// The reasons and cautions are what the traveller reads, so give them in
+	// their language. Names stay as OpenStreetMap has them.
+	for i := range results {
+		results[i].Match = results[i].Match.In(input.Language)
 	}
 
 	env := envelope{"food": map[string]any{

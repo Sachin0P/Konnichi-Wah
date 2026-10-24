@@ -32,9 +32,12 @@ type ChatContext struct {
 	Profile  *UserProfile `json:"profile"`
 }
 
+// Language is the language the traveller reads ("en" or "hi"); it's optional
+// and defaults to English.
 type ChatRequest struct {
 	Messages []ChatMessage `json:"messages"`
 	Context  ChatContext   `json:"context"`
+	Language string        `json:"language"`
 }
 
 // Phrase is a Japanese phrase card the app can show to staff.
@@ -62,6 +65,10 @@ func ValidateChatRequest(v *validator.Validator, req *ChatRequest) {
 		v.Check(validator.PermittedValue(m.Role, ChatRoles...), key+".role", mustBeOneOf(ChatRoles))
 		v.Check(m.Text != "", key+".text", "must be provided")
 		v.Check(len(m.Text) <= 2000, key+".text", "must not be more than 2000 bytes long")
+	}
+
+	if req.Language != "" {
+		v.Check(validator.PermittedValue(req.Language, Languages...), "language", mustBeOneOf(Languages))
 	}
 
 	// The model replies to the last message, so it must be the traveller's.

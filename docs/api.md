@@ -274,7 +274,9 @@ Answers usually take 1–6 seconds. The backend calls the LLM (Groq, or Gemini a
 - `find_food`: Desi Match restaurant search (the same ranking as `GET /v1/food`).
 - `find_places`: anime and figure, toy and game, hobby and model, and 100-yen shops near a place.
 - `show_diet_card`: the hand-checked cards from `backend/rulebook/phrases.json`, picked from the traveller's saved diet.
-- `show_phrase_card`: other phrases ("Where is the toilet?"), translated by the model and checked to be in Japanese script.
+- `show_phrase_card`: other phrases ("Where is the toilet?"), translated by the model and checked to be in Japanese script. A phrase that states a diet ("I am Jain…", "no onion, please") is refused, and the model is told to use `show_diet_card` instead.
+
+With `"language": "hi"` the companion answers in Hindi, and the tools hand it our own Hindi: the rulebook's Hindi tips (`rulebook/etiquette.hi.json`), each diet card's Hindi meaning (`rulebook/phrases.hi.json`, in the card's `english` field) and Hindi Desi Match reasons. Station, line, place and restaurant names stay in English letters, as they appear on signs.
 
 ### Request
 
@@ -288,12 +290,14 @@ Answers usually take 1–6 seconds. The backend calls the LLM (Groq, or Gemini a
     "day_index": 5,
     "stops": [ { "place_name": "Fushimi Inari Taisha", "place_type": "shrine", "time_slot": "morning" } ],
     "profile": { "...": "the same object as in /v1/plan/suggestions" }
-  }
+  },
+  "language": "en"
 }
 ```
 
 - `messages`: 1–20 messages, each with `role` set to `user` or `assistant` and `text` up to 2000 bytes. The last message must be from the user. Send the reply texts back as `assistant` messages; phrase cards aren't part of the history.
 - `context` and all its fields are optional, but the answers are much better with them. `profile` is what makes `show_diet_card` work.
+- `language`: optional, `en` (the default) or `hi`.
 
 ### Response: 200 OK
 
@@ -337,6 +341,7 @@ GET /v1/food?lat=35.7148&lng=139.7967&diet=halal
 | `diet` | no (default `non_veg`) | One of the [diets](#permitted-values) |
 | `avoid` | no | Comma separated, e.g. `pork,beef` |
 | `spice` | no (default `medium`) | One of the spice levels |
+| `language` | no (default `en`) | `en` or `hi`: the language of each result's `reasons` and `caution` |
 | `radius` | no (default 1000) | Metres, 100–3000 |
 
 The brief has the profile coming from the auth token. There's no auth yet, so the app sends `diet`, `avoid` and `spice` instead.
@@ -394,6 +399,7 @@ These exact strings are the contract. They are defined in `backend/internal/data
 | `kind` | `place`, `activity`, `food` |
 | `severity` | `important`, `helpful` |
 | `time_slot` | `morning`, `lunch`, `afternoon`, `evening`, `dinner` |
+| `language` | `en`, `hi` |
 
 The app should send these as enums. When **reading** `place_type`, treat it as a plain string, so that a new place type added on the backend doesn't crash older app builds.
 

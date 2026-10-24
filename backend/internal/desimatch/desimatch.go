@@ -67,20 +67,20 @@ func Score(p *data.Place, profile data.UserProfile) Match {
 	// What the place is, in the traveller's terms.
 	switch {
 	case veganOnly:
-		add("Vegan-only kitchen")
+		add(reasonVeganOnly)
 	case vegOnly:
-		add("Vegetarian-only kitchen")
+		add(reasonVegetarianOnly)
 	case vegOptions:
-		add("Has vegetarian options")
+		add(reasonVegOptions)
 	}
 	if desi {
-		add("Indian or Nepali food")
+		add(reasonDesi)
 	}
 	if halal {
-		add("Halal")
+		add(reasonHalal)
 	}
 	if curry && !desi {
-		add("Curry (familiar comfort food)")
+		add(reasonCurry)
 	}
 
 	switch profile.Diet {
@@ -96,7 +96,7 @@ func Score(p *data.Place, profile data.UserProfile) Match {
 			m.Score = 3
 		case curry:
 			m.Score = 2
-			m.Caution = "Ask for the vegetarian curry: most Japanese curry sauce contains meat."
+			m.Caution = cautionVegCurry
 		default:
 			m.Score = 1
 		}
@@ -114,7 +114,7 @@ func Score(p *data.Place, profile data.UserProfile) Match {
 		default:
 			m.Score = 1
 		}
-		m.Caution = "Ask for Jain food: no onion, garlic or root vegetables. Show your diet card."
+		m.Caution = cautionJain
 
 	case "halal":
 		switch {
@@ -122,10 +122,10 @@ func Score(p *data.Place, profile data.UserProfile) Match {
 			m.Score = 5
 		case vegOnly:
 			m.Score = 4
-			m.Caution = "Vegetarian, so no meat issues; check that no alcohol (mirin, sake) is used in cooking."
+			m.Caution = cautionHalalVeg
 		case desi:
 			m.Score = 3
-			m.Caution = "Many Indian and Nepali restaurants are halal, but ask before ordering meat."
+			m.Caution = cautionHalalDesi
 		default:
 			m.Score = 1
 		}
@@ -145,22 +145,22 @@ func Score(p *data.Place, profile data.UserProfile) Match {
 	for _, item := range profile.Avoid {
 		switch {
 		case item == "pork" && has(porkCuisines):
-			m.Score, m.Caution = 1, "Mostly pork-based dishes (ramen broth, tonkatsu)."
+			m.Score, m.Caution = 1, cautionPork
 		case item == "beef" && has(beefCuisines):
-			m.Score, m.Caution = 1, "Mostly beef dishes."
+			m.Score, m.Caution = 1, cautionBeef
 		case item == "seafood" && has(seafoodCuisines):
-			m.Score, m.Caution = 1, "Mostly fish and seafood."
+			m.Score, m.Caution = 1, cautionSeafood
 		}
 	}
 
 	// Japanese broths and sauces hide fish stock, even in dishes that look
 	// vegetarian, so warn unless the kitchen is fully vegetarian.
 	if japanese && !vegOnly && m.Caution == "" && slices.Contains([]string{"veg", "jain", "eggetarian"}, profile.Diet) {
-		m.Caution = "Japanese broths and sauces often contain dashi (fish stock): show your diet card."
+		m.Caution = cautionDashi
 	}
 
 	if profile.SpiceLevel == "indian_spicy" && desi {
-		add("Can make it properly spicy")
+		add(reasonSpicy)
 	}
 
 	if len(m.Reasons) == 0 {

@@ -118,6 +118,58 @@ func TestFindFoodRanksForTheTravellersDiet(t *testing.T) {
 	}
 }
 
+// In Hindi, the tools hand the model our own Hindi: the rulebook, the diet
+// card's meaning and the Desi Match reasons. The model doesn't translate them.
+func TestHindiToolResults(t *testing.T) {
+	rules := fakeRules{{ID: "temple-shoes", PlaceTypes: []string{"temple"}, Title: "Remove your shoes", Tip: "Take them off.", Severity: "important"}}
+
+	tests := []struct {
+		name string
+		call turn
+		want string
+	}{
+		{"etiquette", call("get_etiquette", `{"place_type": "temple"}`), "जूते उतारें"},
+		{"diet card", call("show_diet_card", `{}`), "मैं शाकाहारी हूँ"},
+		{"food", call("find_food", `{"near": "Senso-ji"}`), "सिर्फ़ वीगन रसोई"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			llm := &fakeLLM{turns: []turn{tt.call, text("ठीक है।")}}
+			c := newCompanion(t, llm, &fakeTransit{}, rules)
+			c.Places = fakePlaces{}
+
+			req := ask("?")
+			req.Language = "hi"
+			req.Context.Profile = &data.UserProfile{Diet: "veg"}
+
+			reply, err := c.Reply(context.Background(), req)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			got := llm.lastResult()
+			if len(reply.Phrases) > 0 {
+				got += reply.Phrases[0].English
+			}
+			if !strings.Contains(got, tt.want) {
+				t.Errorf("got %s; want it to contain %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInstructionsAskForHindi(t *testing.T) {
+	now := time.Date(2026, 10, 26, 10, 5, 0, 0, japan)
+
+	if got := buildInstructions(data.ChatContext{}, "hi", now); !strings.Contains(got, "Devanagari") {
+		t.Error("Hindi instructions missing")
+	}
+	if got := buildInstructions(data.ChatContext{}, "en", now); strings.Contains(got, "Devanagari") {
+		t.Error("English chat asked for Hindi")
+	}
+}
+
 func TestFindPlacesFiltersByKind(t *testing.T) {
 	llm := &fakeLLM{turns: []turn{call("find_places", `{"kind": "anime_figures", "near": "Akihabara"}`), text("Try Mandarake.")}}
 
@@ -161,11 +213,16 @@ func newCompanion(t *testing.T, llm *fakeLLM, tr *fakeTransit, rules fakeRules) 
 	if err != nil {
 		t.Fatal(err)
 	}
+	hindi, err := data.LoadHindi(rulebook.Files)
+	if err != nil {
+		t.Fatal(err)
+	}
 	return Companion{
 		LLM:       llm,
 		Rules:     rules,
 		Transit:   tr,
 		DietCards: cards,
+		Hindi:     hindi,
 		Now:       func() time.Time { return time.Date(2026, 10, 26, 1, 0, 0, 0, time.UTC) },
 	}
 }
@@ -460,11 +517,32 @@ func TestInstructionsIncludeContext(t *testing.T) {
 		Profile:  &data.UserProfile{Diet: "jain", Avoid: []string{"onion_garlic"}, SpiceLevel: "mild", GroupType: "family_elders", JapaneseLevel: "none"},
 	}
 
-	got := buildInstructions(ctx, time.Date(2026, 10, 26, 10, 5, 0, 0, japan))
+	got := buildInstructions(ctx, "", time.Date(2026, 10, 26, 10, 5, 0, 0, japan))
 
 	for _, want := range []string{"day 3 of their trip, in Kyoto", "morning: Fushimi Inari Taisha (shrine)", "Jain", "family_elders", "10:05"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("instructions missing %q", want)
+		}
+	}
+}
+
+func TestDietStatementsNeedTheCheckedCards(t *testing.T) {
+	tests := []struct {
+		japanese string
+		diet     bool
+	}{
+		{"私はジャイナ教徒です。", true},
+		{"肉、魚、卵は食べられません。", true},
+		{"だしは入っていますか？", true},
+		{"玉ねぎ抜きでお願いします。", true},
+		{"トイレはどこですか？", false},
+		{"牛丼をください。", false},
+		{"ピーナッツアレルギーです。", false},
+	}
+
+	for _, tt := range tests {
+		if got := isDietStatement(tt.japanese); got != tt.diet {
+			t.Errorf("isDietStatement(%q) = %v; want %v", tt.japanese, got, tt.diet)
 		}
 	}
 }

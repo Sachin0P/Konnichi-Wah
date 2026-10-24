@@ -106,6 +106,7 @@ const maxPhrases = 3
 type tools struct {
 	companion Companion
 	chat      data.ChatContext
+	language  string // "hi" for Hindi; anything else means English
 	now       time.Time
 	reply     *data.ChatReply
 }
@@ -164,7 +165,8 @@ func (t tools) etiquette(args json.RawMessage) (any, error) {
 			break
 		}
 		if r.AppliesIn(city) {
-			out = append(out, rule{r.Title, r.Tip, r.Severity})
+			title, tip := t.companion.Hindi.Rule(r, t.language)
+			out = append(out, rule{title, tip, r.Severity})
 		}
 	}
 
@@ -322,13 +324,14 @@ func (t tools) findFood(ctx context.Context, args json.RawMessage) (any, error) 
 	}
 	out := []restaurant{}
 	for _, r := range ranked {
+		m := r.Match.In(t.language)
 		out = append(out, restaurant{
 			Name:      r.DisplayName(),
 			Cuisine:   r.Tags["cuisine"],
 			DistanceM: r.DistanceM,
-			DesiMatch: r.Match.Score,
-			Reasons:   r.Match.Reasons,
-			Caution:   r.Match.Caution,
+			DesiMatch: m.Score,
+			Reasons:   m.Reasons,
+			Caution:   m.Caution,
 		})
 	}
 
@@ -458,8 +461,11 @@ func (t tools) dietCard(args json.RawMessage) (any, error) {
 		if len(t.reply.Phrases) == maxPhrases {
 			break
 		}
-		t.reply.Phrases = append(t.reply.Phrases, c.Phrase())
-		shown = append(shown, c.English)
+		// The Japanese is the same in every language; only the meaning
+		// shown to the traveller changes.
+		phrase := t.companion.Hindi.Card(c, t.language)
+		t.reply.Phrases = append(t.reply.Phrases, phrase)
+		shown = append(shown, phrase.English)
 	}
 
 	return map[string]any{"status": "shown", "cards": shown}, nil
@@ -487,6 +493,8 @@ func (t tools) phraseCard(args json.RawMessage) (any, error) {
 		return nil, errors.New("phrase is too long for a card")
 	case !hasJapaneseScript(in.Japanese):
 		return nil, errors.New("japanese must be written in Japanese script")
+	case isDietStatement(in.Japanese):
+		return nil, errors.New("this is a diet statement: call show_diet_card instead, which shows the traveller's checked cards")
 	case len(t.reply.Phrases) >= maxPhrases:
 		return nil, errors.New("too many phrase cards in one reply")
 	}
@@ -494,6 +502,26 @@ func (t tools) phraseCard(args json.RawMessage) (any, error) {
 	t.reply.Phrases = append(t.reply.Phrases, in)
 
 	return map[string]string{"status": "shown"}, nil
+}
+
+// The prompt tells the model to use show_diet_card for diets, but in testing
+// it still translated "I am Jain, I can't eat..." itself about half the time.
+// Diet cards must be exact, so we enforce the rule here. A phrase is a diet
+// statement if it names a diet, or names something our cards cover together
+// with "can't eat", "without" or "does it contain". Other phrases about food
+// still work: "牛丼をください" (a beef bowl, please) and allergies our cards
+// don't cover ("ピーナッツアレルギーです").
+var (
+	dietNames  = []string{"ベジタリアン", "ヴィーガン", "ビーガン", "菜食", "ハラール", "ジャイナ", "ムスリム", "イスラム"}
+	dietFoods  = []string{"肉", "魚", "卵", "玉子", "豚", "牛", "鶏", "魚介", "海鮮", "だし", "出汁", "玉ねぎ", "玉葱", "にんにく", "ニンニク", "ねぎ", "ネギ", "根菜", "アルコール", "お酒", "みりん"}
+	dietLimits = []string{"食べられません", "食べません", "食べれません", "飲めません", "飲みません", "抜き", "入れないで", "使わないで", "入っていますか", "入っていません", "使っていますか", "ダメ", "だめ", "禁止", "できません"}
+)
+
+func isDietStatement(japanese string) bool {
+	has := func(words []string) bool {
+		return slices.ContainsFunc(words, func(w string) bool { return strings.Contains(japanese, w) })
+	}
+	return has(dietNames) || (has(dietFoods) && has(dietLimits))
 }
 
 // hasJapaneseScript reports whether s contains hiragana, katakana or kanji.
