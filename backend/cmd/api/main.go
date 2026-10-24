@@ -19,6 +19,7 @@ import (
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/photon"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/planner"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/websearch"
 	"github.com/Sachin0P/Konnichi-Wah/backend/osmdata"
 	"github.com/Sachin0P/Konnichi-Wah/backend/rulebook"
 
@@ -110,6 +111,7 @@ type application struct {
 	companion *companion.Companion
 	menu      *menu.Translator
 	stations  []*data.Place
+	websearch *websearch.Client
 }
 
 func main() {
@@ -219,6 +221,7 @@ func main() {
 	// Pick the LLMs. Whichever we use, the planner falls back to the
 	// catalogue, the companion is off without one (the chat endpoint returns
 	// 503), and without one the app translates menus on the phone.
+	webSearchClient := websearch.NewClient(8 * time.Second)
 	var p planner.Planner = planner.Catalogue{}
 	var chatLLM companion.LLM
 	var menuTranslator *menu.Translator
@@ -231,7 +234,7 @@ func main() {
 		local := groq.New(cfg.llm.url, "", []string{cfg.llm.model}, cfg.llm.timeout)
 		local.Reasoning = "none"
 		local.NoJSONMode = true
-		p = planner.Fallback{Primary: planner.LLM{Client: local}, Backup: planner.Catalogue{}, Logger: logger}
+		p = planner.Fallback{Primary: planner.LLM{Client: local, Searcher: webSearchClient}, Backup: planner.Catalogue{}, Logger: logger}
 		chatLLM = companion.GroqLLM{Client: local}
 		menuTranslator = &menu.Translator{LLM: local}
 		logger.Info("using local llm", "url", cfg.llm.url, "model", cfg.llm.model)
@@ -241,7 +244,7 @@ func main() {
 		var geminiClient *gemini.Client
 		if cfg.gemini.apiKey != "" {
 			geminiClient = gemini.New(gemini.DefaultBaseURL, cfg.gemini.apiKey, cfg.gemini.models, cfg.gemini.timeout)
-			p = planner.Fallback{Primary: planner.LLM{Client: geminiClient}, Backup: planner.Catalogue{}, Logger: logger}
+			p = planner.Fallback{Primary: planner.LLM{Client: geminiClient, Searcher: webSearchClient}, Backup: planner.Catalogue{}, Logger: logger}
 			logger.Info("using gemini planner", "models", strings.Join(cfg.gemini.models, ","))
 		} else {
 			logger.Warn("no gemini api key provided, using catalogue planner only")
@@ -292,6 +295,7 @@ func main() {
 			Transit:   transitClient,
 			Places:    models.Places,
 			Search:    photonClient,
+			WebSearch: webSearchClient,
 			DietCards: dietCards,
 			Hindi:     hindi,
 			Now:       time.Now,
@@ -305,6 +309,7 @@ func main() {
 		transit:   transitClient,
 		photon:    photonClient,
 		stations:  stations,
+		websearch: webSearchClient,
 		models:    models,
 		planner:   p,
 		companion: c,

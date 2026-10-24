@@ -53,6 +53,7 @@ import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.osakapatnam.konnichiwah.R
+import com.osakapatnam.konnichiwah.data.remote.ApiError
 import com.osakapatnam.konnichiwah.data.remote.JourneyDto
 import com.osakapatnam.konnichiwah.data.remote.JourneyLegDto
 import com.osakapatnam.konnichiwah.data.remote.JourneyStopDto
@@ -95,7 +96,11 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
 
     val journeys = state.result?.journeys.orEmpty()
     val journey = journeys.getOrNull(state.selected)
-    val problem = state.apiError?.userMessage() ?: state.message?.let { stringResource(it) }
+    val err = state.apiError
+    val problem = when {
+        err is ApiError.Http && err.status == 422 -> stringResource(R.string.dir_place_not_found)
+        else -> err?.userMessage() ?: state.message?.let { stringResource(it) }
+    }
 
     var activeGuideSteps by remember { mutableStateOf<List<GuideStep>?>(null) }
     var guideDestName by remember { mutableStateOf("") }

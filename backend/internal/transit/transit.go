@@ -196,11 +196,43 @@ func (c *Client) geocode(ctx context.Context, name string, near *LatLng, exact b
 // their own centres.
 const maxDistanceKm = 40
 
+func stripMacrons(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch r {
+		case 'ō', 'ó', 'ò', 'ö', 'ô':
+			b.WriteRune('o')
+		case 'Ō', 'Ó', 'Ò', 'Ö', 'Ô':
+			b.WriteRune('O')
+		case 'ū', 'ú', 'ù', 'ü', 'û':
+			b.WriteRune('u')
+		case 'Ū', 'Ú', 'Ù', 'Ü', 'Û':
+			b.WriteRune('U')
+		case 'ā', 'á', 'à', 'ä', 'â':
+			b.WriteRune('a')
+		case 'Ā', 'Á', 'À', 'Ä', 'Â':
+			b.WriteRune('A')
+		case 'ē', 'é', 'è', 'ë', 'ê':
+			b.WriteRune('e')
+		case 'Ē', 'É', 'È', 'Ë', 'Ê':
+			b.WriteRune('E')
+		case 'ī', 'í', 'ì', 'ï', 'î':
+			b.WriteRune('i')
+		case 'Ī', 'Í', 'Ì', 'Ï', 'Î':
+			b.WriteRune('I')
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
 // search runs one geocoding query and returns the matches in Japan (and near
 // the city, if given), in the search engine's order. A name ending in
 // "station" (or 駅) is searched as a station stop without the suffix, so
 // "Shinjuku Station" doesn't match Shinjuku Fire Station.
 func (c *Client) search(ctx context.Context, name string, near *LatLng) ([]Place, error) {
+	name = stripMacrons(name)
 	query, station := stripStation(name)
 
 	params := url.Values{"text": {query}}
@@ -255,7 +287,7 @@ func nameVariants(name string) []string {
 		}
 	}
 
-	for _, sep := range []string{",", " and ", " & ", "(", "（"} {
+	for _, sep := range []string{",", " and ", " & ", "(", "（", " - ", " – "} {
 		if i := strings.Index(name, sep); i > 0 {
 			add(name[:i])
 		}
@@ -263,7 +295,7 @@ func nameVariants(name string) []string {
 
 	for _, v := range slices.Clone(variants) {
 		lower := strings.ToLower(v)
-		for _, suffix := range []string{" temple", " shrine"} {
+		for _, suffix := range []string{" temple", " shrine", " electric town", " station"} {
 			if strings.HasSuffix(lower, suffix) {
 				add(v[:len(v)-len(suffix)])
 			}

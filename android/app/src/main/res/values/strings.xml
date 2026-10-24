@@ -218,6 +218,7 @@
     <string name="source_diet_card">Checked diet card</string>
     <string name="source_food">Desi Match from OpenStreetMap</string>
     <string name="source_shops">Shops from OpenStreetMap</string>
+    <string name="source_web_search">Live web search</string>
     <string name="chat_placeholder">Ask about trains, food, manners…</string>
     <string name="chat_send">Send</string>
 
@@ -306,6 +307,7 @@
     <string name="dir_outside_japan">Your current location is outside Japan. Please type a starting station in Japan (e.g. Shinjuku or Tokyo Station).</string>
     <string name="dir_no_fix">Couldn\'t get your location. Go outside or near a window, or type a starting point.</string>
     <string name="dir_no_routes">No public transport route found. Try a nearby station as the destination, or ask station staff or take a taxi.</string>
+    <string name="dir_place_not_found">Could not locate this place or station. Try typing a station name like Tokyo or Akihabara.</string>
     <plurals name="dir_changes">
         <item quantity="one">%d change</item>
         <item quantity="other">%d changes</item>

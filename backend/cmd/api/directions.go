@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/validator"
 )
@@ -92,6 +93,36 @@ func (app *application) listDirectionsHandler(w http.ResponseWriter, r *http.Req
 
 		found, err := app.transit.Geocode(ctx, e.name, transit.CityCentre(input.City))
 		if err != nil {
+			var fallbackLat, fallbackLng float64
+			var fallbackFound bool
+
+			cityCentre := transit.CityCentre(input.City)
+			if cityCentre == nil {
+				cityCentre = &transit.LatLng{Lat: 35.681, Lng: 139.767}
+			}
+
+			// Fallback 1: Local station snapshot
+			if stationMatches := data.SuggestStations(app.stations, e.name, cityCentre.Lat, cityCentre.Lng, 1); len(stationMatches) > 0 {
+				fallbackLat = stationMatches[0].Lat
+				fallbackLng = stationMatches[0].Lng
+				fallbackFound = true
+			}
+
+			// Fallback 2: Photon geocoding
+			if !fallbackFound && app.photon != nil {
+				if photonMatches, pErr := app.photon.Suggest(ctx, e.name, cityCentre.Lat, cityCentre.Lng, 1); pErr == nil && len(photonMatches) > 0 {
+					fallbackLat = photonMatches[0].Lat
+					fallbackLng = photonMatches[0].Lng
+					fallbackFound = true
+				}
+			}
+
+			if fallbackFound {
+				e.place = transit.LatLng{Lat: fallbackLat, Lng: fallbackLng}
+				e.label = e.name
+				continue
+			}
+
 			switch {
 			case errors.Is(err, transit.ErrNotFound):
 				v.AddError(e.key, "could not find this place; try a nearby station or landmark")

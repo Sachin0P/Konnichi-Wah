@@ -210,6 +210,7 @@
     <string name="source_diet_card">जाँचा हुआ डाइट कार्ड</string>
     <string name="source_food">OpenStreetMap से Desi Match</string>
     <string name="source_shops">OpenStreetMap से दुकानें</string>
+    <string name="source_web_search">लाइव वेब खोज</string>
     <string name="chat_placeholder">ट्रेन, खाना, तौर-तरीक़ों के बारे में पूछें…</string>
     <string name="chat_send">भेजें</string>
 
@@ -293,6 +294,7 @@
     <string name="dir_outside_japan">आपका वर्तमान स्थान जापान से बाहर है। कृपया जापान का कोई स्टेशन लिखें (जैसे Shinjuku या Tokyo Station)।</string>
     <string name="dir_no_fix">आपकी लोकेशन नहीं मिल पाई। बाहर या खिड़की के पास जाएँ, या शुरुआती जगह लिखें।</string>
     <string name="dir_no_routes">कोई सार्वजनिक परिवहन रास्ता नहीं मिला। मंज़िल के पास का कोई स्टेशन आज़माएँ, या स्टेशन स्टाफ़ से पूछें या टैक्सी लें।</string>
+    <string name="dir_place_not_found">यह जगह या स्टेशन नहीं मिला। कृपया पास का कोई स्टेशन जैसे Tokyo या Akihabara लिखकर देखें।</string>
     <plurals name="dir_changes">
         <item quantity="one">%d बार बदलें</item>
         <item quantity="other">%d बार बदलें</item>

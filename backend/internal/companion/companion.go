@@ -16,6 +16,7 @@ import (
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/groq"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/photon"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/websearch"
 )
 
 // maxToolRounds limits how many times the model can call tools before it must
@@ -77,6 +78,11 @@ type Search interface {
 	Search(ctx context.Context, query string, lat, lng float64, limit int) ([]photon.Place, error)
 }
 
+// WebSearch is live web search to discover places, bars, events, and reviews.
+type WebSearch interface {
+	Search(ctx context.Context, query string, maxResults int) ([]websearch.Result, error)
+}
+
 // Companion answers a traveller's questions during the trip. It runs the
 // function-calling loop: the model decides which tools to call, we run them
 // against our own data and APIs, and the model writes the answer from the
@@ -88,6 +94,7 @@ type Companion struct {
 	Transit   Transit
 	Places    Places            // restaurants, shops and places to get help, from the OpenStreetMap snapshot
 	Search    Search            // optional; live search for anything else
+	WebSearch WebSearch         // optional; live web search
 	DietCards []data.PhraseCard // checked phrase cards from rulebook/phrases.json
 	Hindi     *data.Hindi       // Hindi rules and card meanings; nil means English only
 	Now       func() time.Time  // time.Now, or a fixed time in tests
@@ -329,6 +336,7 @@ Rules you must follow:
 - Food: to find somewhere to eat, call find_food with a place they're near. Recommend only restaurants it returns, best Desi Match first: give the name, how far it is, why it suits them, and its caution if it has one. Respect the diet strictly, and warn that dashi (fish stock) is in miso soup, udon and soba broth and many sauces.
 - Shops: for anime, figure, manga, toy, game, hobby or 100-yen shops, call find_places. Name only shops it returns, with distances, and say to check opening hours.
 - Help and everyday places: for a hospital, clinic, pharmacy or drugstore, police box (koban), ATM, toilet or convenience store, call find_nearby with that kind; for anything else (a supermarket, a laundromat, a shop by name) call find_nearby with a query. Name only places it returns, with distances, and opening hours and phone numbers when given. In an emergency, first tell them to call 119 for an ambulance or fire, or 110 for the police. For other sights, only name well-known places you are sure exist.
+- Live web search: for questions about trending spots, events, bars/clubs/nightlife, recommendations matching specific hobbies or latest travel updates, call search_web. Use its results to give fresh, accurate, real-world recommendations and details.
 - Where they are: if they say "near me" or "from here" and the context below gives their location, leave near (or from) empty and the tools use it. If it doesn't, ask where they are.
 - If you don't know, say so. Never make up prices, opening hours, addresses or routes.`
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -108,6 +109,17 @@ var toolDeclarations = []Tool{
 			"required": []string{"english", "japanese", "romaji"},
 		},
 	},
+	{
+		Name:        "search_web",
+		Description: "Search the live web for the latest information, best locations, trending spots, nightlife/bars, events, or places in Japan according to traveler preferences.",
+		Parameters: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"query": map[string]any{"type": "string", "description": "The search query in English, e.g. 'best craft beer bars in Shibuya' or 'retro game shops Akihabara'."},
+			},
+			"required": []string{"query"},
+		},
+	},
 }
 
 // maxPhrases caps the cards in one reply, so a confused model can't flood it.
@@ -143,6 +155,8 @@ func (t tools) run(ctx context.Context, call ToolCall) any {
 		result, err = t.dietCard(call.Arguments)
 	case "show_phrase_card":
 		result, err = t.phraseCard(call.Arguments)
+	case "search_web":
+		result, err = t.searchWeb(ctx, call.Arguments)
 	default:
 		err = errors.New("unknown tool")
 	}
@@ -653,4 +667,42 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func (t tools) searchWeb(ctx context.Context, args json.RawMessage) (any, error) {
+	var in struct {
+		Query string `json:"query"`
+	}
+	if err := json.Unmarshal(args, &in); err != nil || strings.TrimSpace(in.Query) == "" {
+		return nil, errors.New("query is required")
+	}
+
+	if t.companion.WebSearch == nil {
+		return nil, errors.New("web search is not available")
+	}
+
+	results, err := t.companion.WebSearch.Search(ctx, in.Query, 5)
+	if err != nil {
+		t.companion.log("web search failed", "query", in.Query, "error", err)
+		return nil, fmt.Errorf("web search failed: %w", err)
+	}
+
+	type webResult struct {
+		Title   string `json:"title"`
+		Snippet string `json:"snippet"`
+		URL     string `json:"url"`
+	}
+	out := make([]webResult, 0, len(results))
+	for _, r := range results {
+		out = append(out, webResult{
+			Title:   r.Title,
+			Snippet: r.Snippet,
+			URL:     r.URL,
+		})
+	}
+
+	return map[string]any{
+		"query":   in.Query,
+		"results": out,
+	}, nil
 }

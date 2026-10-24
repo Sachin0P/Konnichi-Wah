@@ -12,6 +12,7 @@ import (
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/validator"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/websearch"
 )
 
 // ErrInvalidOutput is returned when the LLM's reply doesn't pass our checks.
@@ -26,7 +27,8 @@ type Generator interface {
 
 // LLM is a Planner that asks an LLM for suggestions.
 type LLM struct {
-	Client Generator
+	Client   Generator
+	Searcher websearch.Searcher
 }
 
 func (g LLM) Suggest(ctx context.Context, req data.TripRequest) (*data.Plan, error) {
@@ -50,8 +52,40 @@ func (g LLM) Suggest(ctx context.Context, req data.TripRequest) (*data.Plan, err
 		}
 	}
 
-	input := fmt.Sprintf("%s%sTrip length: %d days\nTravel month: %s\nPace: %s\nTraveller profile (JSON):\n%s",
-		notesHeader, alcoholNote, req.TripDays, time.Month(req.TravelMonth), req.Profile.Pace, profile)
+	var webFindings strings.Builder
+	if g.Searcher != nil {
+		queries := make([]string, 0, 2)
+		if notes != "" {
+			queries = append(queries, fmt.Sprintf("%s Japan travel best locations", notes))
+		}
+		if len(req.Profile.Interests) > 0 {
+			interestsStr := strings.Join(req.Profile.Interests, " ")
+			queries = append(queries, fmt.Sprintf("best places in Tokyo Kyoto Osaka for %s", interestsStr))
+		} else if req.Profile.DrinksAlcohol != nil && *req.Profile.DrinksAlcohol {
+			queries = append(queries, "best lively izakaya craft beer bar nightlife Tokyo Osaka")
+		}
+
+		searchCtx, cancelSearch := context.WithTimeout(ctx, 4*time.Second)
+		defer cancelSearch()
+
+		var allResults []websearch.Result
+		for _, q := range queries {
+			if res, err := g.Searcher.Search(searchCtx, q, 3); err == nil && len(res) > 0 {
+				allResults = append(allResults, res...)
+			}
+		}
+
+		if len(allResults) > 0 {
+			webFindings.WriteString("LIVE WEB SEARCH FINDINGS (REAL-TIME TRAVEL GROUNDING):\n")
+			for _, r := range allResults {
+				webFindings.WriteString(fmt.Sprintf("- %s: %s (Source: %s)\n", r.Title, r.Snippet, r.URL))
+			}
+			webFindings.WriteString("INSTRUCTION: Use these fresh web search findings to inspire your recommendations and personalize the locations according to the user's preferences!\n\n")
+		}
+	}
+
+	input := fmt.Sprintf("%s%s%sTrip length: %d days\nTravel month: %s\nPace: %s\nTraveller profile (JSON):\n%s",
+		notesHeader, alcoholNote, webFindings.String(), req.TripDays, time.Month(req.TravelMonth), req.Profile.Pace, profile)
 
 	js, err := g.Client.GenerateJSON(ctx, plannerInstructions, input, planSchema)
 	if err != nil {

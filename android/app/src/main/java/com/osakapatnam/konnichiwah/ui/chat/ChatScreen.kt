@@ -190,6 +190,7 @@ private fun sourceLabel(toolsUsed: List<String>): String? {
             "show_diet_card" -> R.string.source_diet_card
             "find_food" -> R.string.source_food
             "find_places" -> R.string.source_shops
+            "search_web" -> R.string.source_web_search
             else -> null
         }
     }
