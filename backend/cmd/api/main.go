@@ -156,7 +156,10 @@ func main() {
 
 	flag.StringVar(&cfg.llm.provider, "llm", "cloud", "Where the AI runs (cloud|local)")
 	flag.StringVar(&cfg.llm.url, "local-llm-url", "http://localhost:11434/v1/chat/completions", "Local LLM chat completions URL (Ollama)")
-	flag.StringVar(&cfg.llm.model, "local-llm-model", "qwen3.5:9b", "Local LLM model")
+	// gemma4:12b beat qwen3.5:9b in our tests: Qwen sometimes said it was
+	// showing a diet card without calling the tool, and took twice as long
+	// to plan a trip.
+	flag.StringVar(&cfg.llm.model, "local-llm-model", "gemma4:12b", "Local LLM model")
 	flag.DurationVar(&cfg.llm.timeout, "local-llm-timeout", 2*time.Minute, "Local LLM request timeout")
 
 	displayVersion := flag.Bool("version", false, "Display version and exit")
@@ -224,6 +227,7 @@ func main() {
 		// at these tasks.
 		local := groq.New(cfg.llm.url, "", []string{cfg.llm.model}, cfg.llm.timeout)
 		local.Reasoning = "none"
+		local.NoJSONMode = true
 		p = planner.Fallback{Primary: planner.LLM{Client: local}, Backup: planner.Catalogue{}, Logger: logger}
 		chatLLM = companion.GroqLLM{Client: local}
 		menuTranslator = &menu.Translator{LLM: local}

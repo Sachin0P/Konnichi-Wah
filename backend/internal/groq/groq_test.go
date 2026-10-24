@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 )
@@ -149,5 +150,35 @@ func TestGenerateJSONSendsTheSchema(t *testing.T) {
 	out, err := New(ts.URL, "", []string{"m"}, 5*time.Second).GenerateJSON(context.Background(), "plan", "a trip", map[string]any{"type": "object"})
 	if err != nil || string(out) != `{"cities": []}` {
 		t.Errorf("got %s, %v", out, err)
+	}
+}
+
+func TestNoJSONMode(t *testing.T) {
+	var body map[string]any
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&body)
+		// A reply wrapped in a ```json fence, as local models often send.
+		reply, _ := json.Marshal(map[string]any{"choices": []any{map[string]any{"message": map[string]any{"role": "assistant", "content": "```json\n{\"ok\": true}\n```"}}}})
+		w.Write(reply)
+	}))
+	defer ts.Close()
+
+	c := New(ts.URL, "", []string{"qwen3.5:9b"}, 5*time.Second)
+	c.NoJSONMode = true
+
+	got, err := c.JSON(context.Background(), []Message{{Role: "user", Content: "hi"}}, 100)
+	if err != nil || got != `{"ok": true}` {
+		t.Errorf("got %q, %v; want the JSON without its fence", got, err)
+	}
+	if _, ok := body["response_format"]; ok {
+		t.Error("response_format sent in NoJSONMode")
+	}
+
+	if _, err := c.GenerateJSON(context.Background(), "Plan a trip.", "7 days", map[string]any{"type": "object"}); err != nil {
+		t.Fatal(err)
+	}
+	system := body["messages"].([]any)[0].(map[string]any)["content"].(string)
+	if !strings.Contains(system, "JSON schema") || body["response_format"] != nil {
+		t.Errorf("schema not in the prompt: %q", system)
 	}
 }

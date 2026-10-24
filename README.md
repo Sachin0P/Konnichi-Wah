@@ -133,9 +133,11 @@ make run/api port=4001         # start the API (default port is 4000)
 ```sh
 brew install ollama
 ollama serve &                 # leave it running
-ollama pull qwen3.5:9b         # about 7.6 GB; fits a 16 GB Mac
-go run ./cmd/api -port=4001 -db-dsn="$KONNICHIWAH_DB_DSN" -llm=local -local-llm-model=qwen3.5:9b
+ollama pull gemma4:12b         # about 7.7 GB; fits a 16 GB Mac
+go run ./cmd/api -port=4001 -db-dsn="$KONNICHIWAH_DB_DSN" -llm=local
 ```
+
+`-llm=local` uses `gemma4:12b` unless you pass `-local-llm-model`. In our tests it used the tools correctly (diet cards, rulebook) and planned a 5-day trip in about 25 seconds; `qwen3.5:9b` was faster at menus but sometimes skipped the tools. Answers take 5–10 seconds, against 1–3 from Groq.
 
 `-llm=cloud` (the default) uses Gemini and Groq as before.
 

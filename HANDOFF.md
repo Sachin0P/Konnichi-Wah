@@ -16,7 +16,7 @@ All eight milestones in `CLAUDE.md` are built, plus several extras. Everything b
 | Reminders | Trip dates, plus a 7 pm Japan-time reminder the evening before each day (WorkManager). |
 | Menu reader | Camera or gallery photo, ML Kit on-device text recognition, translations drawn over the photo. Warnings come from our Japanese word list. AI translation through `POST /v1/menu/translate`, falling back to ML Kit on the phone. |
 | Hindi | In-app English/हिन्दी switch. Hindi for all screens, the 78 tips, diet card meanings, chat replies and Desi Match reasons. |
-| Local AI option | `-llm=local` runs the planner, chat and menu translation on Ollama on the Mac. Ollama is installed; `qwen3.5:9b` and `gemma4:12b` are downloaded. |
+| Local AI option | `-llm=local` runs the planner, chat and menu translation on Ollama on the Mac, with no keys or quotas. Default model `gemma4:12b`; `qwen3.5:9b` is also downloaded. Tested: Gemma used the tools correctly and planned a 5-day trip in 24 s; Qwen skipped the tools. |
 | Frontend redesign | By Palak Mahajan: Home screen, tab bar, new theme and shared components (`ui/components/Kit.kt`). |
 | **Directions** | `GET /v1/directions`: Transitous journeys with the walk to the station, the exit to use (e.g. "Exit A1"), line colours and codes (JB12), stops and the path of each leg. App: **Get there** screen with a MapLibre map (free OpenFreeMap tiles), opened from Home's "Find my train" and from each stop. Supports "From my location". |
 | **Help nearby** | `GET /v1/places`: hospitals, clinics, pharmacies, police boxes, ATMs, toilets and convenience stores from a snapshot of 30,436 places (`backend/osmdata/help.json`), plus live Photon search for anything else (supermarket, laundromat, a shop by name). App: **Help nearby** screen with the 119/110 emergency numbers, a map, Call and Directions buttons. The chat has a matching `find_nearby` tool and receives the traveller's location when permission is granted. |
@@ -52,15 +52,7 @@ Commit and push these first.
      adb shell cmd location providers set-test-provider-location $p --location 35.6852,139.7100
    done
    ```
-4. **Compare the local models** (Qwen 3.5 9B and Gemma 4 12B). Start a second backend with `-port=4002 -llm=local -local-llm-model=<model>` and run the same tasks on each:
-   - diet cards for a Jain traveller
-   - Kyoto Station → Fushimi Inari by train
-   - a temple etiquette question in Hindi
-   - the misread vertical menu lines (響油ラーメン, 海老天原ら, 親子井)
-   - a 7-day plan
-   - reading a handwritten menu photo
-
-   Note the timings and quality, then pick one or stay on the cloud. Close Android Studio first; memory is tight on 16 GB.
+4. **Local models.** Compared on menus, diet cards, Hindi etiquette and planning; Gemma 4 12B won and is the default. Still untested on local: train routes, food and help searches in the chat. Close Android Studio while using it; memory is tight on 16 GB.
 5. **Handwritten menus.** ML Kit can't read brush-written menus. The fix would be sending the photo itself to a vision model, for example a local Gemma 4 or Qwen 3.5, which both read images. Not built.
 6. **Content review by native speakers:**
    - all the Hindi: `res/values-hi/strings.xml`, `backend/rulebook/*.hi.json`, the Desi Match reasons
@@ -82,4 +74,4 @@ Commit and push these first.
 - **Phone or emulator:** run `adb reverse tcp:4001 tcp:4001` after every reconnect; the app calls `http://localhost:4001/`.
 - **Android build:** `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradlew testDebugUnitTest assembleDebug`. The first build after an edit sometimes fails within a second; run it again.
 - **OpenStreetMap data:** `go run ./cmd/osmfetch -set=food|help|stations`. The public Overpass servers are slow and often fail on the first round; the tool retries and keeps old data for any city it can't fetch.
-- **Local AI:** `ollama serve`, then start the backend with `-llm=local -local-llm-model=qwen3.5:9b` (or `gemma4:12b`).
+- **Local AI:** start `ollama serve` (Homebrew installed it; it isn't set to start at login), then add `-llm=local` to the backend command and leave out the API keys. Ollama on a Mac can't force JSON replies, so in local mode the backend asks for JSON in the prompt and checks the reply as usual (`NoJSONMode` in `internal/groq`).

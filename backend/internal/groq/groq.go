@@ -91,6 +91,13 @@ type Client struct {
 	// faster). If empty, only the gpt-oss models get "low".
 	Reasoning string
 
+	// NoJSONMode is for servers that can't constrain replies to JSON: Ollama
+	// on a Mac answers "501 structured output is unavailable". JSON and
+	// GenerateJSON then ask for JSON in the prompt instead (with the schema
+	// written out) and strip any ```json fence from the reply. Callers check
+	// the result either way.
+	NoJSONMode bool
+
 	mu        sync.Mutex
 	exhausted map[string]time.Time
 }
@@ -149,14 +156,29 @@ func (c *Client) JSON(ctx context.Context, messages []Message, maxTokens int) (s
 		"messages":              messages,
 		"max_completion_tokens": maxTokens,
 		"temperature":           0.2,
-		"response_format":       map[string]string{"type": "json_object"},
+	}
+	if !c.NoJSONMode {
+		reqBody["response_format"] = map[string]string{"type": "json_object"}
 	}
 
 	msg, err := c.send(ctx, reqBody)
 	if err != nil {
 		return "", err
 	}
-	return msg.Content, nil
+	return stripFence(msg.Content), nil
+}
+
+// stripFence removes a ```json ... ``` fence around a reply, which models
+// often add when nothing forces plain JSON.
+func stripFence(s string) string {
+	s = strings.TrimSpace(s)
+	if !strings.HasPrefix(s, "```") {
+		return s
+	}
+	s = strings.TrimPrefix(s, "```")
+	s = strings.TrimPrefix(s, "json")
+	s = strings.TrimSuffix(strings.TrimSpace(s), "```")
+	return strings.TrimSpace(s)
 }
 
 // GenerateJSON asks for a reply that follows a JSON schema, for the trip
@@ -165,24 +187,32 @@ func (c *Client) JSON(ctx context.Context, messages []Message, maxTokens int) (s
 // the schema fully.
 func (c *Client) GenerateJSON(ctx context.Context, instructions, input string, schema any) ([]byte, error) {
 	reqBody := map[string]any{
-		"messages": []Message{
-			{Role: "system", Content: instructions},
-			{Role: "user", Content: input},
-		},
 		// A plan of up to 25 suggestions, each with a sentence of reasons.
 		"max_completion_tokens": 6000,
 		"temperature":           0.4,
-		"response_format": map[string]any{
+	}
+	if c.NoJSONMode {
+		js, err := json.Marshal(schema)
+		if err != nil {
+			return nil, err
+		}
+		instructions += "\n\nReply with only a JSON object (no other text) that follows this JSON schema:\n" + string(js)
+	} else {
+		reqBody["response_format"] = map[string]any{
 			"type":        "json_schema",
 			"json_schema": map[string]any{"name": "plan", "schema": schema},
-		},
+		}
+	}
+	reqBody["messages"] = []Message{
+		{Role: "system", Content: instructions},
+		{Role: "user", Content: input},
 	}
 
 	msg, err := c.send(ctx, reqBody)
 	if err != nil {
 		return nil, err
 	}
-	return []byte(msg.Content), nil
+	return []byte(stripFence(msg.Content)), nil
 }
 
 // send tries each model that still has quota, best first.
