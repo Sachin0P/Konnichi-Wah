@@ -19,6 +19,7 @@ var (
 type Models struct {
 	EtiquetteRules EtiquetteRuleModel
 	Itineraries    ItineraryModel
+	Places         PlaceModel
 }
 
 // For ease of use, we add a NewModels() method which returns a Models struct
@@ -27,5 +28,6 @@ func NewModels(db *sql.DB) Models {
 	return Models{
 		EtiquetteRules: EtiquetteRuleModel{DB: db},
 		Itineraries:    ItineraryModel{DB: db},
+		Places:         PlaceModel{DB: db},
 	}
 }

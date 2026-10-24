@@ -9,9 +9,11 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 )
 
 // DefaultBaseURL is the public Transitous API: free, no key, run by
@@ -29,6 +31,34 @@ var japan = time.FixedZone("JST", 9*60*60)
 type LatLng struct {
 	Lat float64 `json:"lat"`
 	Lng float64 `json:"lng"`
+}
+
+// cityCentres biases place searches towards the right city. Without it,
+// "Todai-ji" can match a place in Brazil and "Nara Park" a hotel.
+var cityCentres = map[string]LatLng{
+	"tokyo":     {Lat: 35.681, Lng: 139.767},
+	"yokohama":  {Lat: 35.466, Lng: 139.622},
+	"kamakura":  {Lat: 35.319, Lng: 139.550},
+	"hakone":    {Lat: 35.233, Lng: 139.107},
+	"nikko":     {Lat: 36.749, Lng: 139.598},
+	"kyoto":     {Lat: 34.986, Lng: 135.759},
+	"nara":      {Lat: 34.685, Lng: 135.805},
+	"osaka":     {Lat: 34.702, Lng: 135.496},
+	"kobe":      {Lat: 34.690, Lng: 135.196},
+	"himeji":    {Lat: 34.827, Lng: 134.691},
+	"hiroshima": {Lat: 34.398, Lng: 132.475},
+	"kanazawa":  {Lat: 36.578, Lng: 136.648},
+	"fukuoka":   {Lat: 33.590, Lng: 130.421},
+	"sapporo":   {Lat: 43.068, Lng: 141.351},
+	"otaru":     {Lat: 43.197, Lng: 140.994},
+}
+
+// CityCentre returns the centre of a city we know, or nil.
+func CityCentre(city string) *LatLng {
+	if c, ok := cityCentres[strings.ToLower(strings.TrimSpace(city))]; ok {
+		return &c
+	}
+	return nil
 }
 
 // Place is a geocoded name.
@@ -102,16 +132,69 @@ func New(baseURL, userAgent string, timeout time.Duration) *Client {
 }
 
 // Geocode finds a place in Japan by name. near, if given, biases the search
-// towards a city: without it "Todai-ji" can match a place in Brazil. A name
-// ending in "station" (or 駅) is searched as a station stop, without the
-// suffix, so "Shinjuku Station" doesn't match Shinjuku Fire Station.
+// towards a city: without it "Todai-ji" can match a place in Brazil.
+//
+// Names from the planner are often compound, like "Senso-ji Temple, Asakusa"
+// or "Nara Park and Todai-ji", and the search engine matched the first one
+// to Hou-on-ji Temple, 4 km away. So Geocode tries the full name and then
+// simpler versions (see nameVariants), and only accepts a result whose name
+// actually matches what it searched for. If nothing matches well, it falls
+// back to the first result for the full name: a reasonable guess when
+// someone asks how to get somewhere.
 func (c *Client) Geocode(ctx context.Context, name string, near *LatLng) (*Place, error) {
-	query, station := stripStation(name)
+	return c.geocode(ctx, name, near, false)
+}
 
-	key := fmt.Sprintf("geo|%s|%v|%v", strings.ToLower(query), station, near)
+// GeocodeExact is like Geocode, but never guesses: it returns ErrNotFound
+// unless a result's name matches. Use it for coordinates we save, where no
+// location is better than a wrong one (in testing, "Nirvanam, Kamiyacho"
+// guessed a point 6 km away, and a CoCo Ichibanya chain branch 60 km away).
+func (c *Client) GeocodeExact(ctx context.Context, name string, near *LatLng) (*Place, error) {
+	return c.geocode(ctx, name, near, true)
+}
+
+func (c *Client) geocode(ctx context.Context, name string, near *LatLng, exact bool) (*Place, error) {
+	key := fmt.Sprintf("geo|%s|%v|%v", strings.ToLower(strings.TrimSpace(name)), near, exact)
 	if v, ok := c.cached(key); ok {
 		return v.(*Place), nil
 	}
+
+	var fallback *Place
+	for _, variant := range nameVariants(name) {
+		candidates, err := c.search(ctx, variant, near)
+		if err != nil {
+			return nil, err
+		}
+		if len(candidates) == 0 {
+			continue
+		}
+		if fallback == nil {
+			fallback = &candidates[0]
+		}
+		if best := bestMatch(variant, candidates); best != nil {
+			c.store(key, best, 24*time.Hour)
+			return best, nil
+		}
+	}
+
+	if fallback == nil || exact {
+		return nil, ErrNotFound
+	}
+	c.store(key, fallback, 24*time.Hour)
+	return fallback, nil
+}
+
+// maxDistanceKm is how far from the city centre a match may be. 40 km
+// covers Tokyo out to Mitaka and beyond; Hakone, Kamakura and so on have
+// their own centres.
+const maxDistanceKm = 40
+
+// search runs one geocoding query and returns the matches in Japan (and near
+// the city, if given), in the search engine's order. A name ending in
+// "station" (or 駅) is searched as a station stop without the suffix, so
+// "Shinjuku Station" doesn't match Shinjuku Fire Station.
+func (c *Client) search(ctx context.Context, name string, near *LatLng) ([]Place, error) {
+	query, station := stripStation(name)
 
 	params := url.Values{"text": {query}}
 	if station {
@@ -129,8 +212,7 @@ func (c *Client) Geocode(ctx context.Context, name string, near *LatLng) (*Place
 		Lon     float64 `json:"lon"`
 	}
 
-	err := c.get(ctx, "/geocode", params, &matches)
-	if err != nil {
+	if err := c.get(ctx, "/geocode", params, &matches); err != nil {
 		return nil, err
 	}
 
@@ -141,34 +223,94 @@ func (c *Client) Geocode(ctx context.Context, name string, near *LatLng) (*Place
 		if m.Country != "JP" {
 			continue
 		}
-		if near != nil && distanceKm(*near, LatLng{m.Lat, m.Lon}) > 60 {
+		if near != nil && distanceKm(*near, LatLng{m.Lat, m.Lon}) > maxDistanceKm {
 			continue
 		}
 		candidates = append(candidates, Place{Name: m.Name, Location: LatLng{m.Lat, m.Lon}})
 	}
+	return candidates, nil
+}
 
-	if len(candidates) == 0 {
-		return nil, ErrNotFound
-	}
+// nameVariants returns the name, then simpler versions of it to try: before
+// a comma ("Senso-ji Temple, Asakusa" -> "Senso-ji Temple"), before " and "
+// ("Nara Park and Todai-ji" -> "Nara Park") and before brackets
+// ("Kinkaku-ji (Golden Pavilion)" -> "Kinkaku-ji"), and each of those
+// without a trailing "Temple" or "Shrine". The geocoder matched "Senso-ji
+// Temple" to Senzo-ji Temple in Chiba, but found "Senso-ji" straight away.
+func nameVariants(name string) []string {
+	name = strings.TrimSpace(name)
+	variants := []string{name}
 
-	// Prefer an exact name match over the search's top hit: for "Nara Park"
-	// the top hit was "Nara Park Hotel", which is nowhere near the park.
-	place := candidates[0]
-	for _, p := range candidates {
-		if normalizeName(p.Name) == normalizeName(query) {
-			place = p
-			break
+	add := func(v string) {
+		v = strings.TrimSpace(v)
+		if v != "" && !slices.Contains(variants, v) {
+			variants = append(variants, v)
 		}
 	}
 
-	c.store(key, &place, 24*time.Hour)
-	return &place, nil
+	for _, sep := range []string{",", " and ", " & ", "(", "（"} {
+		if i := strings.Index(name, sep); i > 0 {
+			add(name[:i])
+		}
+	}
+
+	for _, v := range slices.Clone(variants) {
+		lower := strings.ToLower(v)
+		for _, suffix := range []string{" temple", " shrine"} {
+			if strings.HasSuffix(lower, suffix) {
+				add(v[:len(v)-len(suffix)])
+			}
+		}
+	}
+	return variants
+}
+
+// bestMatch returns the first candidate whose name matches the query, or nil.
+// Names match if one contains the other once normalised, ignoring generic
+// words: "Sensō-ji" matches "Senso-ji Temple", but "Hou-on-ji Temple" doesn't.
+// An exact match wins over a partial one.
+func bestMatch(query string, candidates []Place) *Place {
+	q := normalizeName(stripGeneric(query))
+	if len(q) < 3 {
+		return nil
+	}
+
+	for i := range candidates {
+		if normalizeName(stripGeneric(candidates[i].Name)) == q {
+			return &candidates[i]
+		}
+	}
+	for i := range candidates {
+		n := normalizeName(stripGeneric(candidates[i].Name))
+		if len(n) >= 3 && (strings.Contains(q, n) || strings.Contains(n, q)) {
+			return &candidates[i]
+		}
+	}
+	return nil
+}
+
+// stripGeneric removes words that appear in many place names, so they don't
+// decide a match on their own.
+func stripGeneric(s string) string {
+	out := strings.ToLower(s)
+	for _, w := range []string{"temple", "shrine", "station", "park", "garden", "national", "museum"} {
+		out = strings.ReplaceAll(out, w, "")
+	}
+	return out
 }
 
 // normalizeName makes names comparable: "Sensō-ji" and "senso ji" match.
+//
+// Only letters and digits are kept, so punctuation never decides a match:
+// "Nirvanam, Kamiyacho" must match "Nirvanam Kamiyacho".
 func normalizeName(s string) string {
-	r := strings.NewReplacer("ō", "o", "ū", "u", "ā", "a", "ē", "e", "ī", "i", "-", "", " ", "", "‐", "")
-	return r.Replace(strings.ToLower(s))
+	s = strings.NewReplacer("ō", "o", "ū", "u", "ā", "a", "ē", "e", "ī", "i").Replace(strings.ToLower(s))
+	return strings.Map(func(r rune) rune {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			return r
+		}
+		return -1
+	}, s)
 }
 
 // Route returns up to three ways to travel between two points, leaving at

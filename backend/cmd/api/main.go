@@ -68,15 +68,16 @@ type config struct {
 }
 
 // Define an application struct to hold the dependencies for our HTTP handlers,
-// helpers and middleware. More fields (Google API clients) will be added as we
-// build out the app.
+// helpers and middleware.
 //
 // The planner field is an interface, so we can switch from the built-in
 // catalogue to a real LLM planner without touching the handlers. The
-// companion is nil when there's no LLM configured.
+// companion is nil when there's no LLM configured. The transit client also
+// geocodes place names for /v1/food.
 type application struct {
 	config    config
 	logger    *slog.Logger
+	transit   *transit.Client
 	models    data.Models
 	planner   planner.Planner
 	companion *companion.Companion
@@ -196,14 +197,17 @@ func main() {
 		logger.Warn("no groq or gemini api key provided, companion chat is off")
 	}
 
+	// Transitous needs no key. Name the app in the User-Agent, as its usage
+	// policy asks, but never include personal data.
+	transitClient := transit.New(transit.DefaultBaseURL, "KonnichiWah/"+version+" (hackathon prototype; github.com/Sachin0P/Konnichi-Wah)", 10*time.Second)
+
 	var c *companion.Companion
 	if chatLLM != nil {
-		// Transitous needs no key. Name the app in the User-Agent, as its
-		// usage policy asks, but never include personal data.
 		c = &companion.Companion{
 			LLM:       chatLLM,
 			Rules:     models.EtiquetteRules,
-			Transit:   transit.New(transit.DefaultBaseURL, "KonnichiWah/"+version+" (hackathon prototype; github.com/Sachin0P/Konnichi-Wah)", 10*time.Second),
+			Transit:   transitClient,
+			Places:    models.Places,
 			DietCards: dietCards,
 			Now:       time.Now,
 			Logger:    logger,
@@ -213,6 +217,7 @@ func main() {
 	app := &application{
 		config:    cfg,
 		logger:    logger,
+		transit:   transitClient,
 		models:    models,
 		planner:   p,
 		companion: c,

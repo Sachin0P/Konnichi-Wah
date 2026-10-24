@@ -80,6 +80,59 @@ func (f *fakeTransit) Route(ctx context.Context, from, to transit.LatLng, depart
 	return []transit.Option{{Minutes: 30, Legs: []transit.Leg{{Mode: "subway", Line: "G Ginza Line"}}}}, nil
 }
 
+// fakePlaces returns fixed restaurants and shops around any point.
+type fakePlaces struct{}
+
+func (fakePlaces) Near(lat, lng float64, radiusM int, food bool) ([]*data.NearbyPlace, error) {
+	food1 := &data.Place{Name: "Ramen Tonkotsu", Tags: map[string]string{"amenity": "restaurant", "cuisine": "ramen"}}
+	food2 := &data.Place{Name: "Taste of Kerala", NameEn: "Taste of Kerala", Tags: map[string]string{"amenity": "restaurant", "cuisine": "indian"}}
+	food3 := &data.Place{Name: "Bon", Tags: map[string]string{"amenity": "restaurant", "diet:vegan": "only", "cuisine": "japanese"}}
+	shop1 := &data.Place{Name: "Mandarake", Tags: map[string]string{"shop": "collector"}}
+	shop2 := &data.Place{Name: "Daiso", Tags: map[string]string{"shop": "variety_store"}}
+
+	if food {
+		return []*data.NearbyPlace{{Place: food1, DistanceM: 100}, {Place: food2, DistanceM: 300}, {Place: food3, DistanceM: 600}}, nil
+	}
+	return []*data.NearbyPlace{{Place: shop2, DistanceM: 50}, {Place: shop1, DistanceM: 200}}, nil
+}
+
+func TestFindFoodRanksForTheTravellersDiet(t *testing.T) {
+	llm := &fakeLLM{turns: []turn{call("find_food", `{"near": "Senso-ji"}`), text("Try Bon.")}}
+
+	c := newCompanion(t, llm, &fakeTransit{}, nil)
+	c.Places = fakePlaces{}
+
+	req := ask("Where can I eat near Senso-ji?")
+	req.Context.Profile = &data.UserProfile{Diet: "veg"}
+
+	if _, err := c.Reply(context.Background(), req); err != nil {
+		t.Fatal(err)
+	}
+
+	// For a vegetarian: the vegan-only place first (5), then the Indian one
+	// (4). The ramen shop (1) is left out, even though it's the closest.
+	r := llm.lastResult()
+	bon, kerala := strings.Index(r, "Bon"), strings.Index(r, "Taste of Kerala")
+	if bon < 0 || kerala < 0 || bon > kerala || strings.Contains(r, "Ramen") {
+		t.Errorf("got %s", r)
+	}
+}
+
+func TestFindPlacesFiltersByKind(t *testing.T) {
+	llm := &fakeLLM{turns: []turn{call("find_places", `{"kind": "anime_figures", "near": "Akihabara"}`), text("Try Mandarake.")}}
+
+	c := newCompanion(t, llm, &fakeTransit{}, nil)
+	c.Places = fakePlaces{}
+
+	if _, err := c.Reply(context.Background(), ask("Figure shops near Akihabara?")); err != nil {
+		t.Fatal(err)
+	}
+
+	if r := llm.lastResult(); !strings.Contains(r, "Mandarake") || strings.Contains(r, "Daiso") {
+		t.Errorf("got %s", r)
+	}
+}
+
 func TestTrainRouteFallsBackToTheMainStation(t *testing.T) {
 	llm := &fakeLLM{turns: []turn{
 		call("get_train_route", `{"from": "Kyoto Station", "to": "Nara Park", "to_city": "Nara"}`),
@@ -156,7 +209,7 @@ func TestReplyRunsTrainRouteTool(t *testing.T) {
 	}
 
 	// No city given in the arguments, so both searches use today's city.
-	if len(tr.near) != 2 || tr.near[0] == nil || *tr.near[0] != cityCentres["tokyo"] {
+	if len(tr.near) != 2 || tr.near[0] == nil || *tr.near[0] != *transit.CityCentre("tokyo") {
 		t.Errorf("geocode was not biased to Tokyo: %v", tr.near)
 	}
 }
@@ -193,7 +246,7 @@ func TestTrainRouteAtNightLooksUpTheMorningTrains(t *testing.T) {
 		t.Errorf("got %s", r)
 	}
 	// The Nara end of the trip must be searched near Nara, not Kyoto.
-	if *tr.near[1] != cityCentres["nara"] {
+	if *tr.near[1] != *transit.CityCentre("nara") {
 		t.Errorf("destination searched near %v", tr.near[1])
 	}
 }

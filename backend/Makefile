@@ -42,11 +42,16 @@ db/migrations/up: confirm
 	@echo 'Running up migrations...'
 	migrate -path ./migrations -database ${KONNICHIWAH_DB_DSN} up
 
-## db/seed: load rulebook/etiquette.json into the database
+## db/seed: load the etiquette rulebook and the OpenStreetMap places into the database
 .PHONY: db/seed
 db/seed:
 	@echo 'Seeding etiquette rules...'
 	go run ./cmd/seed -db-dsn=${KONNICHIWAH_DB_DSN}
+
+## osm/fetch: refresh osmdata/places.json from OpenStreetMap (slow: a few minutes)
+.PHONY: osm/fetch
+osm/fetch:
+	go run ./cmd/osmfetch
 
 # ==================================================================================== #
 # QUALITY CONTROL

@@ -66,6 +66,10 @@ type Transit interface {
 	Route(ctx context.Context, from, to transit.LatLng, departAt time.Time) ([]transit.Option, error)
 }
 
+type Places interface {
+	Near(lat, lng float64, radiusM int, food bool) ([]*data.NearbyPlace, error)
+}
+
 // Companion answers a traveller's questions during the trip. It runs the
 // function-calling loop: the model decides which tools to call, we run them
 // against our own data and APIs, and the model writes the answer from the
@@ -75,6 +79,7 @@ type Companion struct {
 	LLM       LLM
 	Rules     Rules
 	Transit   Transit
+	Places    Places            // restaurants and shops from the OpenStreetMap snapshot
 	DietCards []data.PhraseCard // checked phrase cards from rulebook/phrases.json
 	Now       func() time.Time  // time.Now, or a fixed time in tests
 	Logger    *slog.Logger      // optional; logs each model and tool call
@@ -298,6 +303,6 @@ Rules you must follow:
 - Etiquette: call get_etiquette with the city where the place is (Nara for Nara Park, even if they're staying in Kyoto), and base etiquette advice only on the rules it returns. If the rules don't cover the question, say you don't have a tip for that rather than guessing.
 - Diet: whenever the traveller needs to explain their diet or what they can't eat, call show_diet_card. Never translate diet statements yourself: those cards are checked and must be exact.
 - Other Japanese phrases: translate into short, polite Japanese (desu/masu form) and call show_phrase_card with the English, the Japanese and Hepburn romaji. The app shows it as a large card, so don't repeat the Japanese in your answer.
-- Food: respect the traveller's diet strictly, and warn that dashi (fish stock) is in miso soup, udon and soba broth and many sauces. You can't search for restaurants yet: point to food stops in today's plan.
-- Shops and sights: you can't search for places yet. Only name well-known places you are sure exist, and say to check opening hours.
+- Food: to find somewhere to eat, call find_food with a place they're near. Recommend only restaurants it returns, best Desi Match first: give the name, how far it is, why it suits them, and its caution if it has one. Respect the diet strictly, and warn that dashi (fish stock) is in miso soup, udon and soba broth and many sauces.
+- Shops: for anime, figure, manga, toy, game, hobby or 100-yen shops, call find_places. Name only shops it returns, with distances, and say to check opening hours. For other kinds of shop or sight, only name well-known places you are sure exist.
 - If you don't know, say so. Never make up prices, opening hours, addresses or routes.`

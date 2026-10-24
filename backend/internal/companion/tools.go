@@ -10,30 +10,11 @@ import (
 	"unicode"
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/desimatch"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
 )
 
 var japan = time.FixedZone("JST", 9*60*60)
-
-// cityCentres biases place searches towards the right city. Without it,
-// "Todai-ji" can match a place in Brazil and "Nara Park" a hotel.
-var cityCentres = map[string]transit.LatLng{
-	"tokyo":     {Lat: 35.681, Lng: 139.767},
-	"yokohama":  {Lat: 35.466, Lng: 139.622},
-	"kamakura":  {Lat: 35.319, Lng: 139.550},
-	"hakone":    {Lat: 35.233, Lng: 139.107},
-	"nikko":     {Lat: 36.749, Lng: 139.598},
-	"kyoto":     {Lat: 34.986, Lng: 135.759},
-	"nara":      {Lat: 34.685, Lng: 135.805},
-	"osaka":     {Lat: 34.702, Lng: 135.496},
-	"kobe":      {Lat: 34.690, Lng: 135.196},
-	"himeji":    {Lat: 34.827, Lng: 134.691},
-	"hiroshima": {Lat: 34.398, Lng: 132.475},
-	"kanazawa":  {Lat: 36.578, Lng: 136.648},
-	"fukuoka":   {Lat: 33.590, Lng: 130.421},
-	"sapporo":   {Lat: 43.068, Lng: 141.351},
-	"otaru":     {Lat: 43.197, Lng: 140.994},
-}
 
 // toolDeclarations tells the model which tools exist and what arguments they
 // take. The enums come from the same lists we validate against elsewhere.
@@ -63,6 +44,31 @@ var toolDeclarations = []Tool{
 				"depart_time": map[string]any{"type": "string", "description": "Optional local departure time as HH:MM. Leave out to leave now."},
 			},
 			"required": []string{"from", "to"},
+		},
+	},
+	{
+		Name:        "find_food",
+		Description: "Find restaurants near a place that suit the traveller's diet, ranked by Desi Match (1-5) with reasons. Uses their saved diet.",
+		Parameters: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"near": map[string]any{"type": "string", "description": "Station or landmark they're near, e.g. 'Senso-ji' or 'Kyoto Station'."},
+				"city": map[string]any{"type": "string", "description": "City it's in, e.g. Tokyo."},
+			},
+			"required": []string{"near"},
+		},
+	},
+	{
+		Name:        "find_places",
+		Description: "Find shops of one kind near a place, nearest first.",
+		Parameters: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"kind": map[string]any{"type": "string", "enum": shopKindNames(), "description": "anime_figures: anime, figure and collector shops; toys_games: toy and game shops; hobby_models: hobby and model kit shops; hundred_yen: 100-yen and variety stores."},
+				"near": map[string]any{"type": "string", "description": "Station or landmark they're near."},
+				"city": map[string]any{"type": "string", "description": "City it's in, e.g. Tokyo."},
+			},
+			"required": []string{"kind", "near"},
 		},
 	},
 	{
@@ -113,6 +119,10 @@ func (t tools) run(ctx context.Context, call ToolCall) any {
 		result, err = t.etiquette(call.Arguments)
 	case "get_train_route":
 		result, err = t.trainRoute(ctx, call.Arguments)
+	case "find_food":
+		result, err = t.findFood(ctx, call.Arguments)
+	case "find_places":
+		result, err = t.findPlaces(ctx, call.Arguments)
 	case "show_diet_card":
 		result, err = t.dietCard(call.Arguments)
 	case "show_phrase_card":
@@ -257,6 +267,139 @@ func (t tools) route(ctx context.Context, from, to transit.LatLng, at time.Time)
 	return options, false, nil
 }
 
+// searchRadiusM is how far from the named place find_places looks: about a
+// 10 to 15 minute walk. (find_food widens its search as needed; see
+// desimatch.Search.)
+const searchRadiusM = 1000
+
+// locate turns a place name into a point for a search, aiming at the city.
+func (t tools) locate(ctx context.Context, near, city string) (*transit.Place, error) {
+	near = strings.TrimSpace(near)
+	if near == "" {
+		return nil, errors.New("invalid arguments: near is required")
+	}
+	place, err := t.companion.Transit.Geocode(ctx, near, centre(firstNonEmpty(city, t.chat.City)))
+	if err != nil {
+		return nil, t.placeError(near, err)
+	}
+	return place, nil
+}
+
+func (t tools) findFood(ctx context.Context, args json.RawMessage) (any, error) {
+	var in struct {
+		Near string `json:"near"`
+		City string `json:"city"`
+	}
+	if err := json.Unmarshal(args, &in); err != nil {
+		return nil, errors.New("invalid arguments")
+	}
+
+	where, err := t.locate(ctx, in.Near, in.City)
+	if err != nil {
+		return nil, err
+	}
+
+	profile := data.UserProfile{Diet: "non_veg"}
+	if t.chat.Profile != nil {
+		profile = *t.chat.Profile
+	}
+
+	ranked, err := desimatch.Search(t.companion.Places, where.Location.Lat, where.Location.Lng, profile, 5)
+	if err != nil {
+		t.companion.log("places search failed", "error", err)
+		return nil, errors.New("restaurant search unavailable")
+	}
+
+	// Send the model just what it needs, so the reply stays inside the free
+	// tier's token limits.
+	type restaurant struct {
+		Name      string   `json:"name"`
+		Cuisine   string   `json:"cuisine,omitempty"`
+		DistanceM int      `json:"distance_m"`
+		DesiMatch int      `json:"desi_match"`
+		Reasons   []string `json:"reasons"`
+		Caution   string   `json:"caution,omitempty"`
+	}
+	out := []restaurant{}
+	for _, r := range ranked {
+		out = append(out, restaurant{
+			Name:      r.DisplayName(),
+			Cuisine:   r.Tags["cuisine"],
+			DistanceM: r.DistanceM,
+			DesiMatch: r.Match.Score,
+			Reasons:   r.Match.Reasons,
+			Caution:   r.Match.Caution,
+		})
+	}
+
+	if len(out) == 0 {
+		return map[string]any{"near": where.Name, "restaurants": out, "note": "No restaurants suited to their diet are listed within 3 km. Suggest the diet card and asking staff, or a convenience store."}, nil
+	}
+	return map[string]any{"near": where.Name, "restaurants": out}, nil
+}
+
+// shopKinds maps find_places kinds to OpenStreetMap shop tags.
+var shopKinds = map[string][]string{
+	"anime_figures": {"anime", "collector"},
+	"toys_games":    {"toys", "games"},
+	"hobby_models":  {"hobby", "model"},
+	"hundred_yen":   {"variety_store"},
+}
+
+func shopKindNames() []string {
+	names := make([]string, 0, len(shopKinds))
+	for k := range shopKinds {
+		names = append(names, k)
+	}
+	slices.Sort(names)
+	return names
+}
+
+func (t tools) findPlaces(ctx context.Context, args json.RawMessage) (any, error) {
+	var in struct {
+		Kind string `json:"kind"`
+		Near string `json:"near"`
+		City string `json:"city"`
+	}
+	if err := json.Unmarshal(args, &in); err != nil {
+		return nil, errors.New("invalid arguments")
+	}
+
+	shopTags, ok := shopKinds[in.Kind]
+	if !ok {
+		return nil, errors.New("invalid arguments: kind must be one of " + strings.Join(shopKindNames(), ", "))
+	}
+
+	where, err := t.locate(ctx, in.Near, in.City)
+	if err != nil {
+		return nil, err
+	}
+
+	places, err := t.companion.Places.Near(where.Location.Lat, where.Location.Lng, searchRadiusM, false)
+	if err != nil {
+		t.companion.log("places search failed", "error", err)
+		return nil, errors.New("shop search unavailable")
+	}
+
+	type shop struct {
+		Name      string `json:"name"`
+		Kind      string `json:"kind"`
+		DistanceM int    `json:"distance_m"`
+		Hours     string `json:"opening_hours,omitempty"`
+	}
+	out := []shop{}
+	for _, p := range places {
+		if len(out) == 8 {
+			break
+		}
+		if slices.Contains(shopTags, p.Tags["shop"]) {
+			out = append(out, shop{Name: p.DisplayName(), Kind: p.Tags["shop"], DistanceM: p.DistanceM, Hours: p.Tags["opening_hours"]})
+		}
+	}
+
+	return map[string]any{"near": where.Name, "shops": out}, nil
+}
+
 // dietCovers lists the avoid items each diet's card already covers, so we
 // don't add a separate "no pork" card for a vegetarian.
 var dietCovers = map[string][]string{
@@ -383,10 +526,7 @@ func departAt(now time.Time, hhmm string) time.Time {
 }
 
 func centre(city string) *transit.LatLng {
-	if c, ok := cityCentres[strings.ToLower(strings.TrimSpace(city))]; ok {
-		return &c
-	}
-	return nil
+	return transit.CityCentre(city)
 }
 
 // placeError turns a geocoding error into a message for the model. The model

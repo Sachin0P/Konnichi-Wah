@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/planner"
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/transit"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/validator"
 )
 
@@ -67,6 +71,8 @@ func (app *application) createItineraryHandler(w http.ResponseWriter, r *http.Re
 		app.serverErrorResponse(w, r, err)
 		return
 	}
+
+	app.locateStops(r.Context(), itinerary.Days)
 
 	err = app.models.Itineraries.Insert(itinerary)
 	if err != nil {
@@ -178,6 +184,10 @@ func (app *application) updateItineraryHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Look up coordinates for stops the user just added (the others already
+	// have them, so this is usually instant).
+	app.locateStops(r.Context(), itinerary.Days)
+
 	err = app.models.Itineraries.Update(itinerary)
 	if err != nil {
 		switch {
@@ -229,6 +239,54 @@ func (app *application) attachTips(days []data.Day) error {
 	}
 
 	return nil
+}
+
+// locateTimeout caps how long creating or updating an itinerary may spend
+// looking up stop coordinates.
+const locateTimeout = 10 * time.Second
+
+// locateStops fills in Lat and Lng for stops that don't have them yet, by
+// geocoding each stop's name near its city. Searches like "Find food nearby"
+// can then use the stored coordinates instead of looking the name up again,
+// so they keep working even if the geocoder is unreachable later. A stop that
+// can't be found (or runs out of time) is simply left without coordinates;
+// it's never an error.
+func (app *application) locateStops(ctx context.Context, days []data.Day) {
+	ctx, cancel := context.WithTimeout(ctx, locateTimeout)
+	defer cancel()
+
+	var wg sync.WaitGroup
+	// Only a few lookups at once: Transitous is a volunteer service.
+	limit := make(chan struct{}, 4)
+
+	for i := range days {
+		for j := range days[i].Stops {
+			stop := &days[i].Stops[j]
+			if stop.Lat != nil && stop.Lng != nil {
+				continue
+			}
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				select {
+				case limit <- struct{}{}:
+				case <-ctx.Done():
+					return
+				}
+				defer func() { <-limit }()
+
+				place, err := app.transit.GeocodeExact(ctx, stop.PlaceName, transit.CityCentre(stop.City))
+				if err != nil {
+					return
+				}
+				lat, lng := place.Location.Lat, place.Location.Lng
+				stop.Lat, stop.Lng = &lat, &lng
+			}()
+		}
+	}
+
+	wg.Wait()
 }
 
 // newStopID returns a random id for a new stop, like "st_k3x9...". The app

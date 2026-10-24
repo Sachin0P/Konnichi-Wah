@@ -14,14 +14,16 @@ import (
 
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/data"
 	"github.com/Sachin0P/Konnichi-Wah/backend/internal/validator"
+	"github.com/Sachin0P/Konnichi-Wah/backend/osmdata"
 	"github.com/Sachin0P/Konnichi-Wah/backend/rulebook"
 
 	_ "github.com/lib/pq"
 )
 
-// The seed command loads our hand-written etiquette rulebook into PostgreSQL.
-// Run it after the migrations, and again whenever rulebook/etiquette.json
-// changes: make db/seed
+// The seed command loads our content into PostgreSQL: the hand-written
+// etiquette rulebook and the OpenStreetMap places snapshot. Run it after the
+// migrations, and again whenever rulebook/etiquette.json or
+// osmdata/places.json changes: make db/seed
 func main() {
 	var dsn string
 
@@ -30,9 +32,15 @@ func main() {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	// Load and validate the rules before touching the database, so that a
-	// mistake in the JSON file never wipes the existing rules.
+	// Load and validate both files before touching the database, so that a
+	// mistake in either never wipes what's already there.
 	rules, err := loadRules(rulebook.Files)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	places, err := data.LoadPlaces(osmdata.Files)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
@@ -54,6 +62,14 @@ func main() {
 	}
 
 	logger.Info("etiquette rules seeded", "count", len(rules))
+
+	err = models.Places.ReplaceAll(places)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	logger.Info("places seeded", "count", len(places))
 }
 
 // loadRules reads etiquette.json from fsys, then checks every rule against

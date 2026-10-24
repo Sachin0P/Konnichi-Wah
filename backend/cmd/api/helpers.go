@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Sachin0P/Konnichi-Wah/backend/internal/validator"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -137,6 +138,38 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 	}
 
 	return nil
+}
+
+// The readCSV() helper reads a string value from the query string and then
+// splits it into a slice on the comma character. If no matching key could be
+// found, it returns the provided default value.
+func (app *application) readCSV(qs url.Values, key string, defaultValue []string) []string {
+	csv := qs.Get(key)
+
+	if csv == "" {
+		return defaultValue
+	}
+
+	return strings.Split(csv, ",")
+}
+
+// The readFloat() helper reads a number from the query string. If the key
+// isn't there it returns the default; if the value isn't a number, it records
+// an error message in the provided Validator instance.
+func (app *application) readFloat(qs url.Values, key string, defaultValue float64, v *validator.Validator) float64 {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultValue
+	}
+
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		v.AddError(key, "must be a number")
+		return defaultValue
+	}
+
+	return f
 }
 
 // The readString() helper returns a string value from the query string, or the

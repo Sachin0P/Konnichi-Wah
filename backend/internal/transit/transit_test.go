@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 	"time"
 )
@@ -67,6 +68,88 @@ func TestOptionLabel(t *testing.T) {
 
 	if o.Legs[0].From != "Kyoto Station" || o.Legs[2].To != "NARA" || o.Legs[1].From != "京都" {
 		t.Errorf("got %+v", o.Legs)
+	}
+}
+
+func TestNameVariants(t *testing.T) {
+	tests := []struct {
+		in   string
+		want []string
+	}{
+		{"Senso-ji Temple, Asakusa", []string{"Senso-ji Temple, Asakusa", "Senso-ji Temple", "Senso-ji"}},
+		{"Meiji Jingu Shrine", []string{"Meiji Jingu Shrine", "Meiji Jingu"}},
+		{"Nara Park and Todai-ji", []string{"Nara Park and Todai-ji", "Nara Park"}},
+		{"Kinkaku-ji (Golden Pavilion)", []string{"Kinkaku-ji (Golden Pavilion)", "Kinkaku-ji"}},
+		{"Meiji Jingu", []string{"Meiji Jingu"}},
+	}
+	for _, tt := range tests {
+		if got := nameVariants(tt.in); !slices.Equal(got, tt.want) {
+			t.Errorf("nameVariants(%q) = %q; want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestGeocodeTriesSimplerNamesWhenTheFullOneMatchesBadly(t *testing.T) {
+	// What Transitous really returned in testing: the full compound name
+	// matched a different temple 4 km away.
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Query().Get("text") {
+		case "Senso-ji Temple, Asakusa":
+			w.Write([]byte(`[{"name": "Hou-on-ji Temple", "type": "PLACE", "country": "JP", "lat": 35.7507, "lon": 139.7466}]`))
+		case "Senso-ji Temple":
+			w.Write([]byte(`[{"name": "Senzo-ji Temple", "type": "PLACE", "country": "JP", "lat": 35.838, "lon": 140.006}]`))
+		case "Senso-ji":
+			w.Write([]byte(`[{"name": "Sensō-ji", "type": "PLACE", "country": "JP", "lat": 35.7148, "lon": 139.7967}]`))
+		default:
+			w.Write([]byte(`[]`))
+		}
+	}))
+	defer ts.Close()
+
+	place, err := New(ts.URL, "test-agent", 5*time.Second).Geocode(context.Background(), "Senso-ji Temple, Asakusa", &LatLng{35.681, 139.767})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if place.Name != "Sensō-ji" {
+		t.Errorf("got %q; want Sensō-ji", place.Name)
+	}
+}
+
+func TestPunctuationDoesNotStopAMatch(t *testing.T) {
+	// The real answer for "Nirvanam, Kamiyacho": the right branch first, and
+	// another Nirvanam (6 km away) only when searching for "Nirvanam" alone.
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Query().Get("text") {
+		case "Nirvanam, Kamiyacho":
+			w.Write([]byte(`[{"name": "Nirvanam Kamiyacho", "type": "PLACE", "country": "JP", "lat": 35.6636, "lon": 139.7464}]`))
+		case "Nirvanam":
+			w.Write([]byte(`[{"name": "Nirvanam", "type": "PLACE", "country": "JP", "lat": 35.6312, "lon": 139.7910}]`))
+		}
+	}))
+	defer ts.Close()
+
+	place, err := New(ts.URL, "test-agent", 5*time.Second).GeocodeExact(context.Background(), "Nirvanam, Kamiyacho", &LatLng{35.681, 139.767})
+	if err != nil || place.Location.Lat != 35.6636 {
+		t.Errorf("got %+v, %v; want the Kamiyacho branch", place, err)
+	}
+}
+
+func TestGeocodeExactNeverGuesses(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Nothing here is called Nirvanam.
+		w.Write([]byte(`[{"name": "Tokyo Bay Hotel", "type": "PLACE", "country": "JP", "lat": 35.631, "lon": 139.791}]`))
+	}))
+	defer ts.Close()
+
+	c := New(ts.URL, "test-agent", 5*time.Second)
+	tokyo := &LatLng{35.681, 139.767}
+
+	if _, err := c.GeocodeExact(context.Background(), "Nirvanam, Kamiyacho", tokyo); !errors.Is(err, ErrNotFound) {
+		t.Errorf("GeocodeExact: got %v; want ErrNotFound", err)
+	}
+	// The ordinary Geocode still makes its best guess.
+	if p, err := c.Geocode(context.Background(), "Nirvanam, Kamiyacho", tokyo); err != nil || p.Name != "Tokyo Bay Hotel" {
+		t.Errorf("Geocode: got %v, %v", p, err)
 	}
 }
 
