@@ -18,10 +18,23 @@ import javax.inject.Singleton
 data class HindiRuleDto(val title: String, val tip: String)
 
 @Serializable
+data class StationFloorDto(
+    val level: String,
+    val name: String,
+    val name_ja: String? = null,
+    val lines: List<String> = emptyList(),
+    val exits: List<String> = emptyList(),
+    val amenities: List<String> = emptyList(),
+    val tips: String? = null,
+)
+
+@Serializable
 data class StationExitDto(
     val name: String,
     val name_ja: String? = null,
     val leads_to: String,
+    val lat: Double? = null,
+    val lng: Double? = null,
 )
 
 @Serializable
@@ -35,6 +48,8 @@ data class StationGuideDto(
     val lines: List<String> = emptyList(),
     val exits: List<StationExitDto> = emptyList(),
     val tips: List<String> = emptyList(),
+    val floors: List<StationFloorDto> = emptyList(),
+    val map_url: String? = null,
 )
 
 // Reads the etiquette rulebook bundled in the APK. The build copies it from

@@ -76,4 +76,26 @@ class RulebookTest {
             assertTrue("too many tips for $placeType", tips.size <= MAX_TIPS_PER_STOP)
         }
     }
+
+    @Test
+    fun majorStationMapsLoadProperly() {
+        val json = Json { ignoreUnknownKeys = true }
+        val textEn = File("../../backend/rulebook/stations.json").readText()
+        val stationsEn = json.decodeFromString<List<StationGuideDto>>(textEn)
+
+        assertTrue(stationsEn.size >= 6)
+        val tokyo = stationsEn.first { it.id == "tokyo-station" }
+        assertEquals("Tokyo Station", tokyo.name)
+        assertTrue(tokyo.floors.isNotEmpty())
+        assertTrue(!tokyo.map_url.isNullOrBlank())
+
+        val shinjuku = stationsEn.first { it.id == "shinjuku-station" }
+        assertTrue(shinjuku.floors.isNotEmpty())
+
+        val textHi = File("../../backend/rulebook/stations.hi.json").readText()
+        val stationsHi = json.decodeFromString<List<StationGuideDto>>(textHi)
+        assertEquals(stationsEn.size, stationsHi.size)
+        val tokyoHi = stationsHi.first { it.id == "tokyo-station" }
+        assertTrue(tokyoHi.floors.isNotEmpty())
+    }
 }

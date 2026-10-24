@@ -6,7 +6,8 @@
     "city": "Tokyo",
     "lat": 35.6812,
     "lng": 139.7671,
-    "lines": ["Yamanote", "Chuo", "Keihin-Tohoku", "Marunouchi", "Tokaido Shinkansen", "Tohoku Shinkansen"],
+    "lines": ["Yamanote", "Chuo", "Keihin-Tohoku", "Marunouchi", "Tokaido Shinkansen", "Tohoku Shinkansen", "Sobu / Yokosuka", "Keiyo"],
+    "map_url": "https://www.jreast.co.jp/estation/stations/img/map/m_tokyo.pdf",
     "exits": [
       {
         "name": "Marunouchi Central Exit",
@@ -28,6 +29,63 @@
       "The Shinkansen platforms (Tokaido / Sanyo towards Kyoto/Osaka) are located on the Yaesu (East) side.",
       "Changing from local JR platforms to the Keiyo Line (for Tokyo Disneyland) takes 10–15 minutes walking through long underground passageways.",
       "Tokyo Character Street (Pokemon, Ghibli, Sanrio) is located on the B1 level of First Avenue Tokyo Station on the Yaesu side."
+    ],
+    "floors": [
+      {
+        "level": "2F",
+        "name": "2F Elevated Shinkansen Platforms",
+        "name_ja": "2F 新幹線ホーム",
+        "lines": [
+          "Platforms 14–19: Tokaido & Sanyo Shinkansen (to Kyoto, Shin-Osaka, Hiroshima)",
+          "Platforms 20–23: Tohoku, Joetsu & Hokuriku Shinkansen (to Sendai, Nagano, Kanazawa)",
+          "Platforms 1–2: Chuo Rapid Line (elevated above main concourse)"
+        ],
+        "amenities": ["Shinkansen Ticket Gates", "Ekiben Bento Plazas", "Waiting Lounges"],
+        "tips": "Tokaido Shinkansen (blue gates) is operated by JR Central; Tohoku Shinkansen (green gates) is operated by JR East."
+      },
+      {
+        "level": "1F",
+        "name": "1F Ground Concourse & JR Lines",
+        "name_ja": "1F 地上改札・在来線ホーム",
+        "lines": [
+          "Platforms 3–4: Yamanote & Keihin-Tohoku (Northbound to Ueno / Omiya)",
+          "Platforms 5–6: Yamanote & Keihin-Tohoku (Southbound to Shinagawa / Yokohama)",
+          "Platforms 7–10: Tokaido Main Line & Ueno-Tokyo Line"
+        ],
+        "exits": [
+          "Marunouchi Central / North / South Exits (Imperial Palace & Red Brick Facade)",
+          "Yaesu Central / North / South Exits (Highway Buses & Shinkansen)",
+          "Nihombashi Exit (Financial district & Expressway buses)"
+        ],
+        "amenities": ["JR East Travel Service Center", "Central Passageway", "Coin Lockers", "Baggage Storage Service"],
+        "tips": "Use the broad Central Passageway to easily cross between Marunouchi (West) and Yaesu (East)."
+      },
+      {
+        "level": "B1F",
+        "name": "B1F Gransta & Subway Connections",
+        "name_ja": "B1F 地下コンコース・丸ノ内線",
+        "lines": [
+          "Tokyo Metro Marunouchi Line (M-17)",
+          "Platforms 1–4 (B5F): Sobu & Yokosuka Lines (to Narita Airport / Kamakura)"
+        ],
+        "exits": [
+          "Marunouchi Underground Central Exit",
+          "Yaesu Underground Central Exit",
+          "Direct walkway to Otemachi Station (5 subway lines)"
+        ],
+        "amenities": ["Gransta Tokyo Gourmet Mall", "Tokyo Character Street", "Coin Lockers", "ATMs"],
+        "tips": "Tokyo Character Street is on the Yaesu B1 level; Gransta Tokyo gourmet hall spans the central B1 area."
+      },
+      {
+        "level": "B4F",
+        "name": "B4F–B5F Keiyo Underground (Disneyland)",
+        "name_ja": "B4F-B5F 京葉線ホーム（ディズニー方面）",
+        "lines": [
+          "Platforms 1–4: JR Keiyo & Musashino Lines (to Maihama for Tokyo Disney Resort)"
+        ],
+        "amenities": ["Moving Walkways", "Dedicated Coin Lockers", "Restrooms"],
+        "tips": "The Keiyo Line platform is located 400m south underground. Allow 10–15 minutes walking through moving walkways from the main concourse."
+      }
     ]
   },
   {
@@ -38,6 +96,7 @@
     "lat": 35.6902,
     "lng": 139.7005,
     "lines": ["Yamanote", "Chuo", "Saikyo", "Shonan-Shinjuku", "Marunouchi", "Toei Shinjuku", "Toei Oedo", "Odakyu", "Keio"],
+    "map_url": "https://www.jreast.co.jp/e/stations/e866.html",
     "exits": [
       {
         "name": "East Exit",
@@ -59,6 +118,65 @@
       "The world's busiest station with over 200 exits! Pay close attention to yellow overhead exit signs before tapping out.",
       "Changing between JR platforms and the Toei Oedo Line takes about 10–12 minutes down multiple escalators deep underground.",
       "If you need to cross between the East and West sides without entering ticket gates, use the free East-West Underpass (opened 2020)."
+    ],
+    "floors": [
+      {
+        "level": "2F",
+        "name": "2F South Concourse & Highway Buses",
+        "name_ja": "2F 南口改札・バスタ新宿",
+        "exits": [
+          "South Exit (Lumine 1 & 2)",
+          "New South Exit (direct link to Busta)",
+          "Koshu-kaido Gate"
+        ],
+        "amenities": ["Busta Shinjuku Highway Bus Terminal (3F/4F)", "JR East Travel Service Center", "Tourist Information", "Takashimaya Times Square"],
+        "tips": "Highway buses to Mt. Fuji, airports, and other cities depart from Busta Shinjuku on levels 3F and 4F directly above the South Exit."
+      },
+      {
+        "level": "1F",
+        "name": "1F Ground Platforms & East-West Passageway",
+        "name_ja": "1F 地上ホーム・東西自由通路",
+        "lines": [
+          "Platforms 1–4: Saikyo & Shonan-Shinjuku Lines (South & Northbound)",
+          "Platforms 7–8: Chuo Rapid Line (to Takao)",
+          "Platforms 9–10: Chuo Limited Express (Azusa / Kaiji to Matsumoto)",
+          "Platforms 11–12: Chuo-Sobu Local Line",
+          "Platforms 13–14: Yamanote Line (Inner loop: Shibuya / Shinagawa)",
+          "Platforms 15–16: Yamanote Line (Outer loop: Ikebukuro / Ueno)"
+        ],
+        "exits": [
+          "East-West Free Passageway (connects East & West outside ticket gates)"
+        ],
+        "amenities": ["Coin lockers along concourses", "Wheelchair accessible elevators to all platforms"],
+        "tips": "Opened in 2020, the broad East-West Free Passageway lets you walk between the East and West sides without entering ticket gates."
+      },
+      {
+        "level": "B1F",
+        "name": "B1F Underground Concourse & Private Rail",
+        "name_ja": "B1F 地下改札・私鉄乗換",
+        "lines": [
+          "Tokyo Metro Marunouchi Line (M-08)",
+          "Odakyu Odawara Line (Romancecar to Hakone)",
+          "Keio Line (to Mt. Takao)"
+        ],
+        "exits": [
+          "East Exit (Kabukicho, Omoide Yokocho, Golden Gai)",
+          "West Exit (Metropolitan Government skyscrapers, Yodobashi Camera)"
+        ],
+        "amenities": ["Subnade Underground Shopping City", "Major coin locker banks", "Police Box (Koban)"],
+        "tips": "Pay close attention to yellow overhead exit signs before tapping out."
+      },
+      {
+        "level": "B7F",
+        "name": "B3F–B7F Toei Subway Lines (Deep)",
+        "name_ja": "B3F-B7F 都営地下鉄（大江戸線・新宿線）",
+        "lines": [
+          "Platforms 4–5: Toei Shinjuku Line (S-01)",
+          "Platforms 6–7: Toei Oedo Line (E-27, to Roppongi, Daimon / Tokyo Tower, Tsukiji)"
+        ],
+        "amenities": ["High-speed escalators", "Elevator bank"],
+        "tips": "Toei Oedo Line is deep underground (B7F). Allow 10–12 minutes for transfers from JR platforms."
+      }
     ]
   },
   {
@@ -69,6 +187,7 @@
     "lat": 35.6580,
     "lng": 139.7016,
     "lines": ["Yamanote", "Saikyo", "Ginza", "Hanzomon", "Fukutoshin", "Tokyu Toyoko", "Keio Inokashira"],
+    "map_url": "https://www.jreast.co.jp/e/stations/e808.html",
     "exits": [
       {
         "name": "Hachiko Exit",
@@ -89,6 +208,62 @@
     "tips": [
       "The Ginza Line platform is elevated on the 3rd floor, whereas the Fukutoshin and Tokyu Toyoko lines are located on basement level B5.",
       "Ongoing station redevelopment means walkways change frequently. Follow the color-coded line signs overhead."
+    ],
+    "floors": [
+      {
+        "level": "3F",
+        "name": "3F Elevated Tokyo Metro Ginza Line",
+        "name_ja": "3F 銀座線ホーム",
+        "lines": [
+          "Tokyo Metro Ginza Line (G-01, towards Omotesando, Ginza, Asakusa)"
+        ],
+        "exits": [
+          "Direct sky-bridge into Shibuya Scramble Square",
+          "Direct sky-bridge to Shibuya Hikarie"
+        ],
+        "amenities": ["Futuristic M-shaped vaulted wave roof concourse", "Elevators to ground level"],
+        "tips": "The Ginza Line platform is high above the ground on the 3rd floor, opposite the deep subway lines."
+      },
+      {
+        "level": "1F",
+        "name": "1F Ground Concourse & Scramble Crossing",
+        "name_ja": "1F ハチ公改札・スクランブル交差点",
+        "lines": [
+          "Platforms 1–2: JR Yamanote Line (consolidated island platform)",
+          "Platforms 3–4: JR Saikyo & Shonan-Shinjuku Lines"
+        ],
+        "exits": [
+          "Hachiko Exit (Hachiko Statue, Scramble Crossing, Center-Gai, SHIBUYA109)",
+          "South Exit (West bus terminal)",
+          "Miyamasuzaka Exit (Miyashita Park rooftop park)"
+        ],
+        "amenities": ["Hachiko Tourist Information Center (SHIBU HACHI BOX)", "Coin lockers near Hachiko gate", "JR East Ticket Office"],
+        "tips": "The famous Hachiko statue and Scramble Crossing are directly outside the Hachiko Exit."
+      },
+      {
+        "level": "B3F",
+        "name": "B3F Tokyo Metro Hanzomon & Den-en-toshi Lines",
+        "name_ja": "B3F 半蔵門線・田園都市線ホーム",
+        "lines": [
+          "Tokyo Metro Hanzomon Line (Z-01, towards Otemachi / Skytree)",
+          "Tokyu Den-en-toshi Line"
+        ],
+        "exits": [
+          "Underground exits A0–A12 leading directly to SHIBUYA109 and Dogenzaka"
+        ],
+        "amenities": ["Underground shopping corridors", "Coin lockers"],
+        "tips": "Use underground passage A2/A3 to reach SHIBUYA109 without crossing street traffic in rainy weather."
+      },
+      {
+        "level": "B5F",
+        "name": "B5F Tokyo Metro Fukutoshin & Tokyu Toyoko Lines",
+        "name_ja": "B5F 副都心線・東急東横線ホーム",
+        "lines": [
+          "Platforms 3–6: Tokyu Toyoko Line (to Yokohama) & Tokyo Metro Fukutoshin Line (F-16, to Harajuku & Shinjuku-sanchome)"
+        ],
+        "amenities": ["Tadao Ando egg-shaped 'Chichusen' (Underground Spaceship) design", "Express elevator bank to Shibuya Hikarie"],
+        "tips": "Located 5 floors down. High-speed elevators in Shibuya Hikarie provide the fastest route between B5F and street level."
+      }
     ]
   },
   {
@@ -99,6 +274,7 @@
     "lat": 34.9858,
     "lng": 135.7587,
     "lines": ["Tokaido Shinkansen", "JR Kyoto", "JR Nara", "JR Sagano (San-in)", "Kintetsu Kyoto", "Karasuma Subway"],
+    "map_url": "https://www.westjr.co.jp/global/en/timetable/pdf/station_kyoto.pdf",
     "exits": [
       {
         "name": "Karasuma (North) Central Exit",
@@ -114,6 +290,51 @@
     "tips": [
       "The main city bus terminal for tourist sights (Kinkaku-ji, Kiyomizu-dera, Gion) is located immediately outside the Karasuma (North) Exit.",
       "The JR Sagano Line for Arashiyama departs from platforms 31–33 at the far western end of the main concourse."
+    ],
+    "floors": [
+      {
+        "level": "2F",
+        "name": "2F Shinkansen & Pedestrian Walkway",
+        "name_ja": "2F 新幹線改札・南北自由通路",
+        "lines": [
+          "Platforms 11–14: Tokaido Shinkansen (to Tokyo, Nagoya, Shin-Osaka, Hakata)"
+        ],
+        "exits": [
+          "Hachijo Exit (South side — Airport Limousines & Kintetsu Line to Nara)",
+          "North-South Pedestrian Walkway (free public crossing between Karasuma and Hachijo)"
+        ],
+        "amenities": ["Kyoto Tourist Information Center 'Kyo-Navi'", "Shinkansen Ticket Gates", "ASTY Kyoto Shopping & Dining", "Isetan Department Store entrance"],
+        "tips": "The broad North-South Walkway on 2F connects Kyoto Tower (North) and the Shinkansen gates (South) with panoramic views of the main concourse."
+      },
+      {
+        "level": "1F",
+        "name": "1F Main Concourse & Sightseeing Lines",
+        "name_ja": "1F 中央口・観光路線ホーム",
+        "lines": [
+          "Platform 0: JR Kyoto Line (Special Rapid to Osaka & Kobe)",
+          "Platforms 2–3: Biwako Line / Kosai Line",
+          "Platforms 8–10: JR Nara Line (to Fushimi Inari Taisha, Uji, Nara)",
+          "Platforms 31–33: JR Sagano Line (to Arashiyama bamboo grove)"
+        ],
+        "exits": [
+          "Karasuma Central Exit (Kyoto Tower, City Bus Terminal, Taxi Terminal)"
+        ],
+        "amenities": ["Grand Central Concourse (16-story glass atrium)", "Central Ticket Office (Midori-no-Madoguchi)", "Luggage delivery service (Crosta Kyoto)", "Extensive Coin Locker rooms"],
+        "tips": "Platforms 31–33 for Arashiyama are at the far western end of the concourse. Platforms 8–10 for Fushimi Inari are on the south-east side."
+      },
+      {
+        "level": "B1F",
+        "name": "B1F–B2F Subway & Porta Underground Mall",
+        "name_ja": "B1F-B2F 地下鉄烏丸線・ポルタ地下街",
+        "lines": [
+          "Kyoto City Subway Karasuma Line (K-11, to Shijo, Karasuma-Oike, Kyoto Imperial Palace)"
+        ],
+        "exits": [
+          "Direct underground exits to Kyoto Tower and Station Plaza"
+        ],
+        "amenities": ["Kyoto Porta Underground Shopping Mall (over 200 shops)", "Subway ticket machines with IC card top-up", "Coin lockers"],
+        "tips": "The City Bus Terminal outside the Karasuma (North) Exit has buses to Kinkaku-ji, Kiyomizu-dera, and Gion. Buy a day pass or tap Suica/ICOCA."
+      }
     ]
   },
   {
@@ -124,6 +345,7 @@
     "lat": 34.7024,
     "lng": 135.4959,
     "lines": ["JR Osaka Loop", "JR Kyoto/Kobe", "Midosuji Subway", "Hankyu", "Hanshin"],
+    "map_url": "https://www.westjr.co.jp/global/en/timetable/pdf/station_osaka.pdf",
     "exits": [
       {
         "name": "Midosuji (North) Exit",
@@ -144,6 +366,54 @@
     "tips": [
       "The interconnected underground complex is nicknamed the 'Umeda Dungeon'. If disoriented, head to street level to re-orient using Grand Front or Hanshin towers.",
       "The Osaka Loop Line (platform 1 & 2) circles the city and connects directly to Osaka Castle and Universal Studios transfer points."
+    ],
+    "floors": [
+      {
+        "level": "3F",
+        "name": "3F Bridge Gate & Osaka Station City",
+        "name_ja": "3F 連絡橋口・大阪ステーションシティ",
+        "exits": [
+          "Bridge Gate (Direct bridge connecting Lucua and Daimaru)"
+        ],
+        "amenities": ["Osaka Station City Information Center", "JR Ticket Office", "Toki-no-hiroba (Time and Space Plaza under massive curved roof)"],
+        "tips": "Toki-no-hiroba on 3F offers great panoramic views looking down onto arriving trains."
+      },
+      {
+        "level": "1F",
+        "name": "1F Central Ground Concourse",
+        "name_ja": "1F 中央コンコース・地上改札",
+        "lines": [
+          "Platforms 1–2: Osaka Loop Line (to Osaka Castle, Universal City transfer at Nishikujo)",
+          "Platforms 3–6: JR Kyoto & Kobe Lines (Special Rapid to Kyoto, Shin-Osaka, Sannomiya)"
+        ],
+        "exits": [
+          "Central Exit (Main taxi ranks & central walkways)",
+          "Midosuji North Exit (Grand Front Osaka, Yodobashi Camera Umeda, Lucua)",
+          "South Exit (Hanshin Department Store, Hilton Plaza)",
+          "Sakurabashi Exit (West side, Airport buses)"
+        ],
+        "amenities": ["Central Ticket Office", "Baggage Service & Coin Lockers", "Convenience stores & Bakeries"],
+        "tips": "For Universal Studios Japan, take Osaka Loop Line (platform 1) to Nishikujo Station and transfer across platform to JR Yumezaki Line."
+      },
+      {
+        "level": "B1F",
+        "name": "B1F–B3F 'Umeda Dungeon' & Subways",
+        "name_ja": "B1F-B3F 地下鉄・阪急・阪神（梅田地下街）",
+        "lines": [
+          "Osaka Metro Midosuji Line (M-16, Umeda Station — red line to Dotonbori / Namba)",
+          "Osaka Metro Tanimachi Line (T-20, Higashi-Umeda Station — purple line)",
+          "Osaka Metro Yotsubashi Line (Y-11, Nishi-Umeda Station — blue line)",
+          "Hankyu Osaka-Umeda Station (express trains to Kyoto-Kawaramachi, Kobe)",
+          "Hanshin Osaka-Umeda Station (to Koshien Stadium, Kobe)"
+        ],
+        "exits": [
+          "Whity Umeda",
+          "Diamor Osaka",
+          "Do-chika underground mall"
+        ],
+        "amenities": ["Over 1,200 shops and eateries", "Multiple luggage locker banks", "Underground police and information booths"],
+        "tips": "Nicknamed 'Umeda Dungeon'. Look for colored overhead signs pointing to line letters: M (Red Midosuji), T (Purple Tanimachi), Y (Blue Yotsubashi)."
+      }
     ]
   },
   {
@@ -154,6 +424,7 @@
     "lat": 34.6811,
     "lng": 135.8193,
     "lines": ["JR Yamatoji", "JR Nara", "JR Sakurai"],
+    "map_url": "https://www.westjr.co.jp/global/en/timetable/pdf/station_nara.pdf",
     "exits": [
       {
         "name": "East Exit",
@@ -169,6 +440,31 @@
     "tips": [
       "Kintetsu-Nara Station is 15 minutes closer on foot to the deer at Nara Park than JR Nara Station. If arriving at JR Nara, take bus #2 from East Exit bus stop #1.",
       "The old Western-style JR station building outside the East Exit houses an excellent multi-lingual Tourist Information Office."
+    ],
+    "floors": [
+      {
+        "level": "2F",
+        "name": "2F Elevated Platforms",
+        "name_ja": "2F 高架ホーム",
+        "lines": [
+          "Platforms 1–2: JR Yamatoji Line (Yamatoji Rapid to Tennoji & JR Namba in Osaka)",
+          "Platforms 3–4: JR Nara Line (Miyakoji Rapid to Uji & Kyoto)",
+          "Platform 5: JR Sakurai Line (Man-yo Mahoroba Line to Tenri & Sakurai)"
+        ],
+        "amenities": ["Elevators, escalators and stairs down to 1F concourse", "Vending machines & waiting benches"],
+        "tips": "Rapid trains to Kyoto (Miyakoji Rapid) take approx 45 minutes; Yamatoji Rapid to Osaka Tennoji takes approx 35 minutes."
+      },
+      {
+        "level": "1F",
+        "name": "1F Concourse, Exits & Deer Park Buses",
+        "name_ja": "1F コンコース・奈良公園連絡バス",
+        "exits": [
+          "East Exit (Nara Park, Todai-ji Great Buddha, Kasuga Taisha, Sanjo-dori shopping street)",
+          "West Exit (Hotel Nikko Nara, Kansai & Itami Airport limousine buses)"
+        ],
+        "amenities": ["Historical 1934 Former Station Building (now Tourist Information Center)", "JR Ticket Office (Midori-no-Madoguchi)", "Luggage storage and Coin Lockers", "Starbucks & Souvenir shop"],
+        "tips": "Nara Park & Deer: Take City Loop Bus #2 from East Exit Bus Stop #1 (approx 8 minutes to Todai-ji Daibutsuden). Walking along Sanjo-dori takes approx 20–25 minutes."
+      }
     ]
   }
 ]

@@ -183,6 +183,40 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
             }
         }
 
+        if (state.stationGuides.isNotEmpty()) {
+            item {
+                KCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            stringResource(R.string.dir_station_maps_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Palette.Ink,
+                        )
+                        Text(
+                            stringResource(R.string.dir_station_maps_subtitle),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Palette.Mute,
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        items(state.stationGuides) { guide ->
+                            val shortName = guide.name.replace(" Station", "").replace(" / Umeda", "")
+                            PillButton(
+                                text = stringResource(R.string.dir_station_map_btn, shortName),
+                                onClick = { viewModel.viewGuide(guide) },
+                                tone = Tone.PETAL,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         if (state.showTimetable) {
             item {
                 TimetableCard(
@@ -247,8 +281,9 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
                         )
                     }
                     items(matchingGuides) { guide ->
+                        val shortName = guide.name.replace(" Station", "").replace(" / Umeda", "")
                         PillButton(
-                            stringResource(R.string.dir_station_guide_btn, guide.name),
+                            stringResource(R.string.dir_station_map_btn, shortName),
                             onClick = { viewModel.viewGuide(guide) },
                             tone = Tone.MAROON,
                         )
@@ -306,106 +341,9 @@ fun DirectionsScreen(onBack: () -> Unit, viewModel: DirectionsViewModel = hiltVi
     }
 
     state.viewingGuide?.let { guide ->
-        AlertDialog(
-            onDismissRequest = { viewModel.viewGuide(null) },
-            confirmButton = {
-                TextButton(onClick = { viewModel.viewGuide(null) }) {
-                    Text(stringResource(R.string.card_close), color = Palette.Sun)
-                }
-            },
-            title = {
-                Text(
-                    guide.name + if (guide.name_ja != null) " (${guide.name_ja})" else "",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Palette.Maroon,
-                )
-            },
-            text = {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (guide.lines.isNotEmpty()) {
-                        item {
-                            Text(stringResource(R.string.dir_station_guide_lines) + ": " + guide.lines.joinToString(", "), style = MaterialTheme.typography.labelMedium, color = Palette.Mute)
-                        }
-                    }
-                    if (guide.exits.isNotEmpty()) {
-                        item {
-                            Text(stringResource(R.string.dir_station_guide_exits), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Palette.Ink)
-                        }
-                        items(guide.exits) { exit ->
-                            Text("• ${exit.name}: ${exit.leads_to}", style = MaterialTheme.typography.bodySmall, color = Palette.Ink)
-                        }
-                    }
-                    if (guide.tips.isNotEmpty()) {
-                        item {
-                            Text(stringResource(R.string.dir_station_guide_tips), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = Palette.Ink)
-                        }
-                        items(guide.tips) { tip ->
-                            Text("• $tip", style = MaterialTheme.typography.bodySmall, color = Palette.Ink)
-                        }
-                    }
-                    item {
-                        OutlinedButton(
-                            onClick = {
-                                openWalkingDirections(
-                                    context = context,
-                                    destLat = guide.lat,
-                                    destLng = guide.lng,
-                                    destName = guide.name,
-                                )
-                            },
-                            shape = CircleShape,
-                            border = BorderStroke(1.5.dp, Palette.Green),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Palette.Green),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp),
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Text("🚶", fontSize = 16.sp)
-                                Text(
-                                    stringResource(R.string.dir_walk_to_station, guide.name),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                )
-                            }
-                        }
-                    }
-                    item {
-                        OutlinedButton(
-                            onClick = {
-                                activeGuideSteps = sampleGuide
-                                guideDestName = guide.name
-                                guideDestNameJa = guide.name_ja.orEmpty()
-                                guideDestLat = guide.lat
-                                guideDestLng = guide.lng
-                                viewModel.viewGuide(null)
-                            },
-                            shape = CircleShape,
-                            border = BorderStroke(1.5.dp, Palette.Sun),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Palette.Sun),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp),
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                LifesaverIcon(color = Palette.Sun, modifier = Modifier.size(16.dp))
-                                Text(
-                                    stringResource(R.string.dir_visual_guide_btn),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            containerColor = Palette.Card,
+        StationMapDialog(
+            guide = guide,
+            onDismiss = { viewModel.viewGuide(null) },
         )
     }
 

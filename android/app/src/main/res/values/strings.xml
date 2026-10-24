@@ -371,6 +371,16 @@
     <string name="dir_from_stop">Directions</string>
     <string name="dir_station_guide">Station guide: %s</string>
     <string name="dir_station_guide_btn">View %s guide</string>
+    <string name="dir_station_maps">Station Maps</string>
+    <string name="dir_station_maps_title">Major Station Maps</string>
+    <string name="dir_station_maps_subtitle">Floor layouts &amp; exits for Japan\'s busiest hubs</string>
+    <string name="dir_station_map_btn">🗺️ %s Map</string>
+    <string name="dir_station_floor_overview">Overview</string>
+    <string name="dir_station_floors">Floors &amp; Layout</string>
+    <string name="dir_station_platforms">Platforms &amp; Lines</string>
+    <string name="dir_station_amenities">Key Amenities</string>
+    <string name="dir_station_official_map">Official Station Layout</string>
+    <string name="dir_station_area_map">Station Area Map</string>
     <string name="dir_station_guide_lines">Lines</string>
     <string name="dir_station_guide_exits">Main exits &amp; destinations</string>
     <string name="dir_station_guide_tips">Tips &amp; transfers</string>

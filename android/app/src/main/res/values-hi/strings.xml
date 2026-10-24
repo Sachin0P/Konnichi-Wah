@@ -358,6 +358,16 @@
     <string name="dir_from_stop">रास्ता</string>
     <string name="dir_station_guide">स्टेशन गाइड: %s</string>
     <string name="dir_station_guide_btn">%s गाइड देखें</string>
+    <string name="dir_station_maps">स्टेशन मैप</string>
+    <string name="dir_station_maps_title">प्रमुख स्टेशन मैप</string>
+    <string name="dir_station_maps_subtitle">जापान के सबसे व्यस्त स्टेशनों के फ्लोर गाइड और निकास</string>
+    <string name="dir_station_map_btn">🗺️ %s मैप</string>
+    <string name="dir_station_floor_overview">अवलोकन</string>
+    <string name="dir_station_floors">मंजिलें और लेआउट</string>
+    <string name="dir_station_platforms">प्लेटफॉर्म और लाइनें</string>
+    <string name="dir_station_amenities">प्रमुख सुविधाएं</string>
+    <string name="dir_station_official_map">आधिकारिक स्टेशन लेआउट</string>
+    <string name="dir_station_area_map">स्टेशन क्षेत्र मैप</string>
     <string name="dir_station_guide_lines">लाइनें</string>
     <string name="dir_station_guide_exits">प्रमुख निकास और गंतव्य</string>
     <string name="dir_station_guide_tips">सलाह और ट्रांसफर</string>
