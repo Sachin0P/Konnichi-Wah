@@ -22,13 +22,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.remote.FoodDto
 import com.osakapatnam.konnichiwah.data.remote.FoodResultDto
+import com.osakapatnam.konnichiwah.ui.userMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,8 +45,8 @@ fun FoodScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Food near ${viewModel.route.placeName}", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+                title = { Text(stringResource(R.string.food_title, viewModel.route.placeName), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
             )
         },
     ) { padding ->
@@ -54,12 +57,12 @@ fun FoodScreen(
         ) {
             when (val s = state) {
                 FoodUiState.Loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                is FoodUiState.Error -> Message(s.message, button = "Try again", onClick = viewModel::load)
+                is FoodUiState.Error -> Message(s.error.userMessage(), button = stringResource(R.string.try_again), onClick = viewModel::load)
                 is FoodUiState.Loaded ->
                     if (s.food.results.isEmpty()) {
                         Message(
-                            "We don't know a restaurant suited to your diet within 1 km. Show your diet card at any restaurant, or try a convenience store.",
-                            button = "Show my diet cards",
+                            stringResource(R.string.food_none),
+                            button = stringResource(R.string.show_my_diet_cards),
                             onClick = onDietCards,
                         )
                     } else {
@@ -78,14 +81,14 @@ private fun Results(food: FoodDto, onDietCards: () -> Unit) {
     ) {
         item {
             Text(
-                "Ranked by Desi Match: how well each place suits your diet.",
+                stringResource(R.string.food_ranked),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         items(food.results, key = { it.id }) { RestaurantCard(it) }
         item {
-            TextButton(onClick = onDietCards) { Text("Show my diet cards") }
+            TextButton(onClick = onDietCards) { Text(stringResource(R.string.show_my_diet_cards)) }
         }
         item {
             // OpenStreetMap's licence requires this credit wherever its data is shown.
@@ -100,7 +103,7 @@ private fun RestaurantCard(r: FoodResultDto) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             val score = r.desiMatch.score.coerceIn(1, 5)
             Text(
-                "★".repeat(score) + "☆".repeat(5 - score) + "  Desi Match $score/5",
+                "★".repeat(score) + "☆".repeat(5 - score) + "  " + stringResource(R.string.food_score, score),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -119,17 +122,18 @@ private fun RestaurantCard(r: FoodResultDto) {
                 Text("⚠ $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
             }
             r.tags["opening_hours"]?.let {
-                Text("Hours (from OpenStreetMap, may be out of date): $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.food_hours, it), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
 // "300 m · about 4 min walk", at a gentle 80 metres a minute.
+@Composable
 private fun distanceLabel(metres: Int): String {
-    val distance = if (metres < 1000) "$metres m" else "%.1f km".format(metres / 1000.0)
+    val distance = if (metres < 1000) stringResource(R.string.food_metres, metres) else stringResource(R.string.food_km, metres / 1000.0)
     val minutes = maxOf(1, metres / 80)
-    return "$distance · about $minutes min walk"
+    return stringResource(R.string.food_walk, distance, minutes)
 }
 
 @Composable

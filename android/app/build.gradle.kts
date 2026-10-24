@@ -51,6 +51,14 @@ android {
         compose = true
         buildConfig = true
     }
+    // The app switches between English and Hindi itself (see InLanguage), so
+    // an app bundle must ship both languages to every phone, not just the
+    // phone's own language.
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
 }
 
 // Export Room's schema to app/schemas so database changes show up in code
@@ -59,7 +67,8 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
-// Copy the etiquette rulebook and the checked diet cards from the backend into
+// Copy the etiquette rulebook and the checked diet cards (and their Hindi
+// versions) from the backend into
 // the app's assets, so the app and the API always ship the same content and
 // it works offline. The backend's files are the single source of truth; don't
 // edit the copies.
@@ -83,6 +92,8 @@ val copyRulebook = tasks.register<CopyRulebookTask>("copyRulebook") {
     files.from(
         layout.projectDirectory.file("../../backend/rulebook/etiquette.json"),
         layout.projectDirectory.file("../../backend/rulebook/phrases.json"),
+        layout.projectDirectory.file("../../backend/rulebook/etiquette.hi.json"),
+        layout.projectDirectory.file("../../backend/rulebook/phrases.hi.json"),
     )
 }
 

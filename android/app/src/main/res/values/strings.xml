@@ -1,3 +1,248 @@
-<resources>
-    <string name="app_name">Konnichi-Wah!</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name" translatable="false">Konnichi-Wah!</string>
+
+    <!-- The other language, written in its own script, for the language switch. -->
+    <string name="switch_language">हिन्दी</string>
+
+    <!-- Common -->
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="try_again">Try again</string>
+    <string name="show_my_diet_cards">Show my diet cards</string>
+
+    <!-- Errors. The backend's own 503 messages are in English, so we only
+         show them when the app is in English (see show_server_messages). -->
+    <bool name="show_server_messages">true</bool>
+    <string name="error_network">Can\'t reach the Konnichi-Wah! server. Check your internet connection and try again.</string>
+    <string name="error_rejected">Some of your answers weren\'t accepted. Please go back and check them.</string>
+    <string name="error_too_many">Too many requests. Please wait a moment and try again.</string>
+    <string name="error_busy">The service is busy right now. Please try again in a minute.</string>
+    <string name="error_server">Something went wrong on our side. Please try again.</string>
+    <string name="error_bad_response">We got an unexpected reply from the server. Please try again, or update the app.</string>
+
+    <!-- Questionnaire -->
+    <string name="q_step_interests">What do you love?</string>
+    <string name="q_step_trip">When, and for how long?</string>
+    <string name="q_step_style">How do you like to travel?</string>
+    <string name="q_step_taste">Your taste profile</string>
+    <string name="q_step_extras">Anything else?</string>
+    <string name="q_next">Next</string>
+    <string name="q_plan_my_trip">Plan my trip</string>
+    <string name="q_interests">Pick everything that excites you</string>
+    <string name="q_interests_hint">Choose at least one.</string>
+    <string name="q_days">How many days in Japan?</string>
+    <plurals name="days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <string name="q_month">Which month are you travelling?</string>
+    <string name="q_month_hint">This decides cherry blossoms, snow and festivals.</string>
+    <string name="q_budget">Budget per person</string>
+    <string name="q_budget_hint">Including flights and stay.</string>
+    <string name="q_group">Who\'s travelling?</string>
+    <string name="q_pace">Pace</string>
+    <string name="q_diet">Your diet</string>
+    <string name="q_avoid">Anything you avoid?</string>
+    <string name="q_avoid_hint">We\'ll warn you about hidden ingredients like fish stock (dashi).</string>
+    <string name="q_spice">How spicy do you like it?</string>
+    <string name="q_japanese">How much Japanese do you speak?</string>
+    <string name="q_notes">Anything else we should know?</string>
+    <string name="q_notes_placeholder">Wheelchair access, elderly parents, must-see places…</string>
+    <string name="q_notes_too_long">That\'s a bit long. Please shorten it.</string>
+    <string name="q_optional">Optional</string>
+
+    <!-- Questionnaire answers -->
+    <string name="interest_temples">Temples &amp; shrines</string>
+    <string name="interest_anime">Anime &amp; pop culture</string>
+    <string name="interest_food">Food</string>
+    <string name="interest_nature">Nature</string>
+    <string name="interest_shopping">Shopping</string>
+    <string name="interest_snow">Snow &amp; winter</string>
+    <string name="interest_nightlife">Nightlife</string>
+    <string name="interest_history">History</string>
+    <string name="budget_1_2">₹1–2 lakh</string>
+    <string name="budget_2_3">₹2–3 lakh</string>
+    <string name="budget_3_plus">₹3 lakh+</string>
+    <string name="pace_relaxed">Relaxed</string>
+    <string name="pace_balanced">Balanced</string>
+    <string name="pace_packed">Packed</string>
+    <string name="group_solo">Solo</string>
+    <string name="group_couple">Couple</string>
+    <string name="group_friends">Friends</string>
+    <string name="group_family_kids">Family with kids</string>
+    <string name="group_family_elders">Family with elders</string>
+    <string name="diet_veg">Vegetarian</string>
+    <string name="diet_jain">Jain</string>
+    <string name="diet_eggetarian">Eggetarian</string>
+    <string name="diet_halal">Halal</string>
+    <string name="diet_non_veg">Non-vegetarian</string>
+    <string name="avoid_beef">Beef</string>
+    <string name="avoid_pork">Pork</string>
+    <string name="avoid_seafood">Seafood</string>
+    <string name="avoid_egg">Egg</string>
+    <string name="avoid_onion_garlic">Onion &amp; garlic</string>
+    <string name="spice_mild">Mild</string>
+    <string name="spice_medium">Medium</string>
+    <string name="spice_indian">Indian spicy</string>
+    <string name="japanese_none">None</string>
+    <string name="japanese_basic">A little</string>
+
+    <!-- Values from the backend: suggestion kinds, place types, time slots -->
+    <string name="kind_place">Place</string>
+    <string name="kind_activity">Activity</string>
+    <string name="kind_food">Food</string>
+    <string name="place_temple">Temple</string>
+    <string name="place_shrine">Shrine</string>
+    <string name="place_onsen">Onsen</string>
+    <string name="place_ryokan">Ryokan</string>
+    <string name="place_restaurant">Restaurant</string>
+    <string name="place_train">Train</string>
+    <string name="place_taxi">Taxi</string>
+    <string name="place_shop">Shop</string>
+    <string name="place_street">Street</string>
+    <string name="place_park">Park</string>
+    <string name="place_attraction">Attraction</string>
+    <string name="slot_morning">Morning</string>
+    <string name="slot_lunch">Lunch</string>
+    <string name="slot_afternoon">Afternoon</string>
+    <string name="slot_evening">Evening</string>
+    <string name="slot_dinner">Dinner</string>
+
+    <!-- Suggestions -->
+    <string name="sug_title">Your suggestions</string>
+    <string name="sug_edit">Edit</string>
+    <string name="sug_building">Building your itinerary…</string>
+    <string name="sug_build" tools:ignore="PluralsCandidate">Build itinerary (%d selected)</string>
+    <string name="sug_planning">Planning your trip…</string>
+    <string name="sug_wait">This can take up to 20 seconds.</string>
+    <string name="sug_route">Your %d-day route</string>
+    <string name="sug_catalogue">Our AI planner was busy, so these are our hand-picked suggestions.</string>
+    <string name="sug_answer_first">Please answer the questions first.</string>
+    <string name="trip_title">%1$d-day Japan trip · %2$s</string>
+    <string name="trip_title_default">My Japan trip</string>
+
+    <!-- Itinerary -->
+    <string name="it_your_trip">Your trip</string>
+    <string name="it_ask">Ask</string>
+    <string name="it_menu">Menu</string>
+    <string name="it_cards">Cards</string>
+    <string name="it_more">More</string>
+    <string name="it_new_trip">New trip</string>
+    <string name="it_no_trip">You haven\'t planned a trip yet.</string>
+    <string name="it_plan_trip">Plan a trip</string>
+    <string name="it_free_day">Free day. Rest, or add a stop.</string>
+    <string name="it_saving">Saving…</string>
+    <string name="it_not_synced">Saved on this phone. Not synced yet.</string>
+    <string name="it_synced">Saved on this phone and synced.</string>
+    <string name="it_sync_now">Sync now</string>
+    <string name="it_no_dates">No dates yet</string>
+    <string name="it_set_dates">Set dates</string>
+    <string name="it_change">Change</string>
+    <string name="it_dates_hint">Add your dates to get a reminder the evening before each day.</string>
+    <string name="it_reminder_on">Reminder at 7 pm Japan time the evening before each day.</string>
+    <string name="it_notifications_off">Notifications are off, so reminders won\'t show.</string>
+    <string name="it_turn_on">Turn on</string>
+    <string name="it_first_day">First day in Japan</string>
+    <string name="it_date_range">%1$s – %2$s</string>
+    <string name="it_day">Day %d</string>
+    <string name="it_trip_to">trip to %s</string>
+    <string name="it_add_stop">Add stop</string>
+    <string name="it_move_up">Move up</string>
+    <string name="it_move_down">Move down</string>
+    <string name="it_remove">Remove %s</string>
+    <string name="it_find_food">Find food nearby</string>
+    <plurals name="it_more_tips">
+        <item quantity="one">%d more tip</item>
+        <item quantity="other">%d more tips</item>
+    </plurals>
+    <string name="it_culture_tips">Culture tips</string>
+    <string name="it_important">IMPORTANT</string>
+    <string name="it_add_stop_title">Add a stop to day %d</string>
+    <string name="it_place_name">Place name</string>
+    <string name="it_place_kind">What kind of place?</string>
+    <string name="it_when">When?</string>
+    <string name="it_add">Add</string>
+
+    <!-- Chat -->
+    <string name="chat_title">Ask Konnichi</string>
+    <string name="chat_thinking">Thinking…</string>
+    <string name="chat_day">Day %1$d · %2$s</string>
+    <string name="chat_empty_title">Ask me anything about your trip</string>
+    <string name="chat_empty_hint">Train routes use live timetables, and etiquette and diet cards come from our checked rulebook.</string>
+    <string-array name="chat_suggestions">
+        <item>How do I get to my next stop?</item>
+        <item>What should I know before visiting a temple?</item>
+        <item>How do I tell the waiter what I can\'t eat?</item>
+        <item>How do I ask where the toilet is?</item>
+    </string-array>
+    <string name="source_train">Live train times</string>
+    <string name="source_etiquette">From our etiquette rulebook</string>
+    <string name="source_diet_card">Checked diet card</string>
+    <string name="source_food">Desi Match from OpenStreetMap</string>
+    <string name="source_shops">Shops from OpenStreetMap</string>
+    <string name="chat_placeholder">Ask about trains, food, manners…</string>
+    <string name="chat_send">Send</string>
+
+    <!-- Phrase and diet cards -->
+    <string name="card_tap_to_show">Tap to show staff</string>
+    <string name="card_close">Close</string>
+    <string name="cards_title">Diet cards</string>
+    <string name="cards_hint">Show these to restaurant staff. They\'re checked Japanese and work without internet.</string>
+    <string name="cards_yours">Your cards</string>
+    <string name="cards_all">All cards</string>
+
+    <!-- Food -->
+    <string name="food_title">Food near %s</string>
+    <string name="food_none">We don\'t know a restaurant suited to your diet nearby. Show your diet card at any restaurant, or try a convenience store.</string>
+    <string name="food_ranked">Ranked by Desi Match: how well each place suits your diet.</string>
+    <string name="food_score">Desi Match %d/5</string>
+    <string name="food_hours">Hours (from OpenStreetMap, may be out of date): %s</string>
+    <string name="food_metres">%d m</string>
+    <string name="food_km">%.1f km</string>
+    <string name="food_walk">%1$s · about %2$d min walk</string>
+
+    <!-- Menu reader -->
+    <string name="menu_title">Menu reader</string>
+    <string name="menu_reading">Reading the menu…</string>
+    <string name="menu_model_missing">English translation needs a one-time download (about 30 MB). Warnings work without it.</string>
+    <string name="menu_model_downloading">Downloading the translation…</string>
+    <string name="menu_model_failed">The download didn\'t finish. Check your connection and try again.</string>
+    <string name="menu_retry">Retry</string>
+    <string name="menu_download">Download</string>
+    <string name="menu_read_failed">Couldn\'t read that photo. Try again.</string>
+    <string name="menu_camera_failed">The camera couldn\'t take a photo. Try again.</string>
+    <string name="menu_open_failed">Couldn\'t open that photo.</string>
+    <string name="menu_instructions">Point the camera at a menu or sign, hold it steady, and tap Read.</string>
+    <string name="menu_camera_off">The camera is off for this app.</string>
+    <string name="menu_allow_camera">Allow camera</string>
+    <string name="menu_read">Read</string>
+    <string name="menu_choose_photo">Choose photo</string>
+    <string name="menu_scan_again">Scan again</string>
+    <string name="menu_my_cards">My diet cards</string>
+    <string name="menu_translation_note">English is a machine translation, only a rough guide. Warnings come from the Japanese words themselves.</string>
+    <string name="menu_no_text">No text found</string>
+    <string name="menu_no_text_hint">Hold the phone closer, keep the menu flat, and make sure it\'s well lit.</string>
+    <string name="menu_may_contain">⚠ May contain: %s</string>
+    <string name="menu_marked">The lines are marked below. Ask the staff, and show your diet card.</string>
+    <string name="menu_none_found">No warning words found</string>
+    <string name="menu_none_found_hint">That doesn\'t make a dish safe: dashi and meat stock often aren\'t written on the menu. Show your diet card to check.</string>
+    <string name="menu_translating">Translating…</string>
+    <string name="menu_flag">⚠ %1$s (%2$s)</string>
+    <string name="concern_pork">Pork</string>
+    <string name="concern_beef">Beef</string>
+    <string name="concern_chicken">Chicken</string>
+    <string name="concern_meat">Meat (ask which kind)</string>
+    <string name="concern_seafood">Fish or seafood</string>
+    <string name="concern_dashi">Dashi (fish stock)</string>
+    <string name="concern_egg">Egg</string>
+    <string name="concern_onion_garlic">Onion or garlic</string>
+    <string name="concern_alcohol">Alcohol (sake, mirin)</string>
+
+    <!-- Day-before reminders -->
+    <string name="reminder_channel">Day-before reminders</string>
+    <string name="reminder_channel_description">The evening before each trip day: tomorrow\'s stops and a culture tip.</string>
+    <string name="reminder_title">Tomorrow: Day %1$d in %2$s</string>
+    <string name="reminder_free_day">A free day. Rest, or open the app to add a stop.</string>
+    <string name="reminder_tip">Tip: %s</string>
 </resources>

@@ -2,7 +2,6 @@ package com.osakapatnam.konnichiwah.reminders
 
 import com.osakapatnam.konnichiwah.data.Rulebook
 import com.osakapatnam.konnichiwah.data.remote.DayDto
-import com.osakapatnam.konnichiwah.ui.timeSlotLabel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -33,6 +32,15 @@ fun dayReminders(startDate: LocalDate, dayCount: Int, now: Instant): List<DayRem
 
 data class ReminderText(val title: String, val body: String)
 
+// The words a reminder is made of, in the traveller's language. The worker
+// fills these in from string resources; tests pass plain English.
+class ReminderWords(
+    val title: (dayIndex: Int, city: String) -> String,
+    val freeDay: String,
+    val tip: (title: String) -> String,
+    val timeSlot: (slot: String) -> String,
+)
+
 // What the notification says, e.g.
 //
 //   Tomorrow: Day 2 in Kyoto
@@ -42,16 +50,16 @@ data class ReminderText(val title: String, val body: String)
 //
 // The tip is the most important one for the first stop that has any, from
 // the bundled rulebook, so it works offline like the rest of the trip.
-fun reminderText(day: DayDto, rulebook: Rulebook?): ReminderText {
-    val title = "Tomorrow: Day ${day.index} in ${day.city}"
+fun reminderText(day: DayDto, rulebook: Rulebook?, words: ReminderWords): ReminderText {
+    val title = words.title(day.index, day.city)
 
     if (day.stops.isEmpty()) {
-        return ReminderText(title, "A free day. Rest, or open the app to add a stop.")
+        return ReminderText(title, words.freeDay)
     }
 
-    val lines = day.stops.map { "${timeSlotLabel(it.timeSlot)} · ${it.placeName}" }.toMutableList()
+    val lines = day.stops.map { "${words.timeSlot(it.timeSlot)} · ${it.placeName}" }.toMutableList()
     val tip = rulebook?.let { book -> day.stops.firstNotNullOfOrNull { book.tipsFor(it).firstOrNull() } }
-    if (tip != null) lines += "Tip: ${tip.title}"
+    if (tip != null) lines += words.tip(tip.title)
 
     return ReminderText(title, lines.joinToString("\n"))
 }

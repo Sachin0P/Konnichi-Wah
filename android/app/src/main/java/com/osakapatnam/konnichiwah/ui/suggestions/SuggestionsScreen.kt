@@ -31,14 +31,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.remote.PlanDto
 import com.osakapatnam.konnichiwah.data.remote.SuggestionDto
 import com.osakapatnam.konnichiwah.ui.kindLabel
 import com.osakapatnam.konnichiwah.ui.placeTypeLabel
+import com.osakapatnam.konnichiwah.ui.userMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +55,7 @@ fun SuggestionsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Show a failed build as a snackbar, once.
-    val buildError = (state as? SuggestionsUiState.Loaded)?.buildError
+    val buildError = (state as? SuggestionsUiState.Loaded)?.buildError?.userMessage()
     LaunchedEffect(buildError) {
         if (buildError != null) {
             snackbarHostState.showSnackbar(buildError)
@@ -62,8 +66,8 @@ fun SuggestionsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Your suggestions") },
-                navigationIcon = { TextButton(onClick = onEditAnswers) { Text("Edit") } },
+                title = { Text(stringResource(R.string.sug_title)) },
+                navigationIcon = { TextButton(onClick = onEditAnswers) { Text(stringResource(R.string.sug_edit)) } },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -78,7 +82,7 @@ fun SuggestionsScreen(
                         .navigationBarsPadding()
                         .padding(16.dp),
                 ) {
-                    Text(if (loaded.building) "Building your itinerary…" else "Build itinerary (${loaded.selectedIds.size} selected)")
+                    Text(if (loaded.building) stringResource(R.string.sug_building) else stringResource(R.string.sug_build, loaded.selectedIds.size))
                 }
             }
         },
@@ -90,7 +94,7 @@ fun SuggestionsScreen(
         ) {
             when (val s = state) {
                 SuggestionsUiState.Loading -> LoadingContent()
-                is SuggestionsUiState.Error -> ErrorContent(s.message, onRetry = viewModel::load)
+                is SuggestionsUiState.Error -> ErrorContent(s.error?.userMessage() ?: stringResource(R.string.sug_answer_first), onRetry = viewModel::load)
                 is SuggestionsUiState.Loaded -> PlanContent(s.plan, s.selectedIds, onToggle = viewModel::toggle)
             }
         }
@@ -107,9 +111,9 @@ private fun LoadingContent() {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CircularProgressIndicator()
-        Text("Planning your trip…", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.sug_planning), style = MaterialTheme.typography.titleMedium)
         Text(
-            "This can take up to 20 seconds.",
+            stringResource(R.string.sug_wait),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
         )
@@ -126,7 +130,7 @@ private fun ErrorContent(message: String, onRetry: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(message, textAlign = TextAlign.Center)
-        Button(onClick = onRetry) { Text("Try again") }
+        Button(onClick = onRetry) { Text(stringResource(R.string.try_again)) }
     }
 }
 
@@ -157,15 +161,15 @@ private fun RouteCard(plan: PlanDto) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val totalDays = plan.cities.sumOf { it.days }
-            Text("Your $totalDays-day route", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.sug_route, totalDays), style = MaterialTheme.typography.titleMedium)
             plan.cities.forEach { city ->
-                Text("${city.name} · ${city.days} ${if (city.days == 1) "day" else "days"}", style = MaterialTheme.typography.labelLarge)
+                Text("${city.name} · ${pluralStringResource(R.plurals.days, city.days, city.days)}", style = MaterialTheme.typography.labelLarge)
                 Text(city.reason, style = MaterialTheme.typography.bodySmall)
             }
             // Be honest when the AI planner wasn't used, without alarming anyone.
             if (plan.source == "catalogue") {
                 Text(
-                    "Our AI planner was busy, so these are our hand-picked suggestions.",
+                    stringResource(R.string.sug_catalogue),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

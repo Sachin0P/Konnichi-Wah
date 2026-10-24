@@ -5,17 +5,17 @@ import com.osakapatnam.konnichiwah.data.remote.AvoidItem
 import com.osakapatnam.konnichiwah.data.remote.ChatReplyDto
 import com.osakapatnam.konnichiwah.data.remote.ChatRequestDto
 import com.osakapatnam.konnichiwah.data.remote.Diet
-import com.osakapatnam.konnichiwah.data.remote.FoodDto
-import com.osakapatnam.konnichiwah.data.remote.SpiceLevel
-import com.osakapatnam.konnichiwah.data.remote.UserProfileDto
-import kotlinx.serialization.json.jsonPrimitive
 import com.osakapatnam.konnichiwah.data.remote.EtiquetteRuleDto
+import com.osakapatnam.konnichiwah.data.remote.FoodDto
 import com.osakapatnam.konnichiwah.data.remote.HealthcheckDto
 import com.osakapatnam.konnichiwah.data.remote.KonnichiApi
 import com.osakapatnam.konnichiwah.data.remote.PlanDto
+import com.osakapatnam.konnichiwah.data.remote.SpiceLevel
 import com.osakapatnam.konnichiwah.data.remote.TripRequestDto
+import com.osakapatnam.konnichiwah.data.remote.UserProfileDto
 import com.osakapatnam.konnichiwah.data.remote.apiCall
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonPrimitive
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -43,7 +43,7 @@ class BackendRepository @Inject constructor(
     // backend when the trip was built), otherwise by its name. The query
     // parameters use the same strings as the profile's JSON, so we reuse the
     // serializer rather than spelling them out again.
-    suspend fun food(near: String, city: String, lat: Double?, lng: Double?, profile: UserProfileDto?): ApiResult<FoodDto> =
+    suspend fun food(near: String, city: String, lat: Double?, lng: Double?, profile: UserProfileDto?, language: AppLanguage): ApiResult<FoodDto> =
         apiCall(json) {
             val diet = profile?.diet?.let { json.encodeToJsonElement(Diet.serializer(), it).jsonPrimitive.content } ?: "non_veg"
             val avoid = profile?.avoid.orEmpty()
@@ -58,6 +58,7 @@ class BackendRepository @Inject constructor(
                 near = near.takeUnless { hasPoint },
                 city = city,
                 diet = diet,
+                language = language.tag,
                 avoid = avoid,
                 spice = spice,
             ).food

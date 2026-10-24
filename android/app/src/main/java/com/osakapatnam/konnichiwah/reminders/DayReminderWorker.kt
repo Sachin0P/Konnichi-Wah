@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Resources
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -16,7 +17,9 @@ import androidx.work.WorkerParameters
 import com.osakapatnam.konnichiwah.MainActivity
 import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.ItineraryRepository
+import com.osakapatnam.konnichiwah.data.LanguageRepository
 import com.osakapatnam.konnichiwah.data.RulebookAssets
+import com.osakapatnam.konnichiwah.ui.timeSlotLabel
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -37,6 +40,7 @@ class DayReminderWorker(context: Context, params: WorkerParameters) : CoroutineW
     interface Dependencies {
         fun itineraryRepository(): ItineraryRepository
         fun rulebookAssets(): RulebookAssets
+        fun languageRepository(): LanguageRepository
     }
 
     override suspend fun doWork(): Result {
@@ -58,15 +62,25 @@ class DayReminderWorker(context: Context, params: WorkerParameters) : CoroutineW
 
         if (!canNotify(applicationContext)) return Result.success()
 
-        val text = reminderText(day, deps.rulebookAssets().rulebook())
-        show(text, dayIndex)
+        // The notification is in the language the traveller uses the app in,
+        // tips included.
+        val languages = deps.languageRepository()
+        val res = languages.resources()
+        val words = ReminderWords(
+            title = { index, city -> res.getString(R.string.reminder_title, index, city) },
+            freeDay = res.getString(R.string.reminder_free_day),
+            tip = { res.getString(R.string.reminder_tip, it) },
+            timeSlot = { timeSlotLabel(res, it) },
+        )
+        val text = reminderText(day, deps.rulebookAssets().rulebook(languages.language.first()), words)
+        show(text, dayIndex, res)
 
         return Result.success()
     }
 
-    private fun show(text: ReminderText, dayIndex: Int) {
+    private fun show(text: ReminderText, dayIndex: Int, res: Resources) {
         val context = applicationContext
-        createChannel(context)
+        createChannel(context, res)
 
         // Tapping the notification opens the app on the trip.
         val intent = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -101,11 +115,13 @@ class DayReminderWorker(context: Context, params: WorkerParameters) : CoroutineW
             Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-        // Creating a channel that already exists does nothing, so it's safe to
-        // call before every notification.
-        private fun createChannel(context: Context) {
-            val channel = NotificationChannel(CHANNEL_ID, "Day-before reminders", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "The evening before each trip day: tomorrow's stops and a culture tip."
+        // Creating a channel that already exists is safe, so we do it before
+        // every notification. It also updates the channel's name and
+        // description, so they follow the traveller's language in the
+        // system's notification settings.
+        private fun createChannel(context: Context, res: Resources) {
+            val channel = NotificationChannel(CHANNEL_ID, res.getString(R.string.reminder_channel), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = res.getString(R.string.reminder_channel_description)
             }
             context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
         }

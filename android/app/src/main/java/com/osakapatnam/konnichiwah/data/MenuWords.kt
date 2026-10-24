@@ -1,5 +1,7 @@
 package com.osakapatnam.konnichiwah.data
 
+import androidx.annotation.StringRes
+import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.remote.AvoidItem
 import com.osakapatnam.konnichiwah.data.remote.Diet
 import com.osakapatnam.konnichiwah.data.remote.UserProfileDto
@@ -15,16 +17,16 @@ import com.osakapatnam.konnichiwah.data.remote.UserProfileDto
 // (いか is also "how about", かに is in しずかに), so squid is only イカ.
 // Have a native speaker check these before relying on them.
 
-enum class MenuConcern(val label: String) {
-    PORK("Pork"),
-    BEEF("Beef"),
-    CHICKEN("Chicken"),
-    MEAT("Meat (ask which kind)"),
-    SEAFOOD("Fish or seafood"),
-    DASHI("Dashi (fish stock)"),
-    EGG("Egg"),
-    ONION_GARLIC("Onion or garlic"),
-    ALCOHOL("Alcohol (sake, mirin)"),
+enum class MenuConcern(@StringRes val label: Int) {
+    PORK(R.string.concern_pork),
+    BEEF(R.string.concern_beef),
+    CHICKEN(R.string.concern_chicken),
+    MEAT(R.string.concern_meat),
+    SEAFOOD(R.string.concern_seafood),
+    DASHI(R.string.concern_dashi),
+    EGG(R.string.concern_egg),
+    ONION_GARLIC(R.string.concern_onion_garlic),
+    ALCOHOL(R.string.concern_alcohol),
 }
 
 // One warning word found in a line of the menu, e.g. PORK because of "豚".

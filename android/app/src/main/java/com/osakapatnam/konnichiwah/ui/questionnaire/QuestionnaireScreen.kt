@@ -25,10 +25,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.osakapatnam.konnichiwah.BuildConfig
+import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.remote.AvoidItem
 import com.osakapatnam.konnichiwah.data.remote.BudgetBand
 import com.osakapatnam.konnichiwah.data.remote.Diet
@@ -37,9 +40,11 @@ import com.osakapatnam.konnichiwah.data.remote.Interest
 import com.osakapatnam.konnichiwah.data.remote.JapaneseLevel
 import com.osakapatnam.konnichiwah.data.remote.Pace
 import com.osakapatnam.konnichiwah.data.remote.SpiceLevel
+import com.osakapatnam.konnichiwah.ui.LanguageSwitch
 import com.osakapatnam.konnichiwah.ui.components.ChoiceChips
 import com.osakapatnam.konnichiwah.ui.components.Question
-import com.osakapatnam.konnichiwah.ui.label
+import com.osakapatnam.konnichiwah.ui.currentLocale
+import com.osakapatnam.konnichiwah.ui.labelRes
 import com.osakapatnam.konnichiwah.ui.monthLabel
 import kotlin.math.roundToInt
 
@@ -59,8 +64,9 @@ fun QuestionnaireScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.step.title) },
+                title = { Text(stringResource(state.step.title)) },
                 actions = {
+                    LanguageSwitch()
                     if (BuildConfig.DEBUG) {
                         TextButton(onClick = onOpenDevCheck) { Text("Dev") }
                     }
@@ -81,18 +87,18 @@ fun QuestionnaireScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 if (!state.isFirstStep) {
-                    TextButton(onClick = viewModel::back) { Text("Back") }
+                    TextButton(onClick = viewModel::back) { Text(stringResource(R.string.back)) }
                 } else {
                     Spacer(Modifier)
                 }
 
                 if (state.isLastStep) {
                     Button(onClick = { viewModel.submit(onSubmitted) }, enabled = state.canContinue && !state.saving) {
-                        Text("Plan my trip")
+                        Text(stringResource(R.string.q_plan_my_trip))
                     }
                 } else {
                     Button(onClick = viewModel::next, enabled = state.canContinue) {
-                        Text("Next")
+                        Text(stringResource(R.string.q_next))
                     }
                 }
             }
@@ -124,21 +130,21 @@ fun QuestionnaireScreen(
 
 @Composable
 private fun InterestsStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewModel) {
-    Question("Pick everything that excites you", hint = "Choose at least one.") {
+    Question(stringResource(R.string.q_interests), hint = stringResource(R.string.q_interests_hint)) {
         ChoiceChips(
             options = Interest.entries,
             isSelected = { it in state.interests },
             onClick = viewModel::toggleInterest,
-            label = { it.label },
+            label = { stringResource(it.labelRes) },
         )
     }
 }
 
 @Composable
 private fun TripStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewModel) {
-    Question("How many days in Japan?") {
+    Question(stringResource(R.string.q_days)) {
         Text(
-            if (state.tripDays == 1) "1 day" else "${state.tripDays} days",
+            pluralStringResource(R.plurals.days, state.tripDays, state.tripDays),
             style = MaterialTheme.typography.headlineSmall,
         )
         Slider(
@@ -149,98 +155,98 @@ private fun TripStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewMo
         )
     }
 
-    Question("Which month are you travelling?", hint = "This decides cherry blossoms, snow and festivals.") {
+    Question(stringResource(R.string.q_month), hint = stringResource(R.string.q_month_hint)) {
         ChoiceChips(
             options = (1..12).toList(),
             isSelected = { it == state.travelMonth },
             onClick = viewModel::setTravelMonth,
-            label = ::monthLabel,
+            label = { monthLabel(it, currentLocale()) },
         )
     }
 }
 
 @Composable
 private fun StyleStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewModel) {
-    Question("Budget per person", hint = "Including flights and stay.") {
+    Question(stringResource(R.string.q_budget), hint = stringResource(R.string.q_budget_hint)) {
         ChoiceChips(
             options = BudgetBand.entries,
             isSelected = { it == state.budgetBand },
             onClick = viewModel::setBudgetBand,
-            label = { it.label },
+            label = { stringResource(it.labelRes) },
         )
     }
 
-    Question("Who's travelling?") {
+    Question(stringResource(R.string.q_group)) {
         ChoiceChips(
             options = GroupType.entries,
             isSelected = { it == state.groupType },
             onClick = viewModel::setGroupType,
-            label = { it.label },
+            label = { stringResource(it.labelRes) },
         )
     }
 
-    Question("Pace") {
+    Question(stringResource(R.string.q_pace)) {
         ChoiceChips(
             options = Pace.entries,
             isSelected = { it == state.pace },
             onClick = viewModel::setPace,
-            label = { it.label },
+            label = { stringResource(it.labelRes) },
         )
     }
 }
 
 @Composable
 private fun TasteStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewModel) {
-    Question("Your diet") {
+    Question(stringResource(R.string.q_diet)) {
         ChoiceChips(
             options = Diet.entries,
             isSelected = { it == state.diet },
             onClick = viewModel::setDiet,
-            label = { it.label },
+            label = { stringResource(it.labelRes) },
         )
     }
 
-    Question("Anything you avoid?", hint = "We'll warn you about hidden ingredients like fish stock (dashi).") {
+    Question(stringResource(R.string.q_avoid), hint = stringResource(R.string.q_avoid_hint)) {
         ChoiceChips(
             options = AvoidItem.entries,
             isSelected = { it in state.avoid },
             onClick = viewModel::toggleAvoid,
-            label = { it.label },
+            label = { stringResource(it.labelRes) },
         )
     }
 
-    Question("How spicy do you like it?") {
+    Question(stringResource(R.string.q_spice)) {
         ChoiceChips(
             options = SpiceLevel.entries,
             isSelected = { it == state.spiceLevel },
             onClick = viewModel::setSpiceLevel,
-            label = { it.label },
+            label = { stringResource(it.labelRes) },
         )
     }
 }
 
 @Composable
 private fun ExtrasStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewModel) {
-    Question("How much Japanese do you speak?") {
+    Question(stringResource(R.string.q_japanese)) {
         ChoiceChips(
             options = JapaneseLevel.entries,
             isSelected = { it == state.japaneseLevel },
             onClick = viewModel::setJapaneseLevel,
-            label = { it.label },
+            label = { stringResource(it.labelRes) },
         )
     }
 
-    Question("Anything else we should know?") {
+    Question(stringResource(R.string.q_notes)) {
         val tooLong = state.notesBytes > MAX_NOTES_BYTES
         OutlinedTextField(
             value = state.notes,
             onValueChange = viewModel::setNotes,
             modifier = Modifier.fillMaxWidth(),
             minLines = 4,
-            placeholder = { Text("Wheelchair access, elderly parents, must-see places…") },
+            placeholder = { Text(stringResource(R.string.q_notes_placeholder)) },
             isError = tooLong,
             supportingText = {
-                if (tooLong) Text("That's a bit long. Please shorten it.") else Text("Optional")
+                Text(stringResource(if (tooLong) R.string.q_notes_too_long else R.string.q_optional))
             },
         )
     }

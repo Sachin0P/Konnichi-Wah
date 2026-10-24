@@ -1,0 +1,236 @@
+<resources>
+    <!-- Hindi. Hand-written for the prototype: have a native speaker check it
+         before relying on it. Place, station and dish names stay in English
+         letters, as they appear on signs in Japan. -->
+
+    <string name="switch_language">English</string>
+
+    <string name="back">वापस</string>
+    <string name="cancel">रद्द करें</string>
+    <string name="ok">ठीक है</string>
+    <string name="try_again">फिर कोशिश करें</string>
+    <string name="show_my_diet_cards">मेरे डाइट कार्ड दिखाएँ</string>
+
+    <bool name="show_server_messages">false</bool>
+    <string name="error_network">Konnichi-Wah! सर्वर से कनेक्ट नहीं हो पा रहा। इंटरनेट कनेक्शन देखें और फिर कोशिश करें।</string>
+    <string name="error_rejected">आपके कुछ जवाब स्वीकार नहीं हुए। कृपया वापस जाकर उन्हें जाँचें।</string>
+    <string name="error_too_many">बहुत ज़्यादा अनुरोध। थोड़ा रुककर फिर कोशिश करें।</string>
+    <string name="error_busy">सेवा अभी व्यस्त है। एक मिनट बाद फिर कोशिश करें।</string>
+    <string name="error_server">हमारी तरफ़ कुछ गड़बड़ हो गई। कृपया फिर कोशिश करें।</string>
+    <string name="error_bad_response">सर्वर से अनपेक्षित जवाब मिला। फिर कोशिश करें, या ऐप अपडेट करें।</string>
+
+    <string name="q_step_interests">आपको क्या पसंद है?</string>
+    <string name="q_step_trip">कब, और कितने दिनों के लिए?</string>
+    <string name="q_step_style">आप कैसे घूमना पसंद करते हैं?</string>
+    <string name="q_step_taste">आपका खान-पान</string>
+    <string name="q_step_extras">कुछ और?</string>
+    <string name="q_next">आगे</string>
+    <string name="q_plan_my_trip">मेरी यात्रा प्लान करें</string>
+    <string name="q_interests">जो कुछ भी आपको अच्छा लगे, सब चुनें</string>
+    <string name="q_interests_hint">कम से कम एक चुनें।</string>
+    <string name="q_days">जापान में कितने दिन?</string>
+    <plurals name="days">
+        <item quantity="one">%d दिन</item>
+        <item quantity="other">%d दिन</item>
+    </plurals>
+    <string name="q_month">आप किस महीने जा रहे हैं?</string>
+    <string name="q_month_hint">इसी से तय होगा कि चेरी ब्लॉसम, बर्फ़ और त्योहार मिलेंगे या नहीं।</string>
+    <string name="q_budget">प्रति व्यक्ति बजट</string>
+    <string name="q_budget_hint">फ़्लाइट और ठहरने समेत।</string>
+    <string name="q_group">कौन-कौन जा रहा है?</string>
+    <string name="q_pace">रफ़्तार</string>
+    <string name="q_diet">आपका खान-पान</string>
+    <string name="q_avoid">किन चीज़ों से परहेज़ है?</string>
+    <string name="q_avoid_hint">हम आपको छिपी हुई चीज़ों, जैसे मछली के स्टॉक (dashi), के बारे में सावधान करेंगे।</string>
+    <string name="q_spice">आपको कितना तीखा पसंद है?</string>
+    <string name="q_japanese">आप कितनी जापानी बोलते हैं?</string>
+    <string name="q_notes">हमें और कुछ जानना चाहिए?</string>
+    <string name="q_notes_placeholder">व्हीलचेयर की सुविधा, बुज़ुर्ग माता-पिता, ज़रूर देखने वाली जगहें…</string>
+    <string name="q_notes_too_long">यह थोड़ा लंबा है। कृपया इसे छोटा करें।</string>
+    <string name="q_optional">वैकल्पिक</string>
+
+    <string name="interest_temples">मंदिर और श्राइन</string>
+    <string name="interest_anime">एनीमे और पॉप कल्चर</string>
+    <string name="interest_food">खाना</string>
+    <string name="interest_nature">प्रकृति</string>
+    <string name="interest_shopping">शॉपिंग</string>
+    <string name="interest_snow">बर्फ़ और सर्दी</string>
+    <string name="interest_nightlife">नाइटलाइफ़</string>
+    <string name="interest_history">इतिहास</string>
+    <string name="budget_1_2">₹1–2 लाख</string>
+    <string name="budget_2_3">₹2–3 लाख</string>
+    <string name="budget_3_plus">₹3 लाख+</string>
+    <string name="pace_relaxed">आराम से</string>
+    <string name="pace_balanced">संतुलित</string>
+    <string name="pace_packed">भरपूर</string>
+    <string name="group_solo">अकेले</string>
+    <string name="group_couple">कपल</string>
+    <string name="group_friends">दोस्त</string>
+    <string name="group_family_kids">बच्चों के साथ परिवार</string>
+    <string name="group_family_elders">बुज़ुर्गों के साथ परिवार</string>
+    <string name="diet_veg">शाकाहारी</string>
+    <string name="diet_jain">जैन</string>
+    <string name="diet_eggetarian">शाकाहारी, अंडे के साथ</string>
+    <string name="diet_halal">हलाल</string>
+    <string name="diet_non_veg">मांसाहारी</string>
+    <string name="avoid_beef">बीफ़</string>
+    <string name="avoid_pork">पोर्क</string>
+    <string name="avoid_seafood">सी-फ़ूड</string>
+    <string name="avoid_egg">अंडा</string>
+    <string name="avoid_onion_garlic">प्याज़ और लहसुन</string>
+    <string name="spice_mild">हल्का</string>
+    <string name="spice_medium">मध्यम</string>
+    <string name="spice_indian">भारतीय तीखा</string>
+    <string name="japanese_none">बिल्कुल नहीं</string>
+    <string name="japanese_basic">थोड़ी-बहुत</string>
+
+    <string name="kind_place">जगह</string>
+    <string name="kind_activity">गतिविधि</string>
+    <string name="kind_food">खाना</string>
+    <string name="place_temple">मंदिर</string>
+    <string name="place_shrine">श्राइन</string>
+    <string name="place_onsen">Onsen (गर्म पानी का स्नान)</string>
+    <string name="place_ryokan">Ryokan (पारंपरिक होटल)</string>
+    <string name="place_restaurant">रेस्टोरेंट</string>
+    <string name="place_train">ट्रेन</string>
+    <string name="place_taxi">टैक्सी</string>
+    <string name="place_shop">दुकान</string>
+    <string name="place_street">गली-बाज़ार</string>
+    <string name="place_park">पार्क</string>
+    <string name="place_attraction">दर्शनीय स्थल</string>
+    <string name="slot_morning">सुबह</string>
+    <string name="slot_lunch">दोपहर का खाना</string>
+    <string name="slot_afternoon">दोपहर</string>
+    <string name="slot_evening">शाम</string>
+    <string name="slot_dinner">रात का खाना</string>
+
+    <string name="sug_title">आपके सुझाव</string>
+    <string name="sug_edit">बदलें</string>
+    <string name="sug_building">आपका कार्यक्रम बन रहा है…</string>
+    <string name="sug_build">कार्यक्रम बनाएँ (%d चुने गए)</string>
+    <string name="sug_planning">आपकी यात्रा प्लान हो रही है…</string>
+    <string name="sug_wait">इसमें 20 सेकंड तक लग सकते हैं।</string>
+    <string name="sug_route">आपका %d दिन का रूट</string>
+    <string name="sug_catalogue">हमारा AI प्लानर व्यस्त था, इसलिए ये हमारे चुने हुए सुझाव हैं।</string>
+    <string name="sug_answer_first">कृपया पहले सवालों के जवाब दें।</string>
+    <string name="trip_title">जापान यात्रा, %1$d दिन · %2$s</string>
+    <string name="trip_title_default">मेरी जापान यात्रा</string>
+
+    <string name="it_your_trip">आपकी यात्रा</string>
+    <string name="it_ask">पूछें</string>
+    <string name="it_menu">मेन्यू</string>
+    <string name="it_cards">कार्ड</string>
+    <string name="it_more">और</string>
+    <string name="it_new_trip">नई यात्रा</string>
+    <string name="it_no_trip">आपने अभी कोई यात्रा प्लान नहीं की है।</string>
+    <string name="it_plan_trip">यात्रा प्लान करें</string>
+    <string name="it_free_day">ख़ाली दिन। आराम करें, या कोई जगह जोड़ें।</string>
+    <string name="it_saving">सेव हो रहा है…</string>
+    <string name="it_not_synced">इस फ़ोन पर सेव है। अभी सिंक नहीं हुआ।</string>
+    <string name="it_synced">इस फ़ोन पर सेव और सिंक हो गया।</string>
+    <string name="it_sync_now">अभी सिंक करें</string>
+    <string name="it_no_dates">अभी कोई तारीख़ नहीं</string>
+    <string name="it_set_dates">तारीख़ें चुनें</string>
+    <string name="it_change">बदलें</string>
+    <string name="it_dates_hint">तारीख़ें जोड़ें, ताकि हर दिन से पहले की शाम आपको रिमाइंडर मिले।</string>
+    <string name="it_reminder_on">हर दिन से पहले की शाम, जापान के समय से शाम 7 बजे रिमाइंडर आएगा।</string>
+    <string name="it_notifications_off">नोटिफ़िकेशन बंद हैं, इसलिए रिमाइंडर नहीं दिखेंगे।</string>
+    <string name="it_turn_on">चालू करें</string>
+    <string name="it_first_day">जापान में पहला दिन</string>
+    <string name="it_date_range">%1$s – %2$s</string>
+    <string name="it_day">दिन %d</string>
+    <string name="it_trip_to">%s की सैर</string>
+    <string name="it_add_stop">जगह जोड़ें</string>
+    <string name="it_move_up">ऊपर करें</string>
+    <string name="it_move_down">नीचे करें</string>
+    <string name="it_remove">%s हटाएँ</string>
+    <string name="it_find_food">आसपास खाना ढूँढ़ें</string>
+    <plurals name="it_more_tips">
+        <item quantity="one">%d और टिप</item>
+        <item quantity="other">%d और टिप्स</item>
+    </plurals>
+    <string name="it_culture_tips">संस्कृति टिप्स</string>
+    <string name="it_important">ज़रूरी</string>
+    <string name="it_add_stop_title">दिन %d में जगह जोड़ें</string>
+    <string name="it_place_name">जगह का नाम</string>
+    <string name="it_place_kind">किस तरह की जगह?</string>
+    <string name="it_when">कब?</string>
+    <string name="it_add">जोड़ें</string>
+
+    <string name="chat_title">Konnichi से पूछें</string>
+    <string name="chat_thinking">सोच रहा हूँ…</string>
+    <string name="chat_day">दिन %1$d · %2$s</string>
+    <string name="chat_empty_title">अपनी यात्रा के बारे में कुछ भी पूछें</string>
+    <string name="chat_empty_hint">ट्रेन रूट लाइव टाइमटेबल से आते हैं, और शिष्टाचार व डाइट कार्ड हमारी जाँची हुई नियम-पुस्तिका से।</string>
+    <string-array name="chat_suggestions">
+        <item>अपनी अगली जगह तक कैसे पहुँचूँ?</item>
+        <item>मंदिर जाने से पहले क्या जानना चाहिए?</item>
+        <item>वेटर को कैसे बताऊँ कि मुझे क्या नहीं खाना है?</item>
+        <item>टॉयलेट कहाँ है, यह कैसे पूछूँ?</item>
+    </string-array>
+    <string name="source_train">लाइव ट्रेन समय</string>
+    <string name="source_etiquette">हमारी शिष्टाचार नियम-पुस्तिका से</string>
+    <string name="source_diet_card">जाँचा हुआ डाइट कार्ड</string>
+    <string name="source_food">OpenStreetMap से Desi Match</string>
+    <string name="source_shops">OpenStreetMap से दुकानें</string>
+    <string name="chat_placeholder">ट्रेन, खाना, तौर-तरीक़ों के बारे में पूछें…</string>
+    <string name="chat_send">भेजें</string>
+
+    <string name="card_tap_to_show">स्टाफ़ को दिखाने के लिए टैप करें</string>
+    <string name="card_close">बंद करें</string>
+    <string name="cards_title">डाइट कार्ड</string>
+    <string name="cards_hint">इन्हें रेस्टोरेंट स्टाफ़ को दिखाएँ। इनकी जापानी जाँची हुई है और ये बिना इंटरनेट के चलते हैं।</string>
+    <string name="cards_yours">आपके कार्ड</string>
+    <string name="cards_all">सभी कार्ड</string>
+
+    <string name="food_title">%s के पास खाना</string>
+    <string name="food_none">आसपास आपके खान-पान के लायक़ कोई रेस्टोरेंट हमें नहीं पता। किसी भी रेस्टोरेंट में अपना डाइट कार्ड दिखाएँ, या कन्वीनियंस स्टोर आज़माएँ।</string>
+    <string name="food_ranked">Desi Match के हिसाब से: हर जगह आपके खान-पान के लिए कितनी सही है।</string>
+    <string name="food_score">Desi Match %d/5</string>
+    <string name="food_hours">समय (OpenStreetMap से, पुराना हो सकता है): %s</string>
+    <string name="food_metres">%d मी</string>
+    <string name="food_km">%.1f किमी</string>
+    <string name="food_walk">%1$s · लगभग %2$d मिनट पैदल</string>
+
+    <string name="menu_title">मेन्यू रीडर</string>
+    <string name="menu_reading">मेन्यू पढ़ा जा रहा है…</string>
+    <string name="menu_model_missing">अंग्रेज़ी अनुवाद के लिए एक बार डाउनलोड चाहिए (लगभग 30 MB)। चेतावनियाँ इसके बिना भी काम करती हैं।</string>
+    <string name="menu_model_downloading">अनुवाद डाउनलोड हो रहा है…</string>
+    <string name="menu_model_failed">डाउनलोड पूरा नहीं हुआ। कनेक्शन देखें और फिर कोशिश करें।</string>
+    <string name="menu_retry">फिर से</string>
+    <string name="menu_download">डाउनलोड</string>
+    <string name="menu_read_failed">यह फ़ोटो पढ़ी नहीं जा सकी। फिर कोशिश करें।</string>
+    <string name="menu_camera_failed">कैमरा फ़ोटो नहीं ले पाया। फिर कोशिश करें।</string>
+    <string name="menu_open_failed">यह फ़ोटो खुल नहीं पाई।</string>
+    <string name="menu_instructions">कैमरा मेन्यू या बोर्ड की ओर करें, फ़ोन स्थिर रखें, और \'पढ़ें\' दबाएँ।</string>
+    <string name="menu_camera_off">इस ऐप के लिए कैमरा बंद है।</string>
+    <string name="menu_allow_camera">कैमरा चालू करें</string>
+    <string name="menu_read">पढ़ें</string>
+    <string name="menu_choose_photo">फ़ोटो चुनें</string>
+    <string name="menu_scan_again">फिर स्कैन करें</string>
+    <string name="menu_my_cards">मेरे डाइट कार्ड</string>
+    <string name="menu_translation_note">अंग्रेज़ी अनुवाद मशीन से है, सिर्फ़ मोटा अंदाज़ा। चेतावनियाँ ख़ुद जापानी शब्दों से आती हैं।</string>
+    <string name="menu_no_text">कोई लिखावट नहीं मिली</string>
+    <string name="menu_no_text_hint">फ़ोन पास लाएँ, मेन्यू सीधा रखें, और ध्यान रखें कि रोशनी अच्छी हो।</string>
+    <string name="menu_may_contain">⚠ इसमें हो सकता है: %s</string>
+    <string name="menu_marked">नीचे वे लाइनें चिह्नित हैं। स्टाफ़ से पूछें, और अपना डाइट कार्ड दिखाएँ।</string>
+    <string name="menu_none_found">कोई चेतावनी वाला शब्द नहीं मिला</string>
+    <string name="menu_none_found_hint">इसका मतलब यह नहीं कि डिश सुरक्षित है: dashi और मांस का स्टॉक अक्सर मेन्यू पर नहीं लिखा होता। पक्का करने के लिए अपना डाइट कार्ड दिखाएँ।</string>
+    <string name="menu_translating">अनुवाद हो रहा है…</string>
+    <string name="menu_flag">⚠ %1$s (%2$s)</string>
+    <string name="concern_pork">पोर्क</string>
+    <string name="concern_beef">बीफ़</string>
+    <string name="concern_chicken">चिकन</string>
+    <string name="concern_meat">मांस (पूछें कौन-सा)</string>
+    <string name="concern_seafood">मछली या सी-फ़ूड</string>
+    <string name="concern_dashi">Dashi (मछली का स्टॉक)</string>
+    <string name="concern_egg">अंडा</string>
+    <string name="concern_onion_garlic">प्याज़ या लहसुन</string>
+    <string name="concern_alcohol">शराब (sake, mirin)</string>
+
+    <string name="reminder_channel">एक दिन पहले के रिमाइंडर</string>
+    <string name="reminder_channel_description">हर यात्रा-दिन से पहले की शाम: कल की जगहें और एक संस्कृति टिप।</string>
+    <string name="reminder_title">कल: दिन %1$d, %2$s में</string>
+    <string name="reminder_free_day">ख़ाली दिन। आराम करें, या कोई जगह जोड़ने के लिए ऐप खोलें।</string>
+    <string name="reminder_tip">टिप: %s</string>
+</resources>

@@ -2,6 +2,7 @@ package com.osakapatnam.konnichiwah.ui.cards
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.osakapatnam.konnichiwah.data.LanguageRepository
 import com.osakapatnam.konnichiwah.data.ProfileRepository
 import com.osakapatnam.konnichiwah.data.RulebookAssets
 import com.osakapatnam.konnichiwah.data.dietCardsFor
@@ -30,16 +31,20 @@ data class CardsUiState(
 class CardsViewModel @Inject constructor(
     private val rulebookAssets: RulebookAssets,
     private val profileRepository: ProfileRepository,
+    private val languageRepository: LanguageRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CardsUiState())
     val state: StateFlow<CardsUiState> = _state.asStateFlow()
 
     init {
+        // Each card's meaning follows the traveller's language.
         viewModelScope.launch {
-            val cards = rulebookAssets.phraseCards()
-            val yours = dietCardsFor(profileRepository.tripRequest.first()?.profile, cards)
-            _state.update { it.copy(yours = yours, others = cards - yours.toSet()) }
+            languageRepository.language.collect { language ->
+                val cards = rulebookAssets.phraseCards(language)
+                val yours = dietCardsFor(profileRepository.tripRequest.first()?.profile, cards)
+                _state.update { it.copy(yours = yours, others = cards - yours.toSet()) }
+            }
         }
     }
 

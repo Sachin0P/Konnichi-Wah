@@ -30,7 +30,7 @@ fun <T> ChoiceChips(
     options: List<T>,
     isSelected: (T) -> Boolean,
     onClick: (T) -> Unit,
-    label: (T) -> String,
+    label: @Composable (T) -> String,
 ) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),

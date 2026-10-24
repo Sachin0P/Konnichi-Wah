@@ -41,27 +41,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.LocalItinerary
 import com.osakapatnam.konnichiwah.data.Rulebook
 import com.osakapatnam.konnichiwah.data.remote.DayDto
 import com.osakapatnam.konnichiwah.data.remote.EtiquetteRuleDto
 import com.osakapatnam.konnichiwah.data.remote.StopDto
 import com.osakapatnam.konnichiwah.reminders.DayReminderWorker
+import com.osakapatnam.konnichiwah.ui.LanguageViewModel
 import com.osakapatnam.konnichiwah.ui.components.ChoiceChips
 import com.osakapatnam.konnichiwah.ui.components.Question
+import com.osakapatnam.konnichiwah.ui.currentLocale
 import com.osakapatnam.konnichiwah.ui.placeTypeLabel
 import com.osakapatnam.konnichiwah.ui.timeSlotLabel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,6 +76,7 @@ fun ItineraryScreen(
     onMenu: () -> Unit,
     onFindFood: (StopDto) -> Unit,
     viewModel: ItineraryViewModel = hiltViewModel(),
+    languageViewModel: LanguageViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var addingToDay by remember { mutableStateOf<Int?>(null) }
@@ -81,20 +86,25 @@ fun ItineraryScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(state.itinerary?.title ?: "Your trip", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(state.itinerary?.title ?: stringResource(R.string.it_your_trip), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 },
                 actions = {
-                    TextButton(onClick = onAsk) { Text("Ask") }
-                    TextButton(onClick = onMenu) { Text("Menu") }
-                    TextButton(onClick = onCards) { Text("Cards") }
-                    // "New trip" is rarely needed, so it goes in a menu to
-                    // leave room for the title.
+                    TextButton(onClick = onAsk) { Text(stringResource(R.string.it_ask)) }
+                    TextButton(onClick = onMenu) { Text(stringResource(R.string.it_menu)) }
+                    TextButton(onClick = onCards) { Text(stringResource(R.string.it_cards)) }
+                    // "New trip" and the language switch are rarely needed, so
+                    // they go in a menu to leave room for the title.
+                    val more = stringResource(R.string.it_more)
                     Box {
-                        IconButton(onClick = { showMore = true }, modifier = Modifier.semantics { contentDescription = "More" }) {
+                        IconButton(onClick = { showMore = true }, modifier = Modifier.semantics { contentDescription = more }) {
                             Text("⋮", style = MaterialTheme.typography.titleLarge)
                         }
                         DropdownMenu(expanded = showMore, onDismissRequest = { showMore = false }) {
-                            DropdownMenuItem(text = { Text("New trip") }, onClick = { showMore = false; onNewTrip() })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.it_new_trip)) }, onClick = { showMore = false; onNewTrip() })
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.switch_language)) },
+                                onClick = { showMore = false; languageViewModel.toggle() },
+                            )
                         }
                     }
                 },
@@ -150,8 +160,8 @@ private fun NoTrip(onNewTrip: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("You haven't planned a trip yet.")
-        TextButton(onClick = onNewTrip) { Text("Plan a trip") }
+        Text(stringResource(R.string.it_no_trip))
+        TextButton(onClick = onNewTrip) { Text(stringResource(R.string.it_plan_trip)) }
     }
 }
 
@@ -188,7 +198,7 @@ private fun TripContent(
             if (day.stops.isEmpty()) {
                 item(key = "free-${day.index}") {
                     Text(
-                        "Free day. Rest, or add a stop.",
+                        stringResource(R.string.it_free_day),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -218,9 +228,9 @@ private fun TripContent(
 private fun SyncStatus(pendingSync: Boolean, syncing: Boolean, onSyncNow: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         val text = when {
-            syncing -> "Saving…"
-            pendingSync -> "Saved on this phone. Not synced yet."
-            else -> "Saved on this phone and synced."
+            syncing -> stringResource(R.string.it_saving)
+            pendingSync -> stringResource(R.string.it_not_synced)
+            else -> stringResource(R.string.it_synced)
         }
         Text(
             text,
@@ -229,14 +239,18 @@ private fun SyncStatus(pendingSync: Boolean, syncing: Boolean, onSyncNow: () -> 
             modifier = Modifier.weight(1f),
         )
         if (pendingSync && !syncing) {
-            TextButton(onClick = onSyncNow) { Text("Sync now") }
+            TextButton(onClick = onSyncNow) { Text(stringResource(R.string.it_sync_now)) }
         }
     }
 }
 
-// "Sat 21 Nov" for day headers, and "21 Nov 2026" for the trip's dates.
-private val dayFormat = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH)
-private val tripDateFormat = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
+// "Sat 21 Nov" for day headers, and "21 Nov 2026" for the trip's dates, in
+// the language on screen.
+@Composable
+private fun dayFormat() = DateTimeFormatter.ofPattern("EEE d MMM", currentLocale())
+
+@Composable
+private fun tripDateFormat() = DateTimeFormatter.ofPattern("d MMM yyyy", currentLocale())
 
 // The trip's dates, and the button to set or change them. Dates are what turn
 // on the day-before reminders, so this is also where we ask for permission to
@@ -260,19 +274,20 @@ private fun TripDates(startDate: LocalDate?, dayCount: Int, onSetStartDate: (Loc
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             val dates = if (startDate == null) {
-                "No dates yet"
+                stringResource(R.string.it_no_dates)
             } else {
                 val end = startDate.plusDays(maxOf(dayCount - 1L, 0))
-                "${startDate.format(tripDateFormat)} – ${end.format(tripDateFormat)}"
+                val format = tripDateFormat()
+                stringResource(R.string.it_date_range, startDate.format(format), end.format(format))
             }
             Text(dates, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            TextButton(onClick = { picking = true }) { Text(if (startDate == null) "Set dates" else "Change") }
+            TextButton(onClick = { picking = true }) { Text(stringResource(if (startDate == null) R.string.it_set_dates else R.string.it_change)) }
         }
 
         val note = when {
-            startDate == null -> "Add your dates to get a reminder the evening before each day."
-            canNotify -> "Reminder at 7 pm Japan time the evening before each day."
-            else -> "Notifications are off, so reminders won't show."
+            startDate == null -> stringResource(R.string.it_dates_hint)
+            canNotify -> stringResource(R.string.it_reminder_on)
+            else -> stringResource(R.string.it_notifications_off)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -282,7 +297,7 @@ private fun TripDates(startDate: LocalDate?, dayCount: Int, onSetStartDate: (Loc
                 modifier = Modifier.weight(1f),
             )
             if (startDate != null && !canNotify) {
-                TextButton(onClick = ::askIfNeeded) { Text("Turn on") }
+                TextButton(onClick = ::askIfNeeded) { Text(stringResource(R.string.it_turn_on)) }
             }
         }
     }
@@ -313,11 +328,11 @@ private fun TripDates(startDate: LocalDate?, dayCount: Int, onSetStartDate: (Loc
                         picking = false
                     },
                     enabled = pickerState.selectedDateMillis != null,
-                ) { Text("OK") }
+                ) { Text(stringResource(R.string.ok)) }
             },
-            dismissButton = { TextButton(onClick = { picking = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { picking = false }) { Text(stringResource(R.string.cancel)) } },
         ) {
-            DatePicker(state = pickerState, title = { Text("First day in Japan", modifier = Modifier.padding(start = 24.dp, top = 16.dp)) })
+            DatePicker(state = pickerState, title = { Text(stringResource(R.string.it_first_day), modifier = Modifier.padding(start = 24.dp, top = 16.dp)) })
         }
     }
 }
@@ -326,16 +341,17 @@ private fun TripDates(startDate: LocalDate?, dayCount: Int, onSetStartDate: (Loc
 private fun DayHeader(day: DayDto, date: LocalDate?, onAdd: () -> Unit) {
     // Mention a day trip in the header, e.g. "Day 5 · Kyoto · trip to Nara".
     val tripTowns = day.stops.map { it.city }.filter { !it.equals(day.city, ignoreCase = true) }.distinct()
-    val title = buildString {
-        append("Day ${day.index}")
-        if (date != null) append(" · ${date.format(dayFormat)}")
-        append(" · ${day.city}")
-        if (tripTowns.isNotEmpty()) append(" · trip to ${tripTowns.joinToString()}")
-    }
+    val parts = listOfNotNull(
+        stringResource(R.string.it_day, day.index),
+        date?.format(dayFormat()),
+        day.city,
+        tripTowns.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.it_trip_to, it.joinToString()) },
+    )
+    val title = parts.joinToString(" · ")
 
     Row(modifier = Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-        TextButton(onClick = onAdd) { Text("Add stop") }
+        TextButton(onClick = onAdd) { Text(stringResource(R.string.it_add_stop)) }
     }
 }
 
@@ -388,13 +404,16 @@ private fun StopCard(
 
             // Plain text arrows keep us free of an icon library dependency.
             // Each button has a content description for screen readers.
-            IconButton(onClick = onMoveUp, enabled = canMoveUp, modifier = Modifier.semantics { contentDescription = "Move up" }) {
+            val moveUp = stringResource(R.string.it_move_up)
+            val moveDown = stringResource(R.string.it_move_down)
+            val remove = stringResource(R.string.it_remove, stop.placeName)
+            IconButton(onClick = onMoveUp, enabled = canMoveUp, modifier = Modifier.semantics { contentDescription = moveUp }) {
                 Text("↑")
             }
-            IconButton(onClick = onMoveDown, enabled = canMoveDown, modifier = Modifier.semantics { contentDescription = "Move down" }) {
+            IconButton(onClick = onMoveDown, enabled = canMoveDown, modifier = Modifier.semantics { contentDescription = moveDown }) {
                 Text("↓")
             }
-            IconButton(onClick = onDelete, modifier = Modifier.semantics { contentDescription = "Remove ${stop.placeName}" }) {
+            IconButton(onClick = onDelete, modifier = Modifier.semantics { contentDescription = remove }) {
                 Text("✕")
             }
         }
@@ -402,7 +421,7 @@ private fun StopCard(
         if (expanded) {
             TipsList(tips, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp))
             TextButton(onClick = onFindFood, modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)) {
-                Text("Find food nearby")
+                Text(stringResource(R.string.it_find_food))
             }
         }
     }
@@ -415,11 +434,7 @@ private fun TipsPreview(tips: List<EtiquetteRuleDto>) {
     val first = tips.first()
     val more = tips.size - 1
     val marker = if (first.severity == "important") "⚠ " else ""
-    val suffix = when (more) {
-        0 -> ""
-        1 -> " · 1 more tip"
-        else -> " · $more more tips"
-    }
+    val suffix = if (more == 0) "" else " · " + pluralStringResource(R.plurals.it_more_tips, more, more)
 
     Text(
         "$marker${first.title}$suffix",
@@ -432,13 +447,13 @@ private fun TipsPreview(tips: List<EtiquetteRuleDto>) {
 @Composable
 private fun TipsList(tips: List<EtiquetteRuleDto>, modifier: Modifier = Modifier) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Culture tips", style = MaterialTheme.typography.labelLarge)
+        Text(stringResource(R.string.it_culture_tips), style = MaterialTheme.typography.labelLarge)
         tips.forEach { rule ->
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (rule.severity == "important") {
                         Text(
-                            "IMPORTANT",
+                            stringResource(R.string.it_important),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -463,27 +478,27 @@ private fun AddStopDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add a stop to day ${day.index}") },
+        title = { Text(stringResource(R.string.it_add_stop_title, day.index)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { if (it.length <= 100) name = it },
-                    label = { Text("Place name") },
+                    label = { Text(stringResource(R.string.it_place_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Question("What kind of place?") {
-                    ChoiceChips(ADDABLE_PLACE_TYPES, { it == placeType }, { placeType = it }, ::placeTypeLabel)
+                Question(stringResource(R.string.it_place_kind)) {
+                    ChoiceChips(ADDABLE_PLACE_TYPES, { it == placeType }, { placeType = it }, { placeTypeLabel(it) })
                 }
-                Question("When?") {
-                    ChoiceChips(TIME_SLOTS, { it == timeSlot }, { timeSlot = it }, ::timeSlotLabel)
+                Question(stringResource(R.string.it_when)) {
+                    ChoiceChips(TIME_SLOTS, { it == timeSlot }, { timeSlot = it }, { timeSlotLabel(it) })
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onAdd(name, placeType, timeSlot) }, enabled = name.isNotBlank()) { Text("Add") }
+            TextButton(onClick = { onAdd(name, placeType, timeSlot) }, enabled = name.isNotBlank()) { Text(stringResource(R.string.it_add)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }

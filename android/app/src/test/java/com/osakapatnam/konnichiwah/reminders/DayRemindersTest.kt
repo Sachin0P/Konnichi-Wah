@@ -36,6 +36,14 @@ class DayRemindersTest {
         assertEquals(listOf(3), reminders.map { it.dayIndex })
     }
 
+    // The English strings from res/values, as the worker would fill them in.
+    private val english = ReminderWords(
+        title = { index, city -> "Tomorrow: Day $index in $city" },
+        freeDay = "A free day. Rest, or open the app to add a stop.",
+        tip = { "Tip: $it" },
+        timeSlot = { it.replaceFirstChar(Char::uppercase) },
+    )
+
     private fun stop(name: String, timeSlot: String, placeType: String) =
         StopDto(id = name, timeSlot = timeSlot, placeName = name, placeType = placeType, city = "Kyoto")
 
@@ -59,7 +67,7 @@ class DayRemindersTest {
             ),
         )
 
-        val text = reminderText(day, rulebook)
+        val text = reminderText(day, rulebook, english)
 
         assertEquals("Tomorrow: Day 2 in Kyoto", text.title)
         assertEquals("Morning · Maruyama Park\nAfternoon · Fushimi Inari Taisha\nTip: Bow at the torii", text.body)
@@ -67,7 +75,7 @@ class DayRemindersTest {
 
     @Test
     fun aFreeDaySaysSo() {
-        val text = reminderText(DayDto(index = 4, city = "Osaka", stops = emptyList()), rulebook)
+        val text = reminderText(DayDto(index = 4, city = "Osaka", stops = emptyList()), rulebook, english)
 
         assertEquals("Tomorrow: Day 4 in Osaka", text.title)
         assertEquals("A free day. Rest, or open the app to add a stop.", text.body)

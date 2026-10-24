@@ -3,6 +3,7 @@ package com.osakapatnam.konnichiwah.ui.itinerary
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.osakapatnam.konnichiwah.data.ItineraryRepository
+import com.osakapatnam.konnichiwah.data.LanguageRepository
 import com.osakapatnam.konnichiwah.data.LocalItinerary
 import com.osakapatnam.konnichiwah.data.Rulebook
 import com.osakapatnam.konnichiwah.data.RulebookAssets
@@ -28,15 +29,19 @@ data class ItineraryUiState(
 class ItineraryViewModel @Inject constructor(
     private val repository: ItineraryRepository,
     private val rulebookAssets: RulebookAssets,
+    private val languageRepository: LanguageRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ItineraryUiState())
     val state: StateFlow<ItineraryUiState> = _state.asStateFlow()
 
     init {
+        // The tips follow the traveller's language, and switch with it.
         viewModelScope.launch {
-            val rulebook = rulebookAssets.rulebook()
-            _state.update { it.copy(rulebook = rulebook) }
+            languageRepository.language.collect { language ->
+                val rulebook = rulebookAssets.rulebook(language)
+                _state.update { it.copy(rulebook = rulebook) }
+            }
         }
 
         // The screen always shows Room's copy, so it works offline and updates

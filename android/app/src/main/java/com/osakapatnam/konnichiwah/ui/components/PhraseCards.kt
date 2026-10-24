@@ -13,10 +13,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.remote.PhraseDto
 
 // A Japanese phrase card. Tapping it opens EnlargedPhrase.
@@ -27,7 +29,7 @@ fun PhraseCard(phrase: PhraseDto, onClick: () -> Unit, modifier: Modifier = Modi
             Text(phrase.japanese, style = MaterialTheme.typography.titleLarge)
             Text(phrase.romaji, style = MaterialTheme.typography.bodyMedium)
             Text(phrase.english, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Tap to show staff", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.card_tap_to_show), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -54,7 +56,7 @@ fun EnlargedPhrase(phrase: PhraseDto, onDismiss: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
-                Button(onClick = onDismiss) { Text("Close") }
+                Button(onClick = onDismiss) { Text(stringResource(R.string.card_close)) }
             }
         }
     }

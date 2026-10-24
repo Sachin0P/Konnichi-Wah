@@ -47,5 +47,6 @@ interface KonnichiApi {
         @Query("diet") diet: String,
         @Query("avoid") avoid: String?,
         @Query("spice") spice: String,
+        @Query("language") language: String,
     ): FoodEnvelope
 }

@@ -7,6 +7,7 @@ import android.util.Size
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -49,6 +50,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -56,6 +58,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.mlkit.vision.common.InputImage
+import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.MenuConcern
 import kotlinx.coroutines.awaitCancellation
 
@@ -71,8 +74,8 @@ fun MenuScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Menu reader") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+                title = { Text(stringResource(R.string.menu_title)) },
+                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
             )
         },
     ) { padding ->
@@ -88,7 +91,7 @@ fun MenuScreen(
                 state.reading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         CircularProgressIndicator()
-                        Text("Reading the menu…")
+                        Text(stringResource(R.string.menu_reading))
                     }
                 }
                 lines == null -> Scanner(
@@ -113,9 +116,9 @@ fun MenuScreen(
 @Composable
 private fun TranslationBanner(model: TranslationModel, onDownload: () -> Unit) {
     val text = when (model) {
-        TranslationModel.MISSING -> "English translation needs a one-time download (about 30 MB). Warnings work without it."
-        TranslationModel.DOWNLOADING -> "Downloading the translation…"
-        TranslationModel.FAILED -> "The download didn't finish. Check your connection and try again."
+        TranslationModel.MISSING -> stringResource(R.string.menu_model_missing)
+        TranslationModel.DOWNLOADING -> stringResource(R.string.menu_model_downloading)
+        TranslationModel.FAILED -> stringResource(R.string.menu_model_failed)
         TranslationModel.CHECKING, TranslationModel.READY -> return
     }
 
@@ -129,7 +132,7 @@ private fun TranslationBanner(model: TranslationModel, onDownload: () -> Unit) {
             Text(text, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
             when (model) {
                 TranslationModel.DOWNLOADING -> CircularProgressIndicator(modifier = Modifier.padding(start = 12.dp))
-                else -> TextButton(onClick = onDownload) { Text(if (model == TranslationModel.FAILED) "Retry" else "Download") }
+                else -> TextButton(onClick = onDownload) { Text(stringResource(if (model == TranslationModel.FAILED) R.string.menu_retry else R.string.menu_download)) }
             }
         }
     }
@@ -138,7 +141,7 @@ private fun TranslationBanner(model: TranslationModel, onDownload: () -> Unit) {
 // The camera, plus a way to pick a photo instead (a menu photographed
 // earlier, or when there's no camera permission).
 @Composable
-private fun Scanner(error: String?, onImage: (InputImage) -> Unit, onError: (String) -> Unit) {
+private fun Scanner(@StringRes error: Int?, onImage: (InputImage) -> Unit, onError: (Int) -> Unit) {
     val context = LocalContext.current
     var hasCamera by remember { mutableStateOf(hasCameraPermission(context)) }
     var asked by rememberSaveable { mutableStateOf(false) }
@@ -152,7 +155,7 @@ private fun Scanner(error: String?, onImage: (InputImage) -> Unit, onError: (Str
             // upright.
             runCatching { InputImage.fromFilePath(context, uri) }
                 .onSuccess(onImage)
-                .onFailure { onError("Couldn't open that photo.") }
+                .onFailure { onError(R.string.menu_open_failed) }
         }
     }
 
@@ -187,7 +190,7 @@ private fun Scanner(error: String?, onImage: (InputImage) -> Unit, onError: (Str
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            "Point the camera at a menu or sign, hold it steady, and tap Read.",
+            stringResource(R.string.menu_instructions),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -202,14 +205,14 @@ private fun Scanner(error: String?, onImage: (InputImage) -> Unit, onError: (Str
                 CameraPreview(imageCapture, Modifier.fillMaxSize())
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("The camera is off for this app.")
-                    TextButton(onClick = { askCamera.launch(Manifest.permission.CAMERA) }) { Text("Allow camera") }
+                    Text(stringResource(R.string.menu_camera_off))
+                    TextButton(onClick = { askCamera.launch(Manifest.permission.CAMERA) }) { Text(stringResource(R.string.menu_allow_camera)) }
                 }
             }
         }
 
         if (error != null) {
-            Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(error), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -217,11 +220,11 @@ private fun Scanner(error: String?, onImage: (InputImage) -> Unit, onError: (Str
                 onClick = { capture(context, imageCapture, onImage, onError) },
                 enabled = hasCamera,
                 modifier = Modifier.weight(1f),
-            ) { Text("Read") }
+            ) { Text(stringResource(R.string.menu_read)) }
             OutlinedButton(
                 onClick = { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                 modifier = Modifier.weight(1f),
-            ) { Text("Choose photo") }
+            ) { Text(stringResource(R.string.menu_choose_photo)) }
         }
     }
 }
@@ -249,7 +252,7 @@ private fun CameraPreview(imageCapture: ImageCapture, modifier: Modifier) {
     AndroidView(factory = { previewView }, modifier = modifier)
 }
 
-private fun capture(context: Context, imageCapture: ImageCapture, onImage: (InputImage) -> Unit, onError: (String) -> Unit) {
+private fun capture(context: Context, imageCapture: ImageCapture, onImage: (InputImage) -> Unit, onError: (Int) -> Unit) {
     imageCapture.takePicture(
         ContextCompat.getMainExecutor(context),
         object : ImageCapture.OnImageCapturedCallback() {
@@ -263,7 +266,7 @@ private fun capture(context: Context, imageCapture: ImageCapture, onImage: (Inpu
             }
 
             override fun onError(exception: ImageCaptureException) {
-                onError("The camera couldn't take a photo. Try again.")
+                onError(R.string.menu_camera_failed)
             }
         },
     )
@@ -288,15 +291,15 @@ private fun Results(
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onScanAgain, modifier = Modifier.weight(1f)) { Text("Scan again") }
-                Button(onClick = onDietCards, modifier = Modifier.weight(1f)) { Text("My diet cards") }
+                OutlinedButton(onClick = onScanAgain, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.menu_scan_again)) }
+                Button(onClick = onDietCards, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.menu_my_cards)) }
             }
         }
 
         if (lines.isNotEmpty()) {
             item {
                 Text(
-                    "English is a machine translation, only a rough guide. Warnings come from the Japanese words themselves.",
+                    stringResource(R.string.menu_translation_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -310,11 +313,10 @@ private fun Results(
 @Composable
 private fun Summary(empty: Boolean, found: List<MenuConcern>) {
     val (title, detail) = when {
-        empty -> "No text found" to "Hold the phone closer, keep the menu flat, and make sure it's well lit."
-        found.isNotEmpty() -> "⚠ May contain: ${found.joinToString { it.label }}" to
-            "The lines are marked below. Ask the staff, and show your diet card."
-        else -> "No warning words found" to
-            "That doesn't make a dish safe: dashi and meat stock often aren't written on the menu. Show your diet card to check."
+        empty -> stringResource(R.string.menu_no_text) to stringResource(R.string.menu_no_text_hint)
+        found.isNotEmpty() -> stringResource(R.string.menu_may_contain, found.map { stringResource(it.label) }.joinToString()) to
+            stringResource(R.string.menu_marked)
+        else -> stringResource(R.string.menu_none_found) to stringResource(R.string.menu_none_found_hint)
     }
 
     val colors = if (found.isNotEmpty()) {
@@ -339,14 +341,14 @@ private fun LineCard(line: MenuLine, translating: Boolean) {
             when {
                 line.english != null -> Text(line.english, style = MaterialTheme.typography.bodyMedium)
                 translating -> Text(
-                    "Translating…",
+                    stringResource(R.string.menu_translating),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             for (flag in line.flags) {
                 Text(
-                    "⚠ ${flag.concern.label} (${flag.word})",
+                    stringResource(R.string.menu_flag, stringResource(flag.concern.label), flag.word),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.error,
                 )

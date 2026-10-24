@@ -224,10 +224,12 @@ data class ChatContextDto(
     val profile: UserProfileDto? = null,
 )
 
+// language is "en" or "hi": the companion answers in it.
 @Serializable
 data class ChatRequestDto(
     val messages: List<ChatMessageDto>,
     val context: ChatContextDto,
+    val language: String = "en",
 )
 
 // A Japanese phrase card to show staff.

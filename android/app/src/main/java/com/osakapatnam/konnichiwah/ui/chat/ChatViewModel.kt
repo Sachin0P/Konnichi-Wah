@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.osakapatnam.konnichiwah.data.BackendRepository
 import com.osakapatnam.konnichiwah.data.ItineraryRepository
+import com.osakapatnam.konnichiwah.data.LanguageRepository
 import com.osakapatnam.konnichiwah.data.ProfileRepository
+import com.osakapatnam.konnichiwah.data.remote.ApiError
 import com.osakapatnam.konnichiwah.data.remote.ApiResult
 import com.osakapatnam.konnichiwah.data.remote.ChatContextDto
 import com.osakapatnam.konnichiwah.data.remote.ChatMessageDto
@@ -12,7 +14,6 @@ import com.osakapatnam.konnichiwah.data.remote.ChatRequestDto
 import com.osakapatnam.konnichiwah.data.remote.ChatStopDto
 import com.osakapatnam.konnichiwah.data.remote.DayDto
 import com.osakapatnam.konnichiwah.data.remote.PhraseDto
-import com.osakapatnam.konnichiwah.ui.userMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,8 +37,9 @@ data class ChatEntry(
     val text: String,
     val phrases: List<PhraseDto> = emptyList(),
     val toolsUsed: List<String> = emptyList(),
-    // Error notices are shown in the chat but never sent back as history.
-    val isError: Boolean = false,
+    // A failed reply is shown in the chat as an error message (in the language
+    // on screen) but never sent back as history.
+    val error: ApiError? = null,
 )
 
 data class ChatUiState(
@@ -55,6 +57,7 @@ class ChatViewModel @Inject constructor(
     private val itineraryRepository: ItineraryRepository,
     private val profileRepository: ProfileRepository,
     private val backendRepository: BackendRepository,
+    private val languageRepository: LanguageRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ChatUiState())
@@ -88,10 +91,12 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             val request = ChatRequestDto(
                 messages = entries
-                    .filter { !it.isError }
+                    .filter { it.error == null }
                     .takeLast(HISTORY_SIZE)
                     .map { ChatMessageDto(role = if (it.fromUser) "user" else "assistant", text = it.text) },
                 context = context(current),
+                // The companion answers in the traveller's language.
+                language = languageRepository.language.first().tag,
             )
 
             val reply = when (val result = backendRepository.chat(request)) {
@@ -105,8 +110,8 @@ class ChatViewModel @Inject constructor(
                 is ApiResult.Failure -> ChatEntry(
                     id = nextId++,
                     fromUser = false,
-                    text = result.error.userMessage(),
-                    isError = true,
+                    text = "",
+                    error = result.error,
                 )
             }
 

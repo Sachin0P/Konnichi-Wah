@@ -1,8 +1,10 @@
 package com.osakapatnam.konnichiwah.ui.menu
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.common.InputImage
+import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.MenuConcern
 import com.osakapatnam.konnichiwah.data.MenuFlag
 import com.osakapatnam.konnichiwah.data.MenuReader
@@ -30,7 +32,8 @@ data class MenuUiState(
     val reading: Boolean = false,
     // null until something has been scanned.
     val lines: List<MenuLine>? = null,
-    val error: String? = null,
+    // A string resource, so it follows the language on screen.
+    @StringRes val error: Int? = null,
 ) {
     // Everything flagged on the whole menu, for the summary at the top.
     val found: List<MenuConcern> get() = lines.orEmpty().flatMap { line -> line.flags.map { it.concern } }.distinct()
@@ -62,7 +65,7 @@ class MenuViewModel @Inject constructor(
             _state.update { it.copy(reading = true, error = null) }
 
             val text = runCatching { reader.read(image) }.getOrElse {
-                _state.update { it.copy(reading = false, error = "Couldn't read that photo. Try again.") }
+                _state.update { it.copy(reading = false, error = R.string.menu_read_failed) }
                 return@launch
             }
 
@@ -90,7 +93,7 @@ class MenuViewModel @Inject constructor(
         _state.update { it.copy(lines = null, error = null) }
     }
 
-    fun cameraError(message: String) = _state.update { it.copy(error = message) }
+    fun cameraError(@StringRes message: Int) = _state.update { it.copy(error = message) }
 
     // Translates the lines one at a time, showing each as it's done. A line
     // that fails to translate just stays untranslated.

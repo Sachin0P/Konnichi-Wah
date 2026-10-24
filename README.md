@@ -33,7 +33,11 @@ Konnichi-Wah! removes that uncertainty, before the trip and during it.
    - **Warnings for your diet**, found in the Japanese itself rather than the translation: "⚠ Pork (豚)", "⚠ Dashi (fish stock) (味噌汁)". It knows what dishes usually hide (ramen broth, miso soup) and that 牛乳 is milk, not beef.
    - Text recognition works offline from the start. Translation needs a one-time 30 MB download.
 8. **Diet cards, offline.** The "Cards" screen shows *your* hand-checked Japanese diet cards first (vegetarian, Jain, eggetarian, halal, no beef, no pork, "does this contain dashi?"). They're bundled in the app and work with no signal.
-9. **Ask Konnichi, the in-trip chat.** Answers take 1–3 seconds, using tools rather than guesses:
+9. **In Hindi or English.** One tap (हिन्दी / English) switches the whole app, instantly:
+   - Every screen, the 78 culture tips, each diet card's meaning, the reminders, the menu warnings and the Desi Match reasons have hand-written Hindi versions. The Japanese on the cards stays exactly the same.
+   - The chat answers in Hindi and still uses our checked content, not machine translation.
+   - Planner suggestions, place names and station names stay in English, as they appear on signs in Japan.
+10. **Ask Konnichi, the in-trip chat.** Answers take 1–3 seconds, using tools rather than guesses:
    - **Train routes** from live timetable data: *"Take the Miyakoji Rapid from Kyoto 09:04 → Nara 09:51."* The AI never states a route from memory.
    - **Etiquette** only from our rulebook. City-specific rules apply only where they belong, so the tip about feeding Nara's deer doesn't show up for a park in Tokyo.
    - **Diet cards:** hand-checked Japanese cards to show restaurant staff, e.g. 「私はジャイナ教徒です。肉、魚、魚介類、卵、だしは食べられません。…」 They're never machine-translated on the fly.
@@ -82,7 +86,7 @@ backend/            Go JSON API, structured after Alex Edwards' "Let's Go Furthe
   internal/planner/   Gemini planner, catalogue fallback, day-by-day arranging
   internal/companion/ chat tool loop and tools (provider-neutral: Groq or Gemini)
   internal/gemini/    internal/groq/    internal/transit/   small net/http API clients
-  rulebook/           etiquette.json and phrases.json (hand-written content)
+  rulebook/           etiquette.json and phrases.json (hand-written content), and their Hindi versions
   osmdata/            places.json: the OpenStreetMap snapshot (Tokyo, Kyoto, Osaka, Nara, Sapporo)
   migrations/         golang-migrate SQL migrations
 android/            Kotlin app: Compose, Material 3, Hilt, Retrofit, Room, DataStore, WorkManager, CameraX, ML Kit
@@ -154,17 +158,17 @@ The full contract, with request and response examples for every endpoint, is in 
 
 ## Testing
 
-- **Backend:** `cd backend && go test ./...` covers validation, the day-by-day arranging, the planner's fallback, the chat tool loop (with fake LLMs), the API clients and the content files. Every diet must have a checked card, every place type must have tips, and the Jain card must say ジャイナ教徒.
-- **Android:** `cd android && ./gradlew testDebugUnitTest` covers contract tests that the app's JSON matches `docs/api.md`, plus itinerary editing, the questionnaire rules and the offline tip lookup.
+- **Backend:** `cd backend && go test ./...` covers validation, the day-by-day arranging, the planner's fallback, the chat tool loop (with fake LLMs), the API clients and the content files. Every diet must have a checked card, every place type must have tips, the Jain card must say ジャイナ教徒, and every rule, card and Desi Match reason must have Hindi.
+- **Android:** `cd android && ./gradlew testDebugUnitTest` covers contract tests that the app's JSON matches `docs/api.md`, plus itinerary editing, the questionnaire rules, the offline tip lookup, reminders, the menu warnings, and that every Hindi string exists with the same placeholders as the English.
 
 ## What's not built yet
 
 - **Restaurant coverage beyond the Desi-relevant places.** The snapshot holds only places with diet tags or South Asian and curry cuisines, in five cities. OpenStreetMap's diet tags are also incomplete, so a good vegetarian place may simply not be tagged.
 - **"Near me" with the phone's location.** Searches are by place name for now.
-- **Hindi.**
+- **Hindi planner suggestions.** The planner's reasons and the catalogue are English only.
 - **Sign-in.** Itineraries aren't tied to users yet, so anyone with an itinerary id can read it. Firebase Auth is planned.
 - **Exact locations for stops.** They have no coordinates yet; routes are found by place name.
-- **Content review.** The Japanese phrase cards and the time-sensitive etiquette rules (tax-free shopping, Shinkansen luggage, Gion photo rules) should be checked by a native speaker before any real use.
+- **Content review.** The Japanese phrase cards and the time-sensitive etiquette rules (tax-free shopping, Shinkansen luggage, Gion photo rules) should be checked by a native speaker before any real use, and so should all the Hindi (`res/values-hi/strings.xml`, `rulebook/*.hi.json`, the Desi Match reasons) and the menu reader's word list.
 
 ## Credits
 

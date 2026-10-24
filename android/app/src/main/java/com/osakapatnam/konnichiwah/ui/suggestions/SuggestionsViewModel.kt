@@ -2,13 +2,15 @@ package com.osakapatnam.konnichiwah.ui.suggestions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.BackendRepository
 import com.osakapatnam.konnichiwah.data.ItineraryRepository
+import com.osakapatnam.konnichiwah.data.LanguageRepository
 import com.osakapatnam.konnichiwah.data.ProfileRepository
+import com.osakapatnam.konnichiwah.data.remote.ApiError
 import com.osakapatnam.konnichiwah.data.remote.ApiResult
 import com.osakapatnam.konnichiwah.data.remote.PlanDto
 import com.osakapatnam.konnichiwah.ui.monthLabel
-import com.osakapatnam.konnichiwah.ui.userMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +22,9 @@ import javax.inject.Inject
 
 sealed interface SuggestionsUiState {
     data object Loading : SuggestionsUiState
-    data class Error(val message: String) : SuggestionsUiState
+
+    // error is null when the questionnaire hasn't been answered yet.
+    data class Error(val error: ApiError?) : SuggestionsUiState
 
     // Everything starts selected: it's quicker to remove a few cards than to
     // tick most of them. buildError is a one-off message for a snackbar.
@@ -28,7 +32,7 @@ sealed interface SuggestionsUiState {
         val plan: PlanDto,
         val selectedIds: Set<String>,
         val building: Boolean = false,
-        val buildError: String? = null,
+        val buildError: ApiError? = null,
     ) : SuggestionsUiState
 }
 
@@ -37,6 +41,7 @@ class SuggestionsViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val backendRepository: BackendRepository,
     private val itineraryRepository: ItineraryRepository,
+    private val languageRepository: LanguageRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<SuggestionsUiState>(SuggestionsUiState.Loading)
@@ -52,7 +57,7 @@ class SuggestionsViewModel @Inject constructor(
 
             val request = profileRepository.tripRequest.first()
             if (request == null) {
-                _state.value = SuggestionsUiState.Error("Please answer the questions first.")
+                _state.value = SuggestionsUiState.Error(null)
                 return@launch
             }
 
@@ -61,7 +66,7 @@ class SuggestionsViewModel @Inject constructor(
                     plan = result.value,
                     selectedIds = result.value.suggestions.map { it.id }.toSet(),
                 )
-                is ApiResult.Failure -> SuggestionsUiState.Error(result.error.userMessage())
+                is ApiResult.Failure -> SuggestionsUiState.Error(result.error)
             }
         }
     }
@@ -80,17 +85,20 @@ class SuggestionsViewModel @Inject constructor(
 
         _state.value = loaded.copy(building = true, buildError = null)
         viewModelScope.launch {
+            // The title is saved with the trip, so it's written in the language
+            // the traveller is using when they build it.
             val request = profileRepository.tripRequest.first()
+            val res = languageRepository.resources()
             val title = if (request == null) {
-                "My Japan trip"
+                res.getString(R.string.trip_title_default)
             } else {
-                "${request.tripDays}-day Japan trip · ${monthLabel(request.travelMonth)}"
+                res.getString(R.string.trip_title, request.tripDays, monthLabel(request.travelMonth, res.configuration.locales[0]))
             }
 
             when (val result = itineraryRepository.create(title, loaded.plan, loaded.selectedIds)) {
                 is ApiResult.Success -> onBuilt()
                 is ApiResult.Failure -> _state.update {
-                    (it as? SuggestionsUiState.Loaded)?.copy(building = false, buildError = result.error.userMessage()) ?: it
+                    (it as? SuggestionsUiState.Loaded)?.copy(building = false, buildError = result.error) ?: it
                 }
             }
         }

@@ -33,21 +33,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.remote.PhraseDto
 import com.osakapatnam.konnichiwah.ui.components.EnlargedPhrase
 import com.osakapatnam.konnichiwah.ui.components.PhraseCard
-
-// Starter questions for an empty chat: one per thing the companion is good at.
-private val SUGGESTIONS = listOf(
-    "How do I get to my next stop?",
-    "What should I know before visiting a temple?",
-    "How do I tell the waiter what I can't eat?",
-    "How do I ask where the toilet is?",
-)
+import com.osakapatnam.konnichiwah.ui.userMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,8 +63,8 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ask Konnichi") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+                title = { Text(stringResource(R.string.chat_title)) },
+                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
             )
         },
         bottomBar = {
@@ -102,7 +98,7 @@ fun ChatScreen(
                             Message(entry, onEnlarge = viewModel::enlarge)
                         }
                         if (state.sending) {
-                            item(key = "thinking") { Bubble(fromUser = false) { Text("Thinking…") } }
+                            item(key = "thinking") { Bubble(fromUser = false) { Text(stringResource(R.string.chat_thinking)) } }
                         }
                     }
                 }
@@ -126,7 +122,7 @@ private fun DayPicker(state: ChatUiState, onSelect: (Int) -> Unit) {
             FilterChip(
                 selected = index == state.selectedDay,
                 onClick = { onSelect(index) },
-                label = { Text("Day ${day.index} · ${day.city}") },
+                label = { Text(stringResource(R.string.chat_day, day.index, day.city)) },
             )
         }
     }
@@ -141,14 +137,15 @@ private fun Suggestions(onAsk: (String) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Ask me anything about your trip", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.chat_empty_title), style = MaterialTheme.typography.titleMedium)
         Text(
-            "Train routes use live timetables, and etiquette and diet cards come from our checked rulebook.",
+            stringResource(R.string.chat_empty_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
-        SUGGESTIONS.forEach { question ->
+        // Starter questions: one per thing the companion is good at.
+        stringArrayResource(R.array.chat_suggestions).forEach { question ->
             SuggestionChip(onClick = { onAsk(question) }, label = { Text(question) })
         }
     }
@@ -161,7 +158,7 @@ private fun Message(entry: ChatEntry, onEnlarge: (PhraseDto) -> Unit) {
         horizontalAlignment = if (entry.fromUser) Alignment.End else Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Bubble(fromUser = entry.fromUser, isError = entry.isError) { Text(entry.text) }
+        Bubble(fromUser = entry.fromUser, isError = entry.error != null) { Text(entry.error?.userMessage() ?: entry.text) }
 
         entry.phrases.forEach { phrase ->
             PhraseCard(phrase, onClick = { onEnlarge(phrase) }, modifier = Modifier.widthIn(max = 320.dp))
@@ -175,18 +172,19 @@ private fun Message(entry: ChatEntry, onEnlarge: (PhraseDto) -> Unit) {
 
 // Tells the traveller where an answer came from, which is what makes it
 // trustworthy: real timetables and our own rulebook, not the AI's memory.
+@Composable
 private fun sourceLabel(toolsUsed: List<String>): String? {
     val labels = toolsUsed.mapNotNull {
         when (it) {
-            "get_train_route" -> "Live train times"
-            "get_etiquette" -> "From our etiquette rulebook"
-            "show_diet_card" -> "Checked diet card"
-            "find_food" -> "Desi Match from OpenStreetMap"
-            "find_places" -> "Shops from OpenStreetMap"
+            "get_train_route" -> R.string.source_train
+            "get_etiquette" -> R.string.source_etiquette
+            "show_diet_card" -> R.string.source_diet_card
+            "find_food" -> R.string.source_food
+            "find_places" -> R.string.source_shops
             else -> null
         }
     }
-    return labels.takeIf { it.isNotEmpty() }?.joinToString(" · ")
+    return labels.takeIf { it.isNotEmpty() }?.map { stringResource(it) }?.joinToString(" · ")
 }
 
 @Composable
@@ -223,9 +221,9 @@ private fun InputBar(input: String, sending: Boolean, onInput: (String) -> Unit,
             value = input,
             onValueChange = onInput,
             modifier = Modifier.weight(1f),
-            placeholder = { Text("Ask about trains, food, manners…") },
+            placeholder = { Text(stringResource(R.string.chat_placeholder)) },
             maxLines = 4,
         )
-        Button(onClick = onSend, enabled = input.isNotBlank() && !sending) { Text("Send") }
+        Button(onClick = onSend, enabled = input.isNotBlank() && !sending) { Text(stringResource(R.string.chat_send)) }
     }
 }

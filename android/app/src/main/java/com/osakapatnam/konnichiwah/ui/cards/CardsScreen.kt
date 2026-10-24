@@ -16,9 +16,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.ui.components.EnlargedPhrase
 import com.osakapatnam.konnichiwah.ui.components.PhraseCard
 
@@ -33,8 +35,8 @@ fun CardsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Diet cards") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+                title = { Text(stringResource(R.string.cards_title)) },
+                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.back)) } },
             )
         },
     ) { padding ->
@@ -47,20 +49,20 @@ fun CardsScreen(
         ) {
             item {
                 Text(
-                    "Show these to restaurant staff. They're checked Japanese and work without internet.",
+                    stringResource(R.string.cards_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             if (state.yours.isNotEmpty()) {
-                item { Text("Your cards", style = MaterialTheme.typography.titleMedium) }
+                item { Text(stringResource(R.string.cards_yours), style = MaterialTheme.typography.titleMedium) }
                 items(state.yours, key = { it.id }) { card ->
                     PhraseCard(card.phrase(), onClick = { viewModel.enlarge(card) }, modifier = Modifier.fillMaxWidth())
                 }
             }
 
-            item { Text("All cards", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp)) }
+            item { Text(stringResource(R.string.cards_all), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp)) }
             items(state.others, key = { it.id }) { card ->
                 PhraseCard(card.phrase(), onClick = { viewModel.enlarge(card) }, modifier = Modifier.fillMaxWidth())
             }

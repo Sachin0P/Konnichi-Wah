@@ -1,7 +1,9 @@
 package com.osakapatnam.konnichiwah.ui.questionnaire
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.osakapatnam.konnichiwah.R
 import com.osakapatnam.konnichiwah.data.ProfileRepository
 import com.osakapatnam.konnichiwah.data.remote.AvoidItem
 import com.osakapatnam.konnichiwah.data.remote.BudgetBand
@@ -27,12 +29,12 @@ import javax.inject.Inject
 // the same limit before sending.
 const val MAX_NOTES_BYTES = 1000
 
-enum class Step(val title: String) {
-    INTERESTS("What do you love?"),
-    TRIP("When, and for how long?"),
-    STYLE("How do you like to travel?"),
-    TASTE("Your taste profile"),
-    EXTRAS("Anything else?"),
+enum class Step(@StringRes val title: Int) {
+    INTERESTS(R.string.q_step_interests),
+    TRIP(R.string.q_step_trip),
+    STYLE(R.string.q_step_style),
+    TASTE(R.string.q_step_taste),
+    EXTRAS(R.string.q_step_extras),
 }
 
 data class QuestionnaireUiState(
