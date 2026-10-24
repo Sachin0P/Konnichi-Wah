@@ -66,6 +66,10 @@
     <string name="q_diet">Your diet</string>
     <string name="q_avoid">Anything you avoid?</string>
     <string name="q_avoid_hint">We\'ll warn you about hidden ingredients like fish stock (dashi).</string>
+    <string name="q_alcohol">Do you drink alcohol?</string>
+    <string name="q_alcohol_hint">Helps us recommend izakayas, craft beer pubs, or keep your plan alcohol-free.</string>
+    <string name="alcohol_yes">Yes (izakayas &amp; pubs)</string>
+    <string name="alcohol_no">No alcohol</string>
     <string name="q_spice">How spicy do you like it?</string>
     <string name="q_japanese">How much Japanese do you speak?</string>
     <string name="q_notes">Anything else we should know?</string>
@@ -103,6 +107,7 @@
     <string name="avoid_seafood">Seafood</string>
     <string name="avoid_egg">Egg</string>
     <string name="avoid_onion_garlic">Onion &amp; garlic</string>
+    <string name="avoid_alcohol">Alcohol / Sake</string>
     <string name="spice_mild">Mild</string>
     <string name="spice_medium">Medium</string>
     <string name="spice_indian">Indian spicy</string>
@@ -124,6 +129,7 @@
     <string name="place_street">Street</string>
     <string name="place_park">Park</string>
     <string name="place_attraction">Attraction</string>
+    <string name="slot_breakfast">Breakfast</string>
     <string name="slot_morning">Morning</string>
     <string name="slot_lunch">Lunch</string>
     <string name="slot_afternoon">Afternoon</string>
@@ -187,6 +193,11 @@
     <string name="it_place_kind">What kind of place?</string>
     <string name="it_when">When?</string>
     <string name="it_add">Add</string>
+    <string name="it_add_stop_recommendations">Recommended in %1$s</string>
+    <string name="it_add_stop_rec_hint">Tap any place to auto-fill</string>
+    <string name="it_rec_category_sights">Sights</string>
+    <string name="it_rec_category_food">Food &amp; Cafes</string>
+    <string name="it_rec_category_nightlife">Pubs &amp; Nightlife</string>
 
     <!-- Chat -->
     <string name="chat_title">Ask anything</string>

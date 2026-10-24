@@ -148,20 +148,37 @@ func dayStops(sights, food []data.Suggestion, newID func() string) []data.Stop {
 		})
 	}
 
-	if len(daytime) > 0 {
-		add(daytime[0], "morning")
-	}
-	if len(food) > 0 {
-		add(food[0], "lunch")
-	}
-	for _, s := range daytime[min(1, len(daytime)):] {
-		add(s, "afternoon")
-	}
-	for _, s := range evening {
-		add(s, "evening")
-	}
-	for _, f := range food[min(1, len(food)):] {
-		add(f, "dinner")
+	if len(food) >= 3 {
+		add(food[0], "breakfast")
+		if len(daytime) > 0 {
+			add(daytime[0], "morning")
+		}
+		add(food[1], "lunch")
+		for _, s := range daytime[min(1, len(daytime)):] {
+			add(s, "afternoon")
+		}
+		for _, s := range evening {
+			add(s, "evening")
+		}
+		for _, f := range food[2:] {
+			add(f, "dinner")
+		}
+	} else {
+		if len(daytime) > 0 {
+			add(daytime[0], "morning")
+		}
+		if len(food) > 0 {
+			add(food[0], "lunch")
+		}
+		for _, s := range daytime[min(1, len(daytime)):] {
+			add(s, "afternoon")
+		}
+		for _, s := range evening {
+			add(s, "evening")
+		}
+		for _, f := range food[min(1, len(food)):] {
+			add(f, "dinner")
+		}
 	}
 
 	return stops

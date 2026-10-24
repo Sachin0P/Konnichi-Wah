@@ -129,7 +129,11 @@ fun menuConcernsFor(profile: UserProfileDto?): Set<MenuConcern> {
             AvoidItem.SEAFOOD -> listOf(MenuConcern.SEAFOOD, MenuConcern.DASHI)
             AvoidItem.EGG -> listOf(MenuConcern.EGG)
             AvoidItem.ONION_GARLIC -> listOf(MenuConcern.ONION_GARLIC)
+            AvoidItem.ALCOHOL -> listOf(MenuConcern.ALCOHOL)
         }
+    }
+    if (profile.drinksAlcohol == false) {
+        concerns += MenuConcern.ALCOHOL
     }
     return concerns
 }

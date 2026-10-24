@@ -498,9 +498,9 @@ func (t tools) findNearby(ctx context.Context, args json.RawMessage) (any, error
 // don't add a separate "no pork" card for a vegetarian.
 var dietCovers = map[string][]string{
 	"veg":        {"beef", "pork", "seafood", "egg"},
-	"jain":       {"beef", "pork", "seafood", "egg", "onion_garlic"},
+	"jain":       {"beef", "pork", "seafood", "egg", "onion_garlic", "alcohol"},
 	"eggetarian": {"beef", "pork", "seafood"},
-	"halal":      {"pork"},
+	"halal":      {"pork", "alcohol"},
 }
 
 // dietCard picks the traveller's checked diet cards: the card for their diet,

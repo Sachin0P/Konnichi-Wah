@@ -9,7 +9,7 @@ import java.util.UUID
 // result in one step.
 
 // Time slots in the order they happen during a day (matches the backend).
-val TIME_SLOTS = listOf("morning", "lunch", "afternoon", "evening", "dinner")
+val TIME_SLOTS = listOf("breakfast", "morning", "lunch", "afternoon", "evening", "dinner")
 
 // Place types a user can pick for a stop they add themselves. Train and taxi
 // are left out: they're ways of getting around, not places to visit.

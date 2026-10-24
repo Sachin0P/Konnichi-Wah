@@ -58,6 +58,7 @@ enum class AvoidItem {
     @SerialName("seafood") SEAFOOD,
     @SerialName("egg") EGG,
     @SerialName("onion_garlic") ONION_GARLIC,
+    @SerialName("alcohol") ALCOHOL,
 }
 
 @Serializable
@@ -81,6 +82,7 @@ data class UserProfileDto(
     @SerialName("group_type") val groupType: GroupType,
     val diet: Diet,
     val avoid: List<AvoidItem> = emptyList(),
+    @SerialName("drinks_alcohol") val drinksAlcohol: Boolean? = null,
     @SerialName("spice_level") val spiceLevel: SpiceLevel,
     @SerialName("japanese_level") val japaneseLevel: JapaneseLevel,
     val notes: String = "",

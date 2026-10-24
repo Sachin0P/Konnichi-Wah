@@ -116,6 +116,14 @@ func TestArrangeDayOrderAndSlots(t *testing.T) {
 			want: []string{"morning:A", "lunch:Lunch place", "afternoon:B", "afternoon:C", "dinner:Dinner place"},
 		},
 		{
+			name: "Breakfast, lunch and dinner",
+			suggestions: []data.Suggestion{
+				sight("A", "Kyoto"), sight("B", "Kyoto"),
+				meal("Breakfast spot", "Kyoto"), meal("Lunch place", "Kyoto"), meal("Dinner place", "Kyoto"),
+			},
+			want: []string{"breakfast:Breakfast spot", "morning:A", "lunch:Lunch place", "afternoon:B", "dinner:Dinner place"},
+		},
+		{
 			// A street walk moves to the evening even if it was listed first.
 			name:        "Evening street",
 			suggestions: []data.Suggestion{gion, sight("A", "Kyoto"), meal("Lunch place", "Kyoto")},

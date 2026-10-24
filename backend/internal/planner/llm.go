@@ -41,8 +41,17 @@ func (g LLM) Suggest(ctx context.Context, req data.TripRequest) (*data.Plan, err
 		notesHeader = fmt.Sprintf("CRITICAL USER REQUESTS (HIGHEST PRIORITY):\n\"%s\"\nYou MUST customize the trip specifically to satisfy these requests! If specific places, characters, shopping, accessibility, or walking limits are mentioned, include them in the suggestions.\n\n", notes)
 	}
 
-	input := fmt.Sprintf("%sTrip length: %d days\nTravel month: %s\nPace: %s\nTraveller profile (JSON):\n%s",
-		notesHeader, req.TripDays, time.Month(req.TravelMonth), req.Profile.Pace, profile)
+	alcoholNote := ""
+	if req.Profile.DrinksAlcohol != nil {
+		if *req.Profile.DrinksAlcohol {
+			alcoholNote = "ALCOHOL PREFERENCE: Drinks alcohol. Suggest lively izakayas, craft beer pubs, standing bars (tachinomi), or famous nightlife alleys like Golden Gai, Nonbei Yokocho, or Pontocho.\n\n"
+		} else {
+			alcoholNote = "ALCOHOL PREFERENCE: Does NOT drink alcohol. Strictly avoid pubs, bars, and izakayas. Suggest tea houses, kissaten coffee shops, dessert cafes, or evening viewpoints instead.\n\n"
+		}
+	}
+
+	input := fmt.Sprintf("%s%sTrip length: %d days\nTravel month: %s\nPace: %s\nTraveller profile (JSON):\n%s",
+		notesHeader, alcoholNote, req.TripDays, time.Month(req.TravelMonth), req.Profile.Pace, profile)
 
 	js, err := g.Client.GenerateJSON(ctx, plannerInstructions, input, planSchema)
 	if err != nil {
@@ -254,4 +263,8 @@ CRITICAL RULES:
    - Do not suggest restaurants or specific places to eat. The app adds food options it has checked against the traveller's diet. Food markets are fine as a shop if the traveller likes food.
    - Match the interests, budget band, pace, and travelling group (family_kids: child-friendly; family_elders: little walking, few stairs, frequent rest).
    - Each reason is one short sentence, under 200 characters, explaining why it suits this specific traveller.
-   - Do not include train routes, travel times, prices, opening hours, addresses or etiquette tips. The app adds those from verified sources.`
+   - Do not include train routes, travel times, prices, opening hours, addresses or etiquette tips. The app adds those from verified sources.
+
+4. NIGHTLIFE, PUBS & YOUNGER TRAVELERS:
+   - For young travellers (solo, couples, friends) or those who drink alcohol / enjoy nightlife, suggest lively izakaya streets, craft beer hubs, retro arcades, and famous bar alleys (e.g. Shinjuku Golden Gai, Shibuya Nonbei Yokocho, Omoide Yokocho, Pontocho, Ura-Namba). Use "street" for nightlife alleys/areas or "shop" for markets/arcades.
+   - If the profile says no alcohol, avoid bar alleys and suggest night viewpoints (Shibuya Sky, Tokyo Skytree, Roppongi Hills), evening tea/dessert spots, and illuminated temples.`

@@ -47,6 +47,7 @@ data class QuestionnaireUiState(
     val groupType: GroupType? = null,
     val diet: Diet? = null,
     val avoid: Set<AvoidItem> = emptySet(),
+    val drinksAlcohol: Boolean? = null,
     val spiceLevel: SpiceLevel = SpiceLevel.MEDIUM,
     val japaneseLevel: JapaneseLevel = JapaneseLevel.NONE,
     val notes: String = "",
@@ -77,6 +78,7 @@ data class QuestionnaireUiState(
             groupType = checkNotNull(groupType),
             diet = checkNotNull(diet),
             avoid = avoid.sorted(),
+            drinksAlcohol = drinksAlcohol,
             spiceLevel = spiceLevel,
             japaneseLevel = japaneseLevel,
             notes = notes.trim(),
@@ -110,6 +112,7 @@ class QuestionnaireViewModel @Inject constructor(
                     groupType = p.groupType,
                     diet = p.diet,
                     avoid = p.avoid.toSet(),
+                    drinksAlcohol = p.drinksAlcohol,
                     spiceLevel = p.spiceLevel,
                     japaneseLevel = p.japaneseLevel,
                     notes = p.notes,
@@ -124,16 +127,30 @@ class QuestionnaireViewModel @Inject constructor(
     fun setBudgetBand(band: BudgetBand) = _state.update { it.copy(budgetBand = band) }
     fun setPace(pace: Pace) = _state.update { it.copy(pace = pace) }
     fun setGroupType(group: GroupType) = _state.update { it.copy(groupType = group) }
-    fun toggleAvoid(item: AvoidItem) = _state.update { it.copy(avoid = it.avoid.toggle(item)) }
+    fun toggleAvoid(item: AvoidItem) = _state.update {
+        val newAvoid = it.avoid.toggle(item)
+        val drinks = if (item == AvoidItem.ALCOHOL) {
+            AvoidItem.ALCOHOL !in newAvoid
+        } else {
+            it.drinksAlcohol
+        }
+        it.copy(avoid = newAvoid, drinksAlcohol = drinks)
+    }
+    fun setDrinksAlcohol(drinks: Boolean) = _state.update {
+        val avoid = if (!drinks) it.avoid + AvoidItem.ALCOHOL else it.avoid - AvoidItem.ALCOHOL
+        it.copy(drinksAlcohol = drinks, avoid = avoid)
+    }
     fun setSpiceLevel(level: SpiceLevel) = _state.update { it.copy(spiceLevel = level) }
     fun setJapaneseLevel(level: JapaneseLevel) = _state.update { it.copy(japaneseLevel = level) }
     fun setNotes(notes: String) = _state.update { it.copy(notes = notes) }
 
-    // Jain diets exclude onion and garlic, so we tick that for the user. They
-    // can still untick it if their family's practice differs.
+    // Jain diets exclude onion and garlic, and halal excludes alcohol.
     fun setDiet(diet: Diet) = _state.update {
-        val avoid = if (diet == Diet.JAIN) it.avoid + AvoidItem.ONION_GARLIC else it.avoid
-        it.copy(diet = diet, avoid = avoid)
+        var avoid = it.avoid
+        if (diet == Diet.JAIN) avoid = avoid + AvoidItem.ONION_GARLIC
+        if (diet == Diet.HALAL) avoid = avoid + AvoidItem.ALCOHOL
+        val drinks = if (diet == Diet.HALAL) false else it.drinksAlcohol
+        it.copy(diet = diet, avoid = avoid, drinksAlcohol = drinks)
     }
 
     fun next() = _state.update {

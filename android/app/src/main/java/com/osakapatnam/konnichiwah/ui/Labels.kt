@@ -41,6 +41,37 @@ val BudgetBand.labelRes: Int
         BudgetBand.LAKH_3_PLUS -> R.string.budget_3_plus
     }
 
+fun budgetBandDynamicLabel(band: BudgetBand, tripDays: Int): String {
+    val d = tripDays.coerceIn(1, 30)
+    return when (band) {
+        BudgetBand.LAKH_1_TO_2 -> {
+            val min = (0.5 + d * 0.08).coerceAtLeast(0.6)
+            val max = (0.9 + d * 0.13).coerceAtLeast(1.0)
+            "${formatLakh(min)}–${formatLakh(max)}"
+        }
+        BudgetBand.LAKH_2_TO_3 -> {
+            val min = (0.9 + d * 0.14).coerceAtLeast(1.2)
+            val max = (1.4 + d * 0.20).coerceAtLeast(1.8)
+            "${formatLakh(min)}–${formatLakh(max)}"
+        }
+        BudgetBand.LAKH_3_PLUS -> {
+            val min = (1.5 + d * 0.20).coerceAtLeast(2.0)
+            "${formatLakh(min)}+"
+        }
+    }
+}
+
+private fun formatLakh(amount: Double): String {
+    val rounded = Math.round(amount * 10.0) / 10.0
+    return if (rounded < 1.0) {
+        "₹${Math.round(rounded * 100)}k"
+    } else if (rounded == rounded.toLong().toDouble()) {
+        "₹${rounded.toLong()} lakh"
+    } else {
+        "₹${String.format(java.util.Locale.US, "%.1f", rounded)} lakh"
+    }
+}
+
 @get:StringRes
 val Pace.labelRes: Int
     get() = when (this) {
@@ -77,6 +108,7 @@ val AvoidItem.labelRes: Int
         AvoidItem.SEAFOOD -> R.string.avoid_seafood
         AvoidItem.EGG -> R.string.avoid_egg
         AvoidItem.ONION_GARLIC -> R.string.avoid_onion_garlic
+        AvoidItem.ALCOHOL -> R.string.avoid_alcohol
     }
 
 @get:StringRes
@@ -136,6 +168,7 @@ private val placeTypeLabels = mapOf(
 )
 
 private val timeSlotLabels = mapOf(
+    "breakfast" to R.string.slot_breakfast,
     "morning" to R.string.slot_morning,
     "lunch" to R.string.slot_lunch,
     "afternoon" to R.string.slot_afternoon,

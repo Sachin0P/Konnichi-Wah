@@ -63,6 +63,13 @@
     "romaji": "Tamanegi to ninniku wa taberaremasen."
   },
   {
+    "id": "avoid-alcohol",
+    "avoid": "alcohol",
+    "english": "I can't drink or consume alcohol, including cooking sake and mirin.",
+    "japanese": "アルコールは口にできません。料理酒やみりんも避けてください。",
+    "romaji": "Arukōru wa kuchi ni dekimasen. Ryōrishu ya mirin mo sakete kudasai."
+  },
+  {
     "id": "ask-dashi",
     "ask": "dashi",
     "english": "Does this contain dashi (fish stock)?",

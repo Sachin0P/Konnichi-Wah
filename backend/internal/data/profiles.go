@@ -16,7 +16,7 @@ var (
 	Paces          = []string{"relaxed", "balanced", "packed"}
 	GroupTypes     = []string{"solo", "couple", "friends", "family_kids", "family_elders"}
 	Diets          = []string{"veg", "jain", "eggetarian", "halal", "non_veg"}
-	AvoidItems     = []string{"beef", "pork", "seafood", "egg", "onion_garlic"}
+	AvoidItems     = []string{"beef", "pork", "seafood", "egg", "onion_garlic", "alcohol"}
 	SpiceLevels    = []string{"mild", "medium", "indian_spicy"}
 	JapaneseLevels = []string{"none", "basic"}
 )
@@ -32,6 +32,7 @@ type UserProfile struct {
 	Avoid         []string `json:"avoid"`
 	SpiceLevel    string   `json:"spice_level"`
 	JapaneseLevel string   `json:"japanese_level"`
+	DrinksAlcohol *bool    `json:"drinks_alcohol,omitempty"`
 	Notes         string   `json:"notes"`
 }
 

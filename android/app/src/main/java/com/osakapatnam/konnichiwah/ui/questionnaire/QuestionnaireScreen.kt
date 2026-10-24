@@ -44,6 +44,7 @@ import com.osakapatnam.konnichiwah.data.remote.JapaneseLevel
 import com.osakapatnam.konnichiwah.data.remote.Pace
 import com.osakapatnam.konnichiwah.data.remote.SpiceLevel
 import com.osakapatnam.konnichiwah.ui.LanguageSwitch
+import com.osakapatnam.konnichiwah.ui.budgetBandDynamicLabel
 import com.osakapatnam.konnichiwah.ui.components.ChoiceChips
 import com.osakapatnam.konnichiwah.ui.components.PrimaryButton
 import com.osakapatnam.konnichiwah.ui.components.Question
@@ -209,7 +210,7 @@ private fun StyleStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewM
             options = BudgetBand.entries,
             isSelected = { it == state.budgetBand },
             onClick = viewModel::setBudgetBand,
-            label = { stringResource(it.labelRes) },
+            label = { budgetBandDynamicLabel(it, state.tripDays) },
         )
     }
 
@@ -249,6 +250,17 @@ private fun TasteStep(state: QuestionnaireUiState, viewModel: QuestionnaireViewM
             isSelected = { it in state.avoid },
             onClick = viewModel::toggleAvoid,
             label = { stringResource(it.labelRes) },
+        )
+    }
+
+    Question(stringResource(R.string.q_alcohol), hint = stringResource(R.string.q_alcohol_hint)) {
+        Segmented(
+            options = listOf(false, true),
+            selected = state.drinksAlcohol ?: false,
+            onClick = viewModel::setDrinksAlcohol,
+            label = { drinks ->
+                if (drinks) stringResource(R.string.alcohol_yes) else stringResource(R.string.alcohol_no)
+            },
         )
     }
 

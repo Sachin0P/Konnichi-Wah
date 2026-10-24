@@ -4,8 +4,10 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,7 +21,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -27,10 +32,12 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -539,6 +546,106 @@ private fun TipsList(tips: List<EtiquetteRuleDto>) {
     }
 }
 
+private data class CuratedStopRec(
+    val name: String,
+    val placeType: String,
+    val suggestedSlot: String,
+    val category: String, // "sights", "food", "nightlife"
+)
+
+private fun recommendationsForCity(city: String): List<CuratedStopRec> = when (city.lowercase()) {
+    "kyoto" -> listOf(
+        // Sights
+        CuratedStopRec("Fushimi Inari Taisha", "shrine", "morning", "sights"),
+        CuratedStopRec("Kinkaku-ji (Golden Pavilion)", "temple", "morning", "sights"),
+        CuratedStopRec("Kiyomizu-dera Temple", "temple", "afternoon", "sights"),
+        CuratedStopRec("Arashiyama Bamboo Grove", "park", "morning", "sights"),
+        CuratedStopRec("Nara Park & Todai-ji", "park", "morning", "sights"),
+        // Food (Breakfast, Lunch, Dinner)
+        CuratedStopRec("Inoda Coffee Honten", "restaurant", "breakfast", "food"),
+        CuratedStopRec("Smart Coffee Sanjo", "restaurant", "breakfast", "food"),
+        CuratedStopRec("Nishiki Market Street Food", "shop", "lunch", "food"),
+        CuratedStopRec("Shigetsu Shojin Ryori", "restaurant", "lunch", "food"),
+        CuratedStopRec("Gion Tsujiri Matcha", "restaurant", "afternoon", "food"),
+        // Nightlife & Pubs
+        CuratedStopRec("Pontocho Alley Izakayas", "street", "evening", "nightlife"),
+        CuratedStopRec("Before9 Craft Beer & Sake", "restaurant", "dinner", "nightlife"),
+        CuratedStopRec("Kiyamachi-dori Canal Bars", "street", "evening", "nightlife"),
+        CuratedStopRec("Gion Evening Lantern Walk", "street", "evening", "nightlife"),
+    )
+    "osaka" -> listOf(
+        // Sights
+        CuratedStopRec("Osaka Castle & Park", "attraction", "morning", "sights"),
+        CuratedStopRec("Universal Studios Japan", "attraction", "morning", "sights"),
+        CuratedStopRec("Den Den Town Nipponbashi", "shop", "afternoon", "sights"),
+        CuratedStopRec("Shinsekai Retro Quarter", "attraction", "afternoon", "sights"),
+        // Food (Breakfast, Lunch, Dinner)
+        CuratedStopRec("Kuromon Morning Market", "restaurant", "breakfast", "food"),
+        CuratedStopRec("Dotonbori Okonomiyaki", "restaurant", "lunch", "food"),
+        CuratedStopRec("Takoyaki Wanaka Dotonbori", "restaurant", "afternoon", "food"),
+        CuratedStopRec("Kushikatsu Daruma Skewers", "restaurant", "dinner", "food"),
+        // Nightlife & Pubs
+        CuratedStopRec("Ura-Namba Tachinomi Alleys", "street", "evening", "nightlife"),
+        CuratedStopRec("Bar Nayuta Speakeasy", "restaurant", "dinner", "nightlife"),
+        CuratedStopRec("Dotonbori Canal Neon Walk", "street", "evening", "nightlife"),
+        CuratedStopRec("Amerikamura Youth Street", "street", "afternoon", "nightlife"),
+    )
+    "sapporo" -> listOf(
+        CuratedStopRec("Odori Park & TV Tower", "park", "morning", "sights"),
+        CuratedStopRec("Otaru Canal Day Trip", "street", "afternoon", "sights"),
+        CuratedStopRec("Niseko Powder Snow", "park", "morning", "sights"),
+        CuratedStopRec("Jozankei Hot Springs", "onsen", "afternoon", "sights"),
+        CuratedStopRec("Nijo Morning Fish Market", "restaurant", "breakfast", "food"),
+        CuratedStopRec("Sapporo Ramen Alley", "restaurant", "lunch", "food"),
+        CuratedStopRec("Susukino Nightlife District", "street", "evening", "nightlife"),
+    )
+    else -> listOf(
+        // Tokyo default
+        // Sights
+        CuratedStopRec("Senso-ji Temple Asakusa", "temple", "morning", "sights"),
+        CuratedStopRec("Meiji Jingu Shrine", "shrine", "morning", "sights"),
+        CuratedStopRec("Shibuya Sky Rooftop Deck", "attraction", "evening", "sights"),
+        CuratedStopRec("Akihabara Electric Town", "shop", "afternoon", "sights"),
+        CuratedStopRec("teamLab Planets Toyosu", "attraction", "afternoon", "sights"),
+        CuratedStopRec("Shinjuku Gyoen Garden", "park", "morning", "sights"),
+        // Food (Breakfast, Lunch, Dinner)
+        CuratedStopRec("Komeda's Coffee Morning Set", "restaurant", "breakfast", "food"),
+        CuratedStopRec("Chatei Hatou Kissaten", "restaurant", "breakfast", "food"),
+        CuratedStopRec("Tsukiji Morning Food Stalls", "shop", "breakfast", "food"),
+        CuratedStopRec("T's Tantan Vegan Ramen", "restaurant", "lunch", "food"),
+        CuratedStopRec("Ichiran Tonkotsu Ramen", "restaurant", "lunch", "food"),
+        CuratedStopRec("Kura Sushi Conveyor Belt", "restaurant", "dinner", "food"),
+        // Nightlife & Pubs
+        CuratedStopRec("Shibuya Yokocho Alleys", "restaurant", "dinner", "nightlife"),
+        CuratedStopRec("Nonbei Yokocho (Drinker's Alley)", "street", "evening", "nightlife"),
+        CuratedStopRec("Golden Gai & Omoide Yokocho", "street", "evening", "nightlife"),
+        CuratedStopRec("Spring Valley Craft Brewery", "restaurant", "dinner", "nightlife"),
+        CuratedStopRec("Torikizoku Budget Izakaya", "restaurant", "dinner", "nightlife"),
+    )
+}
+
+@Composable
+private fun CategoryChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        shape = CircleShape,
+        color = if (selected) Palette.Maroon else Palette.Petal,
+        contentColor = if (selected) Palette.Tip else Palette.Maroon,
+        border = if (selected) null else BorderStroke(1.dp, Palette.Line),
+        modifier = Modifier.clickable(onClick = onClick),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AddStopDialog(
     day: DayDto,
@@ -548,12 +655,91 @@ private fun AddStopDialog(
     var name by remember { mutableStateOf("") }
     var placeType by remember { mutableStateOf("attraction") }
     var timeSlot by remember { mutableStateOf("afternoon") }
+    var selectedCategory by remember { mutableStateOf("all") }
+
+    val recommendations = remember(day.city) {
+        recommendationsForCity(day.city)
+    }
+
+    val filteredRecommendations = remember(recommendations, selectedCategory) {
+        if (selectedCategory == "all") recommendations
+        else recommendations.filter { it.category == selectedCategory }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.it_add_stop_title, day.index)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                // Curated recommendations
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.it_add_stop_recommendations, day.city),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = Palette.Maroon,
+                    )
+                    Text(
+                        text = stringResource(R.string.it_add_stop_rec_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    // Category filter row
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        CategoryChip("All", selectedCategory == "all") { selectedCategory = "all" }
+                        CategoryChip(stringResource(R.string.it_rec_category_sights), selectedCategory == "sights") { selectedCategory = "sights" }
+                        CategoryChip(stringResource(R.string.it_rec_category_food), selectedCategory == "food") { selectedCategory = "food" }
+                        CategoryChip(stringResource(R.string.it_rec_category_nightlife), selectedCategory == "nightlife") { selectedCategory = "nightlife" }
+                    }
+
+                    // Tappable recommendation pills
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        filteredRecommendations.forEach { rec ->
+                            val isCurrent = name == rec.name
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isCurrent) Palette.Maroon else Palette.Petal,
+                                contentColor = if (isCurrent) Palette.Tip else Palette.Maroon,
+                                border = if (isCurrent) null else BorderStroke(1.dp, Palette.Line),
+                                modifier = Modifier.clickable {
+                                    name = rec.name
+                                    placeType = rec.placeType
+                                    timeSlot = rec.suggestedSlot
+                                },
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    Text(
+                                        text = rec.name,
+                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                    )
+                                    Text(
+                                        text = "• ${timeSlotLabel(rec.suggestedSlot)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (isCurrent) Palette.Tip.copy(alpha = 0.8f) else Palette.Maroon.copy(alpha = 0.7f),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = Palette.Line)
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = { if (it.length <= 100) name = it },

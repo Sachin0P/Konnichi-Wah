@@ -42,6 +42,7 @@ class ContractTest {
                 "group_type": "family_elders",
                 "diet": "jain",
                 "avoid": ["onion_garlic"],
+                "drinks_alcohol": null,
                 "spice_level": "indian_spicy",
                 "japanese_level": "none",
                 "notes": ""
@@ -151,7 +152,7 @@ class ContractTest {
         )
         assertEquals(listOf("veg", "jain", "eggetarian", "halal", "non_veg"), names(Diet.serializer(), Diet.entries))
         assertEquals(
-            listOf("beef", "pork", "seafood", "egg", "onion_garlic"),
+            listOf("beef", "pork", "seafood", "egg", "onion_garlic", "alcohol"),
             names(AvoidItem.serializer(), AvoidItem.entries),
         )
         assertEquals(listOf("mild", "medium", "indian_spicy"), names(SpiceLevel.serializer(), SpiceLevel.entries))

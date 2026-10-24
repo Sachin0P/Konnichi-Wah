@@ -63,6 +63,10 @@
     <string name="q_diet">आपका खान-पान</string>
     <string name="q_avoid">किन चीज़ों से परहेज़ है?</string>
     <string name="q_avoid_hint">हम आपको छिपी हुई चीज़ों, जैसे मछली के स्टॉक (dashi), के बारे में सावधान करेंगे।</string>
+    <string name="q_alcohol">क्या आप शराब लेते हैं?</string>
+    <string name="q_alcohol_hint">इससे हम इज़काया, क्राफ़्ट बीयर पब सुझा सकेंगे या प्लान को शराब-मुक्त रख सकेंगे।</string>
+    <string name="alcohol_yes">हाँ (पब और इज़काया चलेंगे)</string>
+    <string name="alcohol_no">शराब बिल्कुल नहीं</string>
     <string name="q_spice">आपको कितना तीखा पसंद है?</string>
     <string name="q_japanese">आप कितनी जापानी बोलते हैं?</string>
     <string name="q_notes">हमें और कुछ जानना चाहिए?</string>
@@ -99,6 +103,7 @@
     <string name="avoid_seafood">सी-फ़ूड</string>
     <string name="avoid_egg">अंडा</string>
     <string name="avoid_onion_garlic">प्याज़ और लहसुन</string>
+    <string name="avoid_alcohol">शराब / साके</string>
     <string name="spice_mild">हल्का</string>
     <string name="spice_medium">मध्यम</string>
     <string name="spice_indian">भारतीय तीखा</string>
@@ -119,6 +124,7 @@
     <string name="place_street">गली-बाज़ार</string>
     <string name="place_park">पार्क</string>
     <string name="place_attraction">दर्शनीय स्थल</string>
+    <string name="slot_breakfast">नाश्ता</string>
     <string name="slot_morning">सुबह</string>
     <string name="slot_lunch">दोपहर का खाना</string>
     <string name="slot_afternoon">दोपहर</string>
@@ -180,6 +186,11 @@
     <string name="it_place_kind">किस तरह की जगह?</string>
     <string name="it_when">कब?</string>
     <string name="it_add">जोड़ें</string>
+    <string name="it_add_stop_recommendations">%1$s में सुझाए गए स्थल</string>
+    <string name="it_add_stop_rec_hint">जानकारी अपने आप भरने के लिए किसी भी जगह पर टैप करें</string>
+    <string name="it_rec_category_sights">दर्शनीय स्थल</string>
+    <string name="it_rec_category_food">नाश्ता और खाना</string>
+    <string name="it_rec_category_nightlife">पब और नाइटलाइफ़</string>
 
     <string name="chat_title">कुछ भी पूछें</string>
     <string name="chat_subtitle">आपका प्लान और खान-पान जानता है।</string>

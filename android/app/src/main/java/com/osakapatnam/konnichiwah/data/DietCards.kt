@@ -12,7 +12,7 @@ private val dietCovers = mapOf(
     Diet.VEG to setOf(AvoidItem.BEEF, AvoidItem.PORK, AvoidItem.SEAFOOD, AvoidItem.EGG),
     Diet.JAIN to AvoidItem.entries.toSet(),
     Diet.EGGETARIAN to setOf(AvoidItem.BEEF, AvoidItem.PORK, AvoidItem.SEAFOOD),
-    Diet.HALAL to setOf(AvoidItem.PORK),
+    Diet.HALAL to setOf(AvoidItem.PORK, AvoidItem.ALCOHOL),
 )
 
 // The JSON strings phrases.json uses for diets and avoid items.
@@ -23,6 +23,7 @@ private val dietKey = mapOf(
 private val avoidKey = mapOf(
     AvoidItem.BEEF to "beef", AvoidItem.PORK to "pork", AvoidItem.SEAFOOD to "seafood",
     AvoidItem.EGG to "egg", AvoidItem.ONION_GARLIC to "onion_garlic",
+    AvoidItem.ALCOHOL to "alcohol",
 )
 
 // The traveller's own cards, in the order to show them: their diet card,

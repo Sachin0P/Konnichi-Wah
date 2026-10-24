@@ -73,8 +73,13 @@ func (c Catalogue) Suggest(ctx context.Context, req data.TripRequest) (*data.Pla
 			if !canEat(req.Profile, it) {
 				continue
 			}
-		} else if !it.essential && !overlaps(it.interests, req.Profile.Interests) && !mentions(notes, it.keywords) {
-			continue
+		} else {
+			if !canVisit(req.Profile, it) {
+				continue
+			}
+			if !it.essential && !overlaps(it.interests, req.Profile.Interests) && !mentions(notes, it.keywords) {
+				continue
+			}
 		}
 
 		plan.Suggestions = append(plan.Suggestions, it.Suggestion)
@@ -139,10 +144,10 @@ func foodFor(cities []data.CityPlan, profile data.UserProfile) []data.Suggestion
 		}
 
 		// LLM city names may differ in case from ours ("tokyo" vs "Tokyo").
-		// Cap at 2 food suggestions per city to avoid overcrowding the itinerary.
+		// Cap at 3 food suggestions per city to cover breakfast, lunch and dinner.
 		for _, c := range cities {
 			if strings.EqualFold(c.Name, it.base) {
-				if cityCounts[it.base] < 2 {
+				if cityCounts[it.base] < 3 {
 					food = append(food, it.Suggestion)
 					cityCounts[it.base]++
 				}
@@ -160,6 +165,10 @@ func foodFor(cities []data.CityPlan, profile data.UserProfile) []data.Suggestion
 func canEat(profile data.UserProfile, it item) bool {
 	excluded := slices.Clone(profile.Avoid)
 
+	if profile.DrinksAlcohol != nil && !*profile.DrinksAlcohol {
+		excluded = append(excluded, "alcohol")
+	}
+
 	switch profile.Diet {
 	case "veg":
 		excluded = append(excluded, "beef", "pork", "chicken", "seafood", "egg")
@@ -168,10 +177,28 @@ func canEat(profile data.UserProfile, it item) bool {
 	case "eggetarian":
 		excluded = append(excluded, "beef", "pork", "chicken", "seafood")
 	case "halal":
-		excluded = append(excluded, "pork")
+		excluded = append(excluded, "pork", "alcohol")
 		if !it.halal {
 			excluded = append(excluded, "beef", "chicken")
 		}
+	}
+
+	return !overlaps(it.contains, excluded)
+}
+
+// canVisit reports whether a non-food item (like a bar alley or tasting venue)
+// is suitable for the traveller based on avoidable items such as alcohol.
+func canVisit(profile data.UserProfile, it item) bool {
+	if len(it.contains) == 0 {
+		return true
+	}
+
+	excluded := slices.Clone(profile.Avoid)
+	if profile.DrinksAlcohol != nil && !*profile.DrinksAlcohol {
+		excluded = append(excluded, "alcohol")
+	}
+	if profile.Diet == "halal" {
+		excluded = append(excluded, "alcohol")
 	}
 
 	return !overlaps(it.contains, excluded)
@@ -304,6 +331,36 @@ var catalogue = []item{
 			Reason: "Fun, affordable conveyor-belt sushi ordered from a touch screen with an English menu."},
 		base: "Tokyo", contains: []string{"seafood", "egg"},
 	},
+	{
+		Suggestion: data.Suggestion{ID: "tokyo-komeda-coffee", Kind: "food", Name: "Komeda's Coffee Morning Set", City: "Tokyo", PlaceType: "restaurant",
+			Reason: "Classic Japanese kissaten morning service: order a warm drink and receive thick buttery toast with warm egg or red bean paste."},
+		base: "Tokyo", contains: []string{"egg"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "tokyo-chatei-hatou", Kind: "food", Name: "Chatei Hatou Kissaten, Shibuya", City: "Tokyo", PlaceType: "restaurant",
+			Reason: "Legendary wood-panelled kissaten serving artisanal hand-poured charcoal-roasted coffee and morning toast."},
+		base: "Tokyo",
+	},
+	{
+		Suggestion: data.Suggestion{ID: "tokyo-shibuya-yokocho", Kind: "food", Name: "Shibuya Yokocho in Miyashita Park", City: "Tokyo", PlaceType: "restaurant",
+			Reason: "Vibrant multi-stall retro food alley packed with regional Japanese street snacks, craft beers, and buzzing young crowd."},
+		base: "Tokyo", interests: []string{"nightlife"}, keywords: []string{"izakaya", "bar", "pub", "drinks", "beer"}, contains: []string{"alcohol", "chicken", "pork", "seafood"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "tokyo-spring-valley", Kind: "food", Name: "Spring Valley Brewery, Daikanyama", City: "Tokyo", PlaceType: "restaurant",
+			Reason: "Trendy craft beer pub and microbrewery with creative beer flights and artisan pairings, great for young travellers."},
+		base: "Tokyo", interests: []string{"nightlife"}, keywords: []string{"craft beer", "pub", "bar", "brewery"}, contains: []string{"alcohol", "pork"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "tokyo-torikizoku", Kind: "food", Name: "Torikizoku Izakaya", City: "Tokyo", PlaceType: "restaurant",
+			Reason: "Ultra-popular high-energy budget izakaya chain where all yakitori skewers, drinks, and snacks are one flat affordable price."},
+		base: "Tokyo", interests: []string{"nightlife"}, keywords: []string{"izakaya", "bar", "yakitori", "drinks"}, contains: []string{"alcohol", "chicken", "onion_garlic"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "tokyo-nonbei-yokocho", Kind: "activity", Name: "Nonbei Yokocho (Drinker's Alley), Shibuya", City: "Tokyo", PlaceType: "street",
+			Reason: "Atmospheric lantern-lit alley of tiny bars and izakayas right by Shibuya Station; quintessential Tokyo nightlife."},
+		base: "Tokyo", interests: []string{"nightlife"}, keywords: []string{"bar", "pub", "alley", "drinks", "nightlife"}, contains: []string{"alcohol"},
+	},
 
 	// Kyoto.
 	{
@@ -356,6 +413,31 @@ var catalogue = []item{
 			Reason: "Japanese curry rice where you choose the spice level. Selected branches have a vegetarian curry sauce."},
 		base: "Kyoto", contains: []string{"onion_garlic"},
 	},
+	{
+		Suggestion: data.Suggestion{ID: "kyoto-inoda-coffee", Kind: "food", Name: "Inoda Coffee Honten", City: "Kyoto", PlaceType: "restaurant",
+			Reason: "Kyoto's legendary 1940 salon cafe famous for its 'Kyoto morning' breakfast set, aromatic drip coffee, and tranquil garden patio."},
+		base: "Kyoto", contains: []string{"egg", "pork"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "kyoto-smart-coffee", Kind: "food", Name: "Smart Coffee, Sanjo", City: "Kyoto", PlaceType: "restaurant",
+			Reason: "Beloved 1932 vintage kissaten near Nishiki Market serving hot hand-dripped coffee, fluffy French toast, and breakfast hotcakes."},
+		base: "Kyoto", contains: []string{"egg"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "kyoto-pontocho-alleys", Kind: "activity", Name: "Pontocho Alley Izakayas & Craft Beer", City: "Kyoto", PlaceType: "street",
+			Reason: "Lantern-lit pedestrian alley beside the Kamogawa River lined with craft beer bars, riverside dining, and lively izakayas."},
+		base: "Kyoto", interests: []string{"nightlife"}, keywords: []string{"izakaya", "bar", "pub", "craft beer", "drinks"}, contains: []string{"alcohol"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "kyoto-before9", Kind: "food", Name: "Before9 Craft Beer & Sake, Karasuma", City: "Kyoto", PlaceType: "restaurant",
+			Reason: "Sleek minimalist craft beer bar in a renovated machiya townhouse serving Japanese microbrews on tap, sake, and bar bites."},
+		base: "Kyoto", interests: []string{"nightlife"}, keywords: []string{"craft beer", "bar", "sake", "pub"}, contains: []string{"alcohol"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "kyoto-kiyamachi-bars", Kind: "activity", Name: "Kiyamachi-dori Canal & Student Bars", City: "Kyoto", PlaceType: "street",
+			Reason: "Canal-side street filled with lively student bars, casual pubs, tachinomi standing bars, and late-night food."},
+		base: "Kyoto", interests: []string{"nightlife"}, keywords: []string{"nightlife", "bar", "pub", "standing bar", "club"}, contains: []string{"alcohol"},
+	},
 
 	// Osaka.
 	{
@@ -392,6 +474,26 @@ var catalogue = []item{
 		Suggestion: data.Suggestion{ID: "osaka-okonomiyaki", Kind: "food", Name: "Okonomiyaki in Dotonbori", City: "Osaka", PlaceType: "restaurant",
 			Reason: "Osaka's savoury pancake, grilled at your table. The batter usually contains dashi and egg, and pork is a common topping."},
 		base: "Osaka", contains: []string{"seafood", "egg"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "osaka-kuromon-breakfast", Kind: "food", Name: "Kuromon Morning Market Breakfast", City: "Osaka", PlaceType: "restaurant",
+			Reason: "Bustling morning market stalls serving fresh tamagoyaki rolled omelettes, fruit skewers, and freshly brewed Japanese drip coffee."},
+		base: "Osaka", contains: []string{"egg"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "osaka-ura-namba", Kind: "activity", Name: "Ura-Namba Izakaya & Tachinomi Alleys", City: "Osaka", PlaceType: "street",
+			Reason: "Buzzing foodie backstreets packed with energetic tachinomi (standing bars), kushikatsu joints, and craft beer taps."},
+		base: "Osaka", interests: []string{"nightlife", "food"}, keywords: []string{"izakaya", "bar", "standing bar", "pub", "drinks"}, contains: []string{"alcohol"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "osaka-bar-nayuta", Kind: "food", Name: "Bar Nayuta, Amerikamura", City: "Osaka", PlaceType: "restaurant",
+			Reason: "Mysterious speakeasy cocktail bar hidden behind a tiny door in youth fashion district Amerikamura with drinks tailored to your taste."},
+		base: "Osaka", interests: []string{"nightlife"}, keywords: []string{"bar", "speakeasy", "cocktail", "nightlife"}, contains: []string{"alcohol"},
+	},
+	{
+		Suggestion: data.Suggestion{ID: "osaka-kushikatsu-daruma", Kind: "food", Name: "Kushikatsu Daruma, Shinsekai", City: "Osaka", PlaceType: "restaurant",
+			Reason: "Iconic retro Osaka skewer joint in neon Shinsekai; great for young crowds enjoying hot skewers with cold highballs or draft beer."},
+		base: "Osaka", interests: []string{"food", "nightlife"}, keywords: []string{"kushikatsu", "izakaya", "shinsekai", "beer"}, contains: []string{"beef", "pork", "seafood", "egg", "alcohol"},
 	},
 
 	// Sapporo (only chosen for snow lovers travelling in winter).

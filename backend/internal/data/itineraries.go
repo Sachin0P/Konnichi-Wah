@@ -13,7 +13,7 @@ import (
 
 // TimeSlots lists the permitted time slots for a stop, in the order they
 // happen during a day.
-var TimeSlots = []string{"morning", "lunch", "afternoon", "evening", "dinner"}
+var TimeSlots = []string{"breakfast", "morning", "lunch", "afternoon", "evening", "dinner"}
 
 // Itinerary is a saved trip: an ordered list of days, each with ordered stops.
 type Itinerary struct {
