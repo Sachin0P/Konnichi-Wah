@@ -219,6 +219,12 @@
     <string name="source_food">Desi Match from OpenStreetMap</string>
     <string name="source_shops">Shops from OpenStreetMap</string>
     <string name="source_web_search">Live web search</string>
+    <string name="source_itinerary_update">Trip itinerary updated</string>
+    <string name="chat_itinerary_added">🗓️ Added %1$s to Day %2$d</string>
+    <string name="chat_itinerary_removed">🗑️ Removed %1$s from Day %2$d</string>
+    <string name="chat_itinerary_moved">↔️ Moved %1$s to Day %2$d</string>
+    <string name="chat_itinerary_updated">🗓️ Updated %s in itinerary</string>
+    <string name="chat_view_in_plan">View plan →</string>
     <string name="chat_placeholder">Ask about trains, food, manners…</string>
     <string name="chat_send">Send</string>
 

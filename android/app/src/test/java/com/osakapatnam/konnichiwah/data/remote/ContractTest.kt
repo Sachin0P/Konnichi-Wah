@@ -122,7 +122,7 @@ class ContractTest {
         val js = json.encodeToJsonElement(ChatRequestDto.serializer(), request).jsonObject
         val context = js["context"]!!.jsonObject
 
-        assertEquals(setOf("city", "day_index", "stops", "profile", "location"), context.keys)
+        assertEquals(setOf("city", "day_index", "stops", "days", "profile", "location"), context.keys)
         assertEquals(setOf("place_name", "place_type", "time_slot"), context["stops"]!!.jsonArray[0].jsonObject.keys)
 
         val reply = json.decodeFromString(

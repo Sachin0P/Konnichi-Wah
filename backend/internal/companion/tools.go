@@ -120,6 +120,46 @@ var toolDeclarations = []Tool{
 			"required": []string{"query"},
 		},
 	},
+	{
+		Name:        "add_itinerary_stop",
+		Description: "Add a new place or stop to the traveller's itinerary on a specific day and time slot.",
+		Parameters: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"day_index":  map[string]any{"type": "integer", "description": "1-based day number, e.g. 1 for Day 1, 2 for Day 2."},
+				"place_name": map[string]any{"type": "string", "description": "Name of the place, e.g. 'Fushimi Inari-taisha' or 'Ichiran Ramen'."},
+				"place_type": map[string]any{"type": "string", "enum": data.PlaceTypes, "description": "temple, shrine, restaurant, shop, park, attraction, onsen, ryokan, street."},
+				"time_slot":  map[string]any{"type": "string", "enum": data.TimeSlots, "description": "breakfast, morning, lunch, afternoon, evening, dinner."},
+			},
+			"required": []string{"day_index", "place_name", "place_type", "time_slot"},
+		},
+	},
+	{
+		Name:        "remove_itinerary_stop",
+		Description: "Remove a place from the traveller's itinerary by place name and day index.",
+		Parameters: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"day_index":  map[string]any{"type": "integer", "description": "1-based day number."},
+				"place_name": map[string]any{"type": "string", "description": "Name of the place to remove."},
+			},
+			"required": []string{"day_index", "place_name"},
+		},
+	},
+	{
+		Name:        "move_itinerary_stop",
+		Description: "Move a place from one day to another day or to a different time slot.",
+		Parameters: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"from_day":   map[string]any{"type": "integer", "description": "1-based current day number."},
+				"to_day":     map[string]any{"type": "integer", "description": "1-based destination day number."},
+				"place_name": map[string]any{"type": "string", "description": "Name of the place being moved."},
+				"time_slot":  map[string]any{"type": "string", "enum": data.TimeSlots, "description": "New time slot: breakfast, morning, lunch, afternoon, evening, dinner."},
+			},
+			"required": []string{"from_day", "to_day", "place_name"},
+		},
+	},
 }
 
 // maxPhrases caps the cards in one reply, so a confused model can't flood it.
@@ -157,6 +197,12 @@ func (t tools) run(ctx context.Context, call ToolCall) any {
 		result, err = t.phraseCard(call.Arguments)
 	case "search_web":
 		result, err = t.searchWeb(ctx, call.Arguments)
+	case "add_itinerary_stop":
+		result, err = t.addItineraryStop(call.Arguments)
+	case "remove_itinerary_stop":
+		result, err = t.removeItineraryStop(call.Arguments)
+	case "move_itinerary_stop":
+		result, err = t.moveItineraryStop(call.Arguments)
 	default:
 		err = errors.New("unknown tool")
 	}
@@ -704,5 +750,115 @@ func (t tools) searchWeb(ctx context.Context, args json.RawMessage) (any, error)
 	return map[string]any{
 		"query":   in.Query,
 		"results": out,
+	}, nil
+}
+
+func (t tools) addItineraryStop(args json.RawMessage) (any, error) {
+	var input struct {
+		DayIndex  int    `json:"day_index"`
+		PlaceName string `json:"place_name"`
+		PlaceType string `json:"place_type"`
+		TimeSlot  string `json:"time_slot"`
+	}
+	if err := json.Unmarshal(args, &input); err != nil {
+		return nil, err
+	}
+	input.PlaceName = strings.TrimSpace(input.PlaceName)
+	if input.PlaceName == "" {
+		return nil, errors.New("place_name must be provided")
+	}
+	if input.DayIndex <= 0 {
+		input.DayIndex = 1
+	}
+	if input.PlaceType == "" {
+		input.PlaceType = "attraction"
+	}
+	if input.TimeSlot == "" {
+		input.TimeSlot = "afternoon"
+	}
+
+	action := data.ItineraryAction{
+		Type:      "add",
+		DayIndex:  input.DayIndex,
+		PlaceName: input.PlaceName,
+		PlaceType: input.PlaceType,
+		TimeSlot:  input.TimeSlot,
+	}
+	t.reply.ItineraryActions = append(t.reply.ItineraryActions, action)
+	t.reply.ToolsUsed = append(t.reply.ToolsUsed, "add_itinerary_stop")
+
+	return map[string]any{
+		"status":  "success",
+		"message": fmt.Sprintf("Added %s to Day %d (%s)", input.PlaceName, input.DayIndex, input.TimeSlot),
+	}, nil
+}
+
+func (t tools) removeItineraryStop(args json.RawMessage) (any, error) {
+	var input struct {
+		DayIndex  int    `json:"day_index"`
+		PlaceName string `json:"place_name"`
+	}
+	if err := json.Unmarshal(args, &input); err != nil {
+		return nil, err
+	}
+	input.PlaceName = strings.TrimSpace(input.PlaceName)
+	if input.PlaceName == "" {
+		return nil, errors.New("place_name must be provided")
+	}
+	if input.DayIndex <= 0 {
+		input.DayIndex = 1
+	}
+
+	action := data.ItineraryAction{
+		Type:      "remove",
+		DayIndex:  input.DayIndex,
+		PlaceName: input.PlaceName,
+	}
+	t.reply.ItineraryActions = append(t.reply.ItineraryActions, action)
+	t.reply.ToolsUsed = append(t.reply.ToolsUsed, "remove_itinerary_stop")
+
+	return map[string]any{
+		"status":  "success",
+		"message": fmt.Sprintf("Removed %s from Day %d", input.PlaceName, input.DayIndex),
+	}, nil
+}
+
+func (t tools) moveItineraryStop(args json.RawMessage) (any, error) {
+	var input struct {
+		FromDay   int    `json:"from_day"`
+		ToDay     int    `json:"to_day"`
+		PlaceName string `json:"place_name"`
+		TimeSlot  string `json:"time_slot"`
+	}
+	if err := json.Unmarshal(args, &input); err != nil {
+		return nil, err
+	}
+	input.PlaceName = strings.TrimSpace(input.PlaceName)
+	if input.PlaceName == "" {
+		return nil, errors.New("place_name must be provided")
+	}
+	if input.FromDay <= 0 {
+		input.FromDay = 1
+	}
+	if input.ToDay <= 0 {
+		input.ToDay = input.FromDay
+	}
+	if input.TimeSlot == "" {
+		input.TimeSlot = "afternoon"
+	}
+
+	action := data.ItineraryAction{
+		Type:      "move",
+		DayIndex:  input.FromDay,
+		TargetDay: input.ToDay,
+		PlaceName: input.PlaceName,
+		TimeSlot:  input.TimeSlot,
+	}
+	t.reply.ItineraryActions = append(t.reply.ItineraryActions, action)
+	t.reply.ToolsUsed = append(t.reply.ToolsUsed, "move_itinerary_stop")
+
+	return map[string]any{
+		"status":  "success",
+		"message": fmt.Sprintf("Moved %s from Day %d to Day %d (%s)", input.PlaceName, input.FromDay, input.ToDay, input.TimeSlot),
 	}, nil
 }

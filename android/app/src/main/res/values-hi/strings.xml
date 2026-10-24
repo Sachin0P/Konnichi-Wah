@@ -211,6 +211,12 @@
     <string name="source_food">OpenStreetMap से Desi Match</string>
     <string name="source_shops">OpenStreetMap से दुकानें</string>
     <string name="source_web_search">लाइव वेब खोज</string>
+    <string name="source_itinerary_update">यात्रा योजना अपडेट हुई</string>
+    <string name="chat_itinerary_added">🗓️ %1$s को दिन %2$d में जोड़ा गया</string>
+    <string name="chat_itinerary_removed">🗑️ %1$s को दिन %2$d से हटाया गया</string>
+    <string name="chat_itinerary_moved">↔️ %1$s को दिन %2$d में ले जाया गया</string>
+    <string name="chat_itinerary_updated">🗓️ योजना में %s अपडेट हुआ</string>
+    <string name="chat_view_in_plan">योजना देखें →</string>
     <string name="chat_placeholder">ट्रेन, खाना, तौर-तरीक़ों के बारे में पूछें…</string>
     <string name="chat_send">भेजें</string>
 

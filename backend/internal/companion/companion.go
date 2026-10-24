@@ -109,7 +109,11 @@ func (c Companion) log(msg string, args ...any) {
 
 // Reply answers the last message in the conversation.
 func (c Companion) Reply(ctx context.Context, req data.ChatRequest) (*data.ChatReply, error) {
-	now := c.Now().In(japan)
+	now := time.Now()
+	if c.Now != nil {
+		now = c.Now()
+	}
+	now = now.In(japan)
 	conv := c.LLM.Start(buildInstructions(req.Context, req.Language, now), req.Messages, toolDeclarations)
 
 	reply := &data.ChatReply{Phrases: []data.Phrase{}, ToolsUsed: []string{}}
@@ -283,7 +287,20 @@ func buildInstructions(c data.ChatContext, language string, now time.Time) strin
 		}
 	}
 
-	if len(c.Stops) > 0 {
+	if len(c.Days) > 0 {
+		b.WriteString("- The traveller's complete itinerary:\n")
+		for _, d := range c.Days {
+			var stopNames []string
+			for _, s := range d.Stops {
+				stopNames = append(stopNames, fmt.Sprintf("%s (%s, %s)", s.PlaceName, s.PlaceType, s.TimeSlot))
+			}
+			if len(stopNames) == 0 {
+				fmt.Fprintf(&b, "  * Day %d (%s): no stops planned yet\n", d.Index, d.City)
+			} else {
+				fmt.Fprintf(&b, "  * Day %d (%s): %s\n", d.Index, d.City, strings.Join(stopNames, "; "))
+			}
+		}
+	} else if len(c.Stops) > 0 {
 		var stops []string
 		for _, s := range c.Stops {
 			stops = append(stops, fmt.Sprintf("%s: %s (%s)", s.TimeSlot, s.PlaceName, s.PlaceType))
@@ -337,6 +354,7 @@ Rules you must follow:
 - Shops: for anime, figure, manga, toy, game, hobby or 100-yen shops, call find_places. Name only shops it returns, with distances, and say to check opening hours.
 - Help and everyday places: for a hospital, clinic, pharmacy or drugstore, police box (koban), ATM, toilet or convenience store, call find_nearby with that kind; for anything else (a supermarket, a laundromat, a shop by name) call find_nearby with a query. Name only places it returns, with distances, and opening hours and phone numbers when given. In an emergency, first tell them to call 119 for an ambulance or fire, or 110 for the police. For other sights, only name well-known places you are sure exist.
 - Live web search: for questions about trending spots, events, bars/clubs/nightlife, recommendations matching specific hobbies or latest travel updates, call search_web. Use its results to give fresh, accurate, real-world recommendations and details.
+- Itinerary editing: when the traveller asks to add, remove, or move a stop in their trip itinerary (e.g. 'add Fushimi Inari to Day 2 afternoon', 'remove the museum from Day 1', 'move Dotonbori to evening'), call add_itinerary_stop, remove_itinerary_stop, or move_itinerary_stop. You can also recommend places (using find_food, find_places, search_web) and offer or confirm adding them to their trip. Always state clearly in your answer what was added, removed, or moved, and on which day.
 - Where they are: if they say "near me" or "from here" and the context below gives their location, leave near (or from) empty and the tools use it. If it doesn't, ask where they are.
 - If you don't know, say so. Never make up prices, opening hours, addresses or routes.`
 

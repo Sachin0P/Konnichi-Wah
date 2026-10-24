@@ -1,6 +1,7 @@
 package com.osakapatnam.konnichiwah.ui.chat
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,9 +40,11 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.osakapatnam.konnichiwah.R
+import com.osakapatnam.konnichiwah.data.remote.ItineraryActionDto
 import com.osakapatnam.konnichiwah.data.remote.PhraseDto
 import com.osakapatnam.konnichiwah.ui.components.EnlargedPhrase
 import com.osakapatnam.konnichiwah.ui.components.Pill
@@ -54,7 +57,7 @@ import com.osakapatnam.konnichiwah.ui.userMessage
 
 // The companion chat. It's a bottom tab, so it has no Back button.
 @Composable
-fun ChatScreen(viewModel: ChatViewModel = hiltViewModel()) {
+fun ChatScreen(onOpenPlan: () -> Unit = {}, viewModel: ChatViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
@@ -100,7 +103,7 @@ fun ChatScreen(viewModel: ChatViewModel = hiltViewModel()) {
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
                     items(state.entries, key = { it.id }) { entry ->
-                        Message(entry, onEnlarge = viewModel::enlarge)
+                        Message(entry, onEnlarge = viewModel::enlarge, onOpenPlan = onOpenPlan)
                     }
                     if (state.sending) {
                         item(key = "thinking") {
@@ -161,7 +164,7 @@ private fun Suggestions(onAsk: (String) -> Unit) {
 }
 
 @Composable
-private fun Message(entry: ChatEntry, onEnlarge: (PhraseDto) -> Unit) {
+private fun Message(entry: ChatEntry, onEnlarge: (PhraseDto) -> Unit, onOpenPlan: () -> Unit = {}) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (entry.fromUser) Alignment.End else Alignment.Start,
@@ -171,11 +174,61 @@ private fun Message(entry: ChatEntry, onEnlarge: (PhraseDto) -> Unit) {
             Text(entry.error?.userMessage() ?: entry.text, color = if (entry.fromUser) Palette.Tip else Palette.Ink)
         }
 
+        entry.itineraryActions.forEach { action ->
+            ItineraryActionBadge(action, onOpenPlan)
+        }
+
         entry.phrases.forEach { phrase ->
             PhraseCard(phrase, onClick = { onEnlarge(phrase) }, modifier = Modifier.widthIn(max = 320.dp))
         }
 
         sourceLabel(entry.toolsUsed)?.let { Pill("✓ $it", Tone.GREEN) }
+    }
+}
+
+@Composable
+private fun ItineraryActionBadge(action: ItineraryActionDto, onOpenPlan: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Palette.Petal,
+        border = BorderStroke(1.dp, Palette.Maroon.copy(alpha = 0.25f)),
+        modifier = Modifier
+            .widthIn(max = 320.dp)
+            .clickable(onClick = onOpenPlan),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                val actionText = when (action.type.lowercase()) {
+                    "add" -> stringResource(R.string.chat_itinerary_added, action.placeName, action.dayIndex)
+                    "remove" -> stringResource(R.string.chat_itinerary_removed, action.placeName, action.dayIndex)
+                    "move" -> stringResource(R.string.chat_itinerary_moved, action.placeName, action.targetDay ?: action.dayIndex)
+                    else -> stringResource(R.string.chat_itinerary_updated, action.placeName)
+                }
+                Text(
+                    text = actionText,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = Palette.Maroon,
+                )
+                if (!action.timeSlot.isNullOrBlank()) {
+                    Text(
+                        text = action.timeSlot.replaceFirstChar { it.uppercase() },
+                        fontSize = 11.sp,
+                        color = Palette.Mute,
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.chat_view_in_plan),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = Palette.Maroon,
+            )
+        }
     }
 }
 
@@ -191,6 +244,7 @@ private fun sourceLabel(toolsUsed: List<String>): String? {
             "find_food" -> R.string.source_food
             "find_places" -> R.string.source_shops
             "search_web" -> R.string.source_web_search
+            "add_itinerary_stop", "remove_itinerary_stop", "move_itinerary_stop" -> R.string.source_itinerary_update
             else -> null
         }
     }

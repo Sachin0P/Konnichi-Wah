@@ -210,7 +210,13 @@ fun KonnichiNavHost(startViewModel: StartViewModel = hiltViewModel()) {
                     },
                 )
             }
-            composable<ChatRoute> { ChatScreen() }
+            composable<ChatRoute> {
+                ChatScreen(
+                    onOpenPlan = dropUnlessResumed {
+                        navController.navigate(ItineraryRoute) { launchSingleTop = true }
+                    },
+                )
+            }
             composable<CardsRoute> {
                 CardsScreen(onBack = dropUnlessResumed { navController.safePop() })
             }

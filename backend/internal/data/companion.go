@@ -23,6 +23,23 @@ type ChatStop struct {
 	TimeSlot  string `json:"time_slot"`
 }
 
+// ChatDay represents one day of the full itinerary for the companion.
+type ChatDay struct {
+	Index int        `json:"index"`
+	City  string     `json:"city"`
+	Stops []ChatStop `json:"stops"`
+}
+
+// ItineraryAction describes a modification to the traveller's itinerary.
+type ItineraryAction struct {
+	Type      string `json:"type"`                  // "add", "remove", "move"
+	DayIndex  int    `json:"day_index"`             // 1-based day index
+	PlaceName string `json:"place_name"`
+	PlaceType string `json:"place_type,omitempty"`
+	TimeSlot  string `json:"time_slot,omitempty"`
+	TargetDay int    `json:"target_day,omitempty"`
+}
+
 // ChatContext tells the companion where the traveller is in their trip, so
 // "how do I get to my next stop?" makes sense. Everything in it is optional.
 //
@@ -32,6 +49,7 @@ type ChatContext struct {
 	City     string        `json:"city"`
 	DayIndex int           `json:"day_index"`
 	Stops    []ChatStop    `json:"stops"`
+	Days     []ChatDay     `json:"days,omitempty"`
 	Profile  *UserProfile  `json:"profile"`
 	Location *ChatLocation `json:"location"`
 }
@@ -59,9 +77,10 @@ type Phrase struct {
 // ChatReply is the companion's answer. Phrases are shown as cards under the
 // text; ToolsUsed is for debugging and the demo ("Checked live train times").
 type ChatReply struct {
-	Text      string   `json:"text"`
-	Phrases   []Phrase `json:"phrases"`
-	ToolsUsed []string `json:"tools_used"`
+	Text             string            `json:"text"`
+	Phrases          []Phrase          `json:"phrases"`
+	ToolsUsed        []string          `json:"tools_used"`
+	ItineraryActions []ItineraryAction `json:"itinerary_actions,omitempty"`
 }
 
 func ValidateChatRequest(v *validator.Validator, req *ChatRequest) {
@@ -95,6 +114,17 @@ func ValidateChatRequest(v *validator.Validator, req *ChatRequest) {
 		v.Check(s.PlaceName != "" && len(s.PlaceName) <= 100, key+".place_name", "must be 1 to 100 bytes long")
 		v.Check(validator.PermittedValue(s.PlaceType, PlaceTypes...), key+".place_type", mustBeOneOf(PlaceTypes))
 		v.Check(validator.PermittedValue(s.TimeSlot, TimeSlots...), key+".time_slot", mustBeOneOf(TimeSlots))
+	}
+
+	v.Check(len(c.Days) <= 30, "context.days", "must not contain more than 30 days")
+	for i, d := range c.Days {
+		key := fmt.Sprintf("context.days[%d]", i)
+		v.Check(d.Index >= 1 && d.Index <= 30, key+".index", "must be between 1 and 30")
+		v.Check(len(d.Stops) <= 20, key+".stops", "must not contain more than 20 stops")
+		for j, s := range d.Stops {
+			stopKey := fmt.Sprintf("%s.stops[%d]", key, j)
+			v.Check(s.PlaceName != "" && len(s.PlaceName) <= 100, stopKey+".place_name", "must be 1 to 100 bytes long")
+		}
 	}
 
 	if c.Profile != nil {

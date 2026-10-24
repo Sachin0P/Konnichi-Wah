@@ -218,6 +218,23 @@ data class ChatStopDto(
     @SerialName("time_slot") val timeSlot: String,
 )
 
+@Serializable
+data class ChatDayDto(
+    val index: Int,
+    val city: String,
+    val stops: List<ChatStopDto> = emptyList(),
+)
+
+@Serializable
+data class ItineraryActionDto(
+    val type: String, // "add", "remove", "move"
+    @SerialName("day_index") val dayIndex: Int,
+    @SerialName("place_name") val placeName: String,
+    @SerialName("place_type") val placeType: String? = null,
+    @SerialName("time_slot") val timeSlot: String? = null,
+    @SerialName("target_day") val targetDay: Int? = null,
+)
+
 // location is where the traveller is now, sent only if they've let the app
 // use it, so "a pharmacy near me" works.
 @Serializable
@@ -225,6 +242,7 @@ data class ChatContextDto(
     val city: String = "",
     @SerialName("day_index") val dayIndex: Int = 0,
     val stops: List<ChatStopDto> = emptyList(),
+    val days: List<ChatDayDto> = emptyList(),
     val profile: UserProfileDto? = null,
     val location: GeoPointDto? = null,
 )
@@ -249,6 +267,7 @@ data class ChatReplyDto(
     val text: String,
     val phrases: List<PhraseDto> = emptyList(),
     @SerialName("tools_used") val toolsUsed: List<String> = emptyList(),
+    @SerialName("itinerary_actions") val itineraryActions: List<ItineraryActionDto> = emptyList(),
 )
 
 @Serializable

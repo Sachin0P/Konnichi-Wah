@@ -10,12 +10,16 @@ import com.osakapatnam.konnichiwah.data.ProfileRepository
 import com.osakapatnam.konnichiwah.data.remote.ApiError
 import com.osakapatnam.konnichiwah.data.remote.ApiResult
 import com.osakapatnam.konnichiwah.data.remote.ChatContextDto
+import com.osakapatnam.konnichiwah.data.remote.ChatDayDto
 import com.osakapatnam.konnichiwah.data.remote.ChatMessageDto
 import com.osakapatnam.konnichiwah.data.remote.ChatRequestDto
 import com.osakapatnam.konnichiwah.data.remote.ChatStopDto
 import com.osakapatnam.konnichiwah.data.remote.DayDto
 import com.osakapatnam.konnichiwah.data.remote.GeoPointDto
+import com.osakapatnam.konnichiwah.data.remote.ItineraryActionDto
 import com.osakapatnam.konnichiwah.data.remote.PhraseDto
+import com.osakapatnam.konnichiwah.ui.itinerary.addStop
+import com.osakapatnam.konnichiwah.ui.itinerary.deleteStop
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +43,7 @@ data class ChatEntry(
     val text: String,
     val phrases: List<PhraseDto> = emptyList(),
     val toolsUsed: List<String> = emptyList(),
+    val itineraryActions: List<ItineraryActionDto> = emptyList(),
     // A failed reply is shown in the chat as an error message (in the language
     // on screen) but never sent back as history.
     val error: ApiError? = null,
@@ -103,13 +108,20 @@ class ChatViewModel @Inject constructor(
             )
 
             val reply = when (val result = backendRepository.chat(request)) {
-                is ApiResult.Success -> ChatEntry(
-                    id = nextId++,
-                    fromUser = false,
-                    text = result.value.text,
-                    phrases = result.value.phrases,
-                    toolsUsed = result.value.toolsUsed,
-                )
+                is ApiResult.Success -> {
+                    val actions = result.value.itineraryActions
+                    if (actions.isNotEmpty()) {
+                        applyItineraryActions(actions)
+                    }
+                    ChatEntry(
+                        id = nextId++,
+                        fromUser = false,
+                        text = result.value.text,
+                        phrases = result.value.phrases,
+                        toolsUsed = result.value.toolsUsed,
+                        itineraryActions = actions,
+                    )
+                }
                 is ApiResult.Failure -> ChatEntry(
                     id = nextId++,
                     fromUser = false,
@@ -120,6 +132,55 @@ class ChatViewModel @Inject constructor(
 
             _state.update { it.copy(entries = it.entries + reply, sending = false) }
         }
+    }
+
+    private suspend fun applyItineraryActions(actions: List<ItineraryActionDto>) {
+        val local = itineraryRepository.latest.first() ?: return
+        var currentDays = local.days
+
+        for (action in actions) {
+            val dayIdx = (action.dayIndex - 1).coerceIn(0, currentDays.lastIndex)
+            when (action.type.lowercase()) {
+                "add" -> {
+                    val placeType = action.placeType ?: "attraction"
+                    val timeSlot = action.timeSlot ?: "afternoon"
+                    currentDays = addStop(currentDays, dayIdx, action.placeName, placeType, timeSlot)
+                }
+                "remove" -> {
+                    val targetName = action.placeName.trim().lowercase()
+                    val day = currentDays.getOrNull(dayIdx)
+                    if (day != null) {
+                        val stopIdx = day.stops.indexOfFirst {
+                            val name = it.placeName.trim().lowercase()
+                            name == targetName || name.contains(targetName) || targetName.contains(name)
+                        }
+                        if (stopIdx >= 0) {
+                            currentDays = deleteStop(currentDays, dayIdx, stopIdx)
+                        }
+                    }
+                }
+                "move" -> {
+                    val targetName = action.placeName.trim().lowercase()
+                    val fromDay = currentDays.getOrNull(dayIdx)
+                    val toIdx = ((action.targetDay ?: action.dayIndex) - 1).coerceIn(0, currentDays.lastIndex)
+                    if (fromDay != null) {
+                        val stop = fromDay.stops.firstOrNull {
+                            val name = it.placeName.trim().lowercase()
+                            name == targetName || name.contains(targetName) || targetName.contains(name)
+                        }
+                        if (stop != null) {
+                            val stopIdx = fromDay.stops.indexOf(stop)
+                            currentDays = deleteStop(currentDays, dayIdx, stopIdx)
+                            val timeSlot = action.timeSlot ?: stop.timeSlot
+                            currentDays = addStop(currentDays, toIdx, stop.placeName, stop.placeType, timeSlot)
+                        }
+                    }
+                }
+            }
+        }
+
+        itineraryRepository.updateDays(local.localId, currentDays)
+        _state.update { it.copy(days = currentDays) }
     }
 
     // Tell the companion about the chosen day and the traveller's taste
@@ -133,6 +194,15 @@ class ChatViewModel @Inject constructor(
             dayIndex = day?.index ?: 0,
             stops = day?.stops.orEmpty().take(20).map {
                 ChatStopDto(placeName = it.placeName.take(100), placeType = it.placeType, timeSlot = it.timeSlot)
+            },
+            days = state.days.take(15).map { d ->
+                ChatDayDto(
+                    index = d.index,
+                    city = d.city,
+                    stops = d.stops.take(10).map { s ->
+                        ChatStopDto(placeName = s.placeName.take(100), placeType = s.placeType, timeSlot = s.timeSlot)
+                    }
+                )
             },
             profile = profile,
             // Only if they've already allowed location and are in Japan:

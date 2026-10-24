@@ -24,13 +24,15 @@ type turn struct {
 
 // fakeLLM replays scripted turns and records what the companion did.
 type fakeLLM struct {
-	turns      []turn
-	calls      int
-	allowTools []bool
-	results    []string // JSON of each tool result, in order
+	instructions string
+	turns        []turn
+	calls        int
+	allowTools   []bool
+	results      []string // JSON of each tool result, in order
 }
 
 func (f *fakeLLM) Start(instructions string, history []data.ChatMessage, tools []Tool) Conversation {
+	f.instructions = instructions
 	return f
 }
 
