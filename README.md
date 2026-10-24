@@ -45,6 +45,13 @@ Konnichi-Wah! removes that uncertainty, before the trip and during it.
    - **Food and shops nearby:** "Where can we eat near Senso-ji?" uses the same Desi Match ranking. "Figure shops near Akihabara?" lists real anime, collector, toy, hobby and 100-yen shops.
 11. **Get there: Live transit directions and maps.** Point-to-point transit directions with walk-to-station legs, which exit to use (e.g. "Exit A1"), platform numbers, line codes, and step-by-step transfer instructions. An interactive vector map (MapLibre with free OpenFreeMap tiles) shows the path of each leg, with search-as-you-type station suggestions.
 12. **Help nearby.** Quick emergency numbers (110 police, 119 ambulance), plus one-tap access to nearby hospitals, clinics, pharmacies, ATMs, police boxes, convenience stores, and toilets from a snapshot of 30,436 places, with directions and click-to-call.
+13. **First-Timer Visual Station Guide.** An interactive, step-by-step visual route guide built for first-time visitors navigating Japanese stations:
+    - **Step 1 ("Find this sign"):** Coloured line badge (e.g. orange `G 01`), direction arrow, and floor/wall track navigation line with double chevrons (`>>`).
+    - **Step 2 ("Board this train"):** Train front graphic with line stripe, headlights, and amber LED destination board (`[浅草 Asakusa]`).
+    - **Step 3 ("Ride X more stops"):** Big stops-to-go countdown with active progress bar and station-to-station progress.
+    - **Step 4 ("This is your stop"):** Arrival sign badge with destination Japanese/English and green checkmark.
+    - **"I'm lost. Help me" Station Staff Card:** One tap opens a Japanese assistance card (`"すみません、道に迷いました。この駅に行きたいです：..."`) to show station staff or Koban police.
+    - **Instant Hindi/English switch (`हिन्दी | EN`)** on every step.
 
 ## How it fits together
 
@@ -122,40 +129,63 @@ SQL
 
 ```sh
 cd backend
-cp .envrc.example .envrc       # then fill in the DSN password and any API keys
+cp .envrc.example .envrc       # fill in the DSN password and any API keys
 make db/migrations/up          # create the tables
-make db/seed                   # load the etiquette rulebook and the places snapshot
-make run/api port=4001         # start the API (default port is 4000)
+make db/seed                   # load the etiquette rulebook, places, and station guides
+make run/api port=4001         # start the API on port 4001 (port 4000 is reserved)
 ```
 
-`.envrc` is gitignored. Never commit keys. Check it's up with `curl localhost:4001/v1/healthcheck`.
+`.envrc` is gitignored. Never commit keys. Verify the server is running:
+```sh
+curl http://localhost:4001/v1/healthcheck
+```
 
-**AI on your own machine instead (no keys, no quotas).** The planner, chat and menu translation can all run on a local model with [Ollama](https://ollama.com) instead of Gemini and Groq. Nothing leaves the machine, but answers are slower (a plan can take a minute or more on a laptop):
+#### Running with Local AI (Ollama - No keys, no quotas)
+The planner, in-trip companion chat and menu translation can all run locally on your Mac using [Ollama](https://ollama.com) (`gemma4:12b`):
 
 ```sh
+# 1. Install & start Ollama
 brew install ollama
-ollama serve &                 # leave it running
-ollama pull gemma4:12b         # about 7.7 GB; fits a 16 GB Mac
-go run ./cmd/api -port=4001 -db-dsn="$KONNICHIWAH_DB_DSN" -llm=local
+ollama serve &                 # leave running in the background
+
+# 2. Pull the recommended model (about 7.7 GB)
+ollama pull gemma4:12b
+
+# 3. Start the backend with local LLM flag
+cd backend
+source .envrc
+go build -o bin/api ./cmd/api
+./bin/api -port=4001 -db-dsn="$KONNICHIWAH_DB_DSN" -llm=local
 ```
 
-`-llm=local` uses `gemma4:12b` unless you pass `-local-llm-model`. In our tests it used the tools correctly (diet cards, rulebook) and planned a 5-day trip in about 25 seconds; `qwen3.5:9b` was faster at menus but sometimes skipped the tools. Answers take 5–10 seconds, against 1–3 from Groq.
+### 3. Android App on Physical Phone or Emulator
 
-`-llm=cloud` (the default) uses Gemini and Groq as before.
-
-Other useful targets: `make audit` (vet and tests), `make db/psql`, and `make help` for the full list. The live Transitous test is skipped by default; run it with `TRANSIT_LIVE=1 go test ./internal/transit -run Live -v`.
-
-### 3. Android app
-
-1. In Android Studio, **File → Open → `android/`**. Open that folder, not the repo root, or the Run button stays greyed out.
-2. Start the emulator, then forward the port. Do this again each time the emulator restarts or the phone reconnects:
+#### Connecting a Real Android Phone over USB
+1. Enable **Developer Options** and **USB Debugging** on your phone (Settings → About Phone → tap *Build Number* 7 times, then enable *USB Debugging* in Developer Options).
+2. Connect the phone to your Mac via USB cable and allow the USB debugging prompt on the phone screen.
+3. Check the device is recognised:
+   ```sh
+   adb devices
+   ```
+4. **Crucial:** Reverse port forwarding so the phone can access `http://localhost:4001`:
    ```sh
    adb reverse tcp:4001 tcp:4001
    ```
-   Debug builds call `http://localhost:4001/`. We don't use the emulator's usual `10.0.2.2` alias because Android 17 blocks apps from reaching local-network addresses without a runtime permission.
-3. Press **Run ▶**.
+   *(Run this every time the phone is re-plugged or reconnects!)*
+5. Build and install the APK directly from the terminal:
+   ```sh
+   cd android
+   ./gradlew assembleDebug
+   adb install -r app/build/outputs/apk/debug/app-debug.apk
+   adb shell am start -n com.osakapatnam.konnichiwah/.MainActivity
+   ```
+   *(Note for OnePlus/Oppo/Xiaomi: if a security dialog appears asking "Continue installation", confirm it on the phone).*
 
-If you build from a terminal and see `jlink ... does not exist`, a Gradle daemon was started with VS Code's bundled Java runtime. Run `./gradlew --stop`, then build with `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"`.
+#### Running via Android Studio
+1. Open the `android/` subfolder in Android Studio (**File → Open → `android/`**).
+2. Connect your phone or start an emulator on **API 37** (Android 17).
+3. Ensure port forwarding is set: `adb reverse tcp:4001 tcp:4001`.
+4. Press **Run ▶**.
 
 ## API
 
@@ -165,11 +195,14 @@ The full contract, with request and response examples for every endpoint, is in 
 |---|---|---|
 | GET | `/v1/healthcheck` | Status and version |
 | GET | `/v1/etiquette?place_type=temple` | Etiquette rules for a kind of place |
-| POST | `/v1/plan/suggestions` | Questionnaire answers → route and suggestion cards |
+| POST | `/v1/plan/suggestions` | Questionnaire answers → route and curated suggestion cards |
 | POST | `/v1/itineraries` | Chosen cards → a day-by-day itinerary |
 | GET / PATCH | `/v1/itineraries/:id` | Fetch, or save edits (with optimistic locking) |
-| POST | `/v1/companion/chat` | One chat turn; the backend runs the tool loop |
+| POST | `/v1/companion/chat` | One chat turn; backend runs the tool loop (trains, etiquette, help) |
 | GET | `/v1/food?near=Senso-ji&city=Tokyo&diet=veg` | Restaurants nearby, ranked by Desi Match |
+| GET | `/v1/places/suggest?q=shinjuku` | Autocomplete station and place suggestions |
+| GET | `/v1/places?near=Tokyo&kind=hospital` | Help nearby: hospitals, police boxes, ATMs, konbini |
+| GET | `/v1/directions?from=...&to=...` | Transit routing with line colours, codes and exits |
 
 ## Testing
 
