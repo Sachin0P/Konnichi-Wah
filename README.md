@@ -27,8 +27,13 @@ Konnichi-Wah! removes that uncertainty, before the trip and during it.
    - ★★★★★ "Vegan-only kitchen" for a vegetarian
    - ★★★★ "Indian or Nepali food", with "Ask for Jain food: no onion, garlic or root vegetables"
    - A ramen shop is left out for someone avoiding pork, even if it's the closest place.
-6. **Diet cards, offline.** The "Cards" screen shows *your* hand-checked Japanese diet cards first (vegetarian, Jain, eggetarian, halal, no beef, no pork, "does this contain dashi?"). They're bundled in the app and work with no signal.
-7. **Ask Konnichi, the in-trip chat.** Answers take 1–3 seconds, using tools rather than guesses:
+6. **Day-before reminders.** Set the trip's dates and you get a notification at 7 pm Japan time the evening before each day, with tomorrow's stops and a culture tip ("Tomorrow: Day 2 in Kyoto · Morning · Fushimi Inari Taisha · Tip: …"). They're scheduled on the phone with WorkManager and need no network.
+7. **Menu reader.** Photograph a Japanese menu (or pick a photo) and the app reads it on the phone:
+   - Each line with its English translation (machine-translated, so only a rough guide).
+   - **Warnings for your diet**, found in the Japanese itself rather than the translation: "⚠ Pork (豚)", "⚠ Dashi (fish stock) (味噌汁)". It knows what dishes usually hide (ramen broth, miso soup) and that 牛乳 is milk, not beef.
+   - Text recognition works offline from the start. Translation needs a one-time 30 MB download.
+8. **Diet cards, offline.** The "Cards" screen shows *your* hand-checked Japanese diet cards first (vegetarian, Jain, eggetarian, halal, no beef, no pork, "does this contain dashi?"). They're bundled in the app and work with no signal.
+9. **Ask Konnichi, the in-trip chat.** Answers take 1–3 seconds, using tools rather than guesses:
    - **Train routes** from live timetable data: *"Take the Miyakoji Rapid from Kyoto 09:04 → Nara 09:51."* The AI never states a route from memory.
    - **Etiquette** only from our rulebook. City-specific rules apply only where they belong, so the tip about feeding Nara's deer doesn't show up for a park in Tokyo.
    - **Diet cards:** hand-checked Japanese cards to show restaurant staff, e.g. 「私はジャイナ教徒です。肉、魚、魚介類、卵、だしは食べられません。…」 They're never machine-translated on the fly.
@@ -60,6 +65,7 @@ Konnichi-Wah! removes that uncertainty, before the trip and during it.
 | [Gemini API](https://ai.google.dev) (free tier) | Trip planner (structured JSON output) | Schema-constrained output. The free tier allows only **20 requests per day per model**, so the backend falls back through several models and then to the catalogue. |
 | [Groq](https://console.groq.com) (free tier) | Companion chat (tool calling) | About 1-second answers and around 1,000 free requests a day |
 | [Transitous](https://transitous.org) | Train, subway, Shinkansen and bus routes | Free, no key, with real timetables for JR, Tokyo Metro, Shinkansen and Kintetsu. Google's transit directions appear not to cover Japan. |
+| [ML Kit](https://developers.google.com/ml-kit) | Menu reader: Japanese text recognition and Japanese-English translation | Free and on the phone, so photos never leave it and it works offline |
 | [OpenStreetMap](https://www.openstreetmap.org) | Restaurants (Desi Match) and shops | Free, and has diet tags (`diet:vegetarian`, `diet:halal`) and cuisines (`indian`, `nepalese`). We keep a snapshot (`osmdata/places.json`) because the public Overpass servers were often too slow or down to use live. |
 
 Transitous is run by volunteers for open-source and non-profit projects. We cache its results and keep request volume low. A public launch would move to NAVITIME or a self-hosted instance. Route data © Transitous and the transit operators whose feeds it uses. Map data © OpenStreetMap contributors (ODbL).
@@ -79,7 +85,7 @@ backend/            Go JSON API, structured after Alex Edwards' "Let's Go Furthe
   rulebook/           etiquette.json and phrases.json (hand-written content)
   osmdata/            places.json: the OpenStreetMap snapshot (Tokyo, Kyoto, Osaka, Nara, Sapporo)
   migrations/         golang-migrate SQL migrations
-android/            Kotlin app: Compose, Material 3, Hilt, Retrofit, Room, DataStore
+android/            Kotlin app: Compose, Material 3, Hilt, Retrofit, Room, DataStore, WorkManager, CameraX, ML Kit
 docs/api.md         the API contract between app and backend
 CLAUDE.md           the project brief
 ```
@@ -155,7 +161,7 @@ The full contract, with request and response examples for every endpoint, is in 
 
 - **Restaurant coverage beyond the Desi-relevant places.** The snapshot holds only places with diet tags or South Asian and curry cuisines, in five cities. OpenStreetMap's diet tags are also incomplete, so a good vegetarian place may simply not be tagged.
 - **"Near me" with the phone's location.** Searches are by place name for now.
-- The **menu camera** (on-device OCR and translation), trip reminders, and **Hindi**.
+- **Hindi.**
 - **Sign-in.** Itineraries aren't tied to users yet, so anyone with an itinerary id can read it. Firebase Auth is planned.
 - **Exact locations for stops.** They have no coordinates yet; routes are found by place name.
 - **Content review.** The Japanese phrase cards and the time-sensitive etiquette rules (tax-free shopping, Shinkansen luggage, Gion photo rules) should be checked by a native speaker before any real use.

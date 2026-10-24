@@ -16,6 +16,7 @@ import com.osakapatnam.konnichiwah.ui.chat.ChatScreen
 import com.osakapatnam.konnichiwah.ui.devcheck.DevCheckScreen
 import com.osakapatnam.konnichiwah.ui.food.FoodScreen
 import com.osakapatnam.konnichiwah.ui.itinerary.ItineraryScreen
+import com.osakapatnam.konnichiwah.ui.menu.MenuScreen
 import com.osakapatnam.konnichiwah.ui.questionnaire.QuestionnaireScreen
 import com.osakapatnam.konnichiwah.ui.suggestions.SuggestionsScreen
 import kotlinx.serialization.Serializable
@@ -38,6 +39,9 @@ object ChatRoute
 
 @Serializable
 object CardsRoute
+
+@Serializable
+object MenuRoute
 
 // The food search is for one stop, so its route carries the stop's name, city
 // and coordinates (type-safe arguments; FoodViewModel reads them back with
@@ -96,6 +100,7 @@ fun KonnichiNavHost(startViewModel: StartViewModel = hiltViewModel()) {
                 onNewTrip = dropUnlessResumed { navController.navigate(QuestionnaireRoute) { launchSingleTop = true } },
                 onAsk = dropUnlessResumed { navController.navigate(ChatRoute) { launchSingleTop = true } },
                 onCards = dropUnlessResumed { navController.navigate(CardsRoute) { launchSingleTop = true } },
+                onMenu = dropUnlessResumed { navController.navigate(MenuRoute) { launchSingleTop = true } },
                 onFindFood = { stop ->
                     if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                         val route = FoodRoute(stop.placeName, stop.city, stop.lat ?: Double.NaN, stop.lng ?: Double.NaN)
@@ -112,6 +117,12 @@ fun KonnichiNavHost(startViewModel: StartViewModel = hiltViewModel()) {
         }
         composable<FoodRoute> {
             FoodScreen(
+                onBack = dropUnlessResumed { navController.safePop() },
+                onDietCards = dropUnlessResumed { navController.navigate(CardsRoute) { launchSingleTop = true } },
+            )
+        }
+        composable<MenuRoute> {
+            MenuScreen(
                 onBack = dropUnlessResumed { navController.safePop() },
                 onDietCards = dropUnlessResumed { navController.navigate(CardsRoute) { launchSingleTop = true } },
             )

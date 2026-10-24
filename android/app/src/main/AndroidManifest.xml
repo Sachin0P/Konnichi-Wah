@@ -2,6 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- For the day-before reminders. Asked for when the traveller sets their dates. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- For the menu reader. Without a camera you can still pick a photo. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:name=".KonnichiApp"

@@ -18,6 +18,14 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1"
+
+        // ML Kit (the menu reader) ships about 28 MB of native code per CPU
+        // type. Phones from the last several years are arm64, and the
+        // emulator on our Macs is x86_64, so we leave out 32-bit ARM and x86.
+        // An app bundle on Play would split these per device anyway.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "x86_64")
+        }
     }
 
     buildTypes {
@@ -110,6 +118,17 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    implementation(libs.androidx.work.runtime.ktx)
+
+    // The menu reader: CameraX for the camera, and ML Kit's on-device
+    // Japanese text recognition (the model is bundled in the APK, so it works
+    // offline) and translation (the ja-en model is downloaded once).
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.mlkit.text.recognition.japanese)
+    implementation(libs.mlkit.translate)
 
     testImplementation(libs.junit)
     debugImplementation(libs.androidx.compose.ui.tooling)
