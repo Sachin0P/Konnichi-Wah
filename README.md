@@ -77,7 +77,7 @@ backend/            Go JSON API, structured after Alex Edwards' "Let's Go Furthe
   internal/companion/ chat tool loop and tools (provider-neutral: Groq or Gemini)
   internal/gemini/    internal/groq/    internal/transit/   small net/http API clients
   rulebook/           etiquette.json and phrases.json (hand-written content)
-  osmdata/            places.json: the OpenStreetMap snapshot (Tokyo, Kyoto, Osaka, Nara)
+  osmdata/            places.json: the OpenStreetMap snapshot (Tokyo, Kyoto, Osaka, Nara, Sapporo)
   migrations/         golang-migrate SQL migrations
 android/            Kotlin app: Compose, Material 3, Hilt, Retrofit, Room, DataStore
 docs/api.md         the API contract between app and backend
@@ -153,7 +153,7 @@ The full contract, with request and response examples for every endpoint, is in 
 
 ## What's not built yet
 
-- **Restaurant coverage beyond the Desi-relevant places.** The snapshot holds only places with diet tags or South Asian and curry cuisines, in four cities. Sapporo isn't in it yet: the Overpass servers timed out every time (add it with `go run ./cmd/osmfetch -cities Sapporo`, then `make db/seed`). OpenStreetMap's diet tags are also incomplete, so a good vegetarian place may simply not be tagged.
+- **Restaurant coverage beyond the Desi-relevant places.** The snapshot holds only places with diet tags or South Asian and curry cuisines, in five cities. OpenStreetMap's diet tags are also incomplete, so a good vegetarian place may simply not be tagged.
 - **"Near me" with the phone's location.** Searches are by place name for now.
 - The **menu camera** (on-device OCR and translation), trip reminders, and **Hindi**.
 - **Sign-in.** Itineraries aren't tied to users yet, so anyone with an itinerary id can read it. Firebase Auth is planned.

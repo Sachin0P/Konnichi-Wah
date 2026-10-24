@@ -322,7 +322,7 @@ Answers usually take 1–6 seconds. The backend calls the LLM (Groq, or Gemini a
 
 Finds restaurants near a named place, or a point, and ranks them with **Desi Match**: how well each one suits the traveller's diet, from 1 to 5, with the reasons.
 
-The data is a snapshot of OpenStreetMap (`backend/osmdata/places.json`), loaded by `make db/seed`. It covers Tokyo, Kyoto, Osaka and Nara (Sapporo isn't fetched yet), and only includes places with diet tags or South Asian and curry cuisines. Searches are fast and don't depend on any external service at request time. The one exception is turning a `near` name into a location, which uses Transitous.
+The data is a snapshot of OpenStreetMap (`backend/osmdata/places.json`), loaded by `make db/seed`. It covers Tokyo, Kyoto, Osaka, Nara and Sapporo, and only includes places with diet tags or South Asian and curry cuisines. Searches are fast and don't depend on any external service at request time. The one exception is turning a `near` name into a location, which uses Transitous.
 
 ```
 GET /v1/food?near=Senso-ji&city=Tokyo&diet=veg&avoid=onion_garlic&spice=indian_spicy
