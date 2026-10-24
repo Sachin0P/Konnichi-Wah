@@ -46,6 +46,17 @@ class MenuWordsTest {
     }
 
     @Test
+    fun spacesBetweenJapaneseCharactersAreRemoved() {
+        // How text recognition reads vertical menus.
+        assertEquals("枝豆", joinJapanese("枝 豆"))
+        assertEquals("野菜カレー", joinJapanese("野 菜 カレー"))
+        assertEquals("ラーメン 850円", joinJapanese("ラーメン 850円"))
+        assertEquals("Pork cutlet ¥ 850", joinJapanese("Pork cutlet ¥ 850"))
+        // And so the warning still matches.
+        assertTrue(MenuConcern.SEAFOOD in concerns(joinJapanese("海 老天ぷら")))
+    }
+
+    @Test
     fun milkAndBurdockArentBeef() {
         assertFalse(MenuConcern.BEEF in concerns("牛乳"))
         assertFalse(MenuConcern.BEEF in concerns("牛蒡サラダ"))

@@ -45,7 +45,7 @@ class MenuReader @Inject constructor() {
     suspend fun read(photo: Bitmap): List<ReadLine> {
         val text = recognizer.process(InputImage.fromBitmap(photo, 0)).await()
         return text.textBlocks
-            .flatMap { block -> block.lines.map { ReadLine(it.text.trim(), it.boundingBox) } }
+            .flatMap { block -> block.lines.map { ReadLine(joinJapanese(it.text.trim()), it.boundingBox) } }
             .filter { line -> line.text.any { it.isLetter() } }
     }
 
