@@ -306,4 +306,3 @@ cd android && ./gradlew testDebugUnitTest
 - **Cultural Guidance:** Public guidance and etiquette standards from Japan National Tourism Organization (JNTO / [japan.travel](https://www.japan.travel)).
 - **Transit Data:** [Transitous OpenTransit](https://transitous.org) and participating Japanese railway operators under open data agreements.
 - **Geocoding & Map Data:** [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, [MapLibre](https://maplibre.org), [OpenFreeMap](https://openfreemap.org), and [Komoot Photon](https://photon.komoot.io).
-- **Backend Architecture:** Structured after Alex Edwards' *[Let's Go Further](https://lets-go-further.alexedwards.net)*.
